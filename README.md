@@ -1,19 +1,24 @@
-{{PROJECT_NAME}}
+Salesforce Connector for Apache Kafka
 ======================
-This is a template repository for creating open source repositories at Aiven.
+
 
 Overview
 ========
 
+
 Features
 ============
-
+A source connector for salesforce to consume data from Salesforce and to publish that data to Kafka topics
 Setup
 ============
 
+### Prerequisites 
+* Java 11 or 17
+* Maven
+
 License
 ============
-{{PROJECT_NAME}} is licensed under the Apache license, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
+Salesforce Connector for Apache Kafka is licensed under the Apache license, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
 
 Please note that the project explicitly does not require a CLA (Contributor License Agreement) from its contributors.
 
