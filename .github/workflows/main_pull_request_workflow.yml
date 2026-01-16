@@ -22,7 +22,7 @@ jobs:
         with:
           java-version: ${{ matrix.java-version }}
           distribution: "temurin"
-          cache: gradle
+          cache: maven
       - name: Build
         run: ./mvnw clean package
 
