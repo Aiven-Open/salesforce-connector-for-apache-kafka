@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
- * Hello world!
+ * Unit test for simple App.
  */
-public class App {
+public class AppTest {
 
 	/**
-	 * Default constructor
+	 * Rigorous Test :-)
 	 */
-	public App() {
-		// Default constructor
-	}
-	/**
-	 * Main method for Hello world state
-	 * 
-	 * @param args
-	 *            normal main args given during start up of a java app
-	 */
-	public static void main(String[] args) {
-		System.out.println("Hello World!");
+	@Test
+	public void shouldAnswerWithTrue() {
+		assertTrue(true);
 	}
 }
