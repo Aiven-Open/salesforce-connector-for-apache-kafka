@@ -113,10 +113,6 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		return configDef;
 	}
 
-	// public static Setter setter(final Map<String, String> configData) {
-	// return new Setter(configData);
-	// }
-
 	/**
 	 *
 	 * @param configDef
