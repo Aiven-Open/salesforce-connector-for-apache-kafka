@@ -13,22 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
-
+package io.aiven.kafka.connect.salesforce.model;
 /**
- * Unit test for simple App.
+ * Allow a job to be aborted, it can only be aborted if the state is InProgress
+ * or UploadComplete
  */
-public class AppTest {
+public class AbortJob {
+	/**
+	 * Abort Job only has the abort state
+	 */
+	private final JobState state = JobState.Aborted;
 
 	/**
-	 * Rigorous Test :-)
+	 * Default constructor
 	 */
-	@Test
-	public void shouldAnswerWithTrue() {
-		assertTrue(true);
+	public AbortJob() {
+
+	}
+
+	/**
+	 * Get the abort state
+	 * 
+	 * @return JobState.Abort
+	 */
+	public JobState getState() {
+		return state;
 	}
 }

@@ -17,7 +17,10 @@ package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
+import io.aiven.kafka.connect.salesforce.model.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
+import io.aiven.kafka.connect.salesforce.model.JobState;
+import io.aiven.kafka.connect.salesforce.model.QueryResponse;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -47,12 +50,34 @@ public class BulkApiClient {
 	 **/
 	public static final String BEARER = "Bearer ";
 	private final HttpClient client;
-	// TODO Not happy with these names revisit
-	private final static String submitJobUri = "/services/data/%s/jobs/query";
-	private final static String queryJobByIdUri = "/services/data/%s/jobs/query/queryJobId/";
-	private final static String getJobResultsUri = "/services/data/%s/jobs/query/results";
-	private final static String deleteJobUri = "/services/data/%s/jobs/query/queryJobId/";
-	private final static String abortJobUri = "/services/data/%s/jobs/query/queryJobId/";
+	/**
+	 * This is the URI endpoint which when added to the salesforce uri is used to
+	 * submit a query.
+	 */
+	protected final static String submitJobUri = "/services/data/%s/jobs/query";
+	/**
+	 * This is the URI endpoint which when added to the salesforce uri is used to
+	 * check the status of a query.
+	 */
+	protected final static String queryJobByIdUri = "/services/data/%s/jobs/query/queryJobId/%s";
+	/**
+	 * This is the URI endpoint which when added to the salesforce uri is used to
+	 * get the job results of a query.
+	 *
+	 */
+	protected final static String getJobResultsUri = "/services/data/%s/jobs/query/results/%s";
+	/**
+	 * This is the URI endpoint which when added to the salesforce uri is used to
+	 * delete a query. A job can only be deleted if the state is in JobComplete,
+	 * Aborted, or Failed.
+	 */
+	protected final static String deleteJobUri = "/services/data/%s/jobs/query/queryJobId/%s";
+	/**
+	 * This is the URI endpoint which when added to the salesforce uri is used to
+	 * abort a query. A query can only be aborted when its state is InProgress and
+	 * UploadComplete
+	 */
+	protected final static String abortJobUri = "/services/data/%s/jobs/query/queryJobId/%s";
 	// When retrieving results you can add maxRecords to specify the maixmum number
 	// of records to be returned at a time.
 	// Larger queries of data can mean that a timeout may be returned before
@@ -80,10 +105,19 @@ public class BulkApiClient {
 	 */
 	Random random = new Random();
 
-	BulkApiClient(String baseUri, SalesforceConfigFragment configFragment) {
+	BulkApiClient(SalesforceConfigFragment configFragment) {
+		this(configFragment, HttpClient.newBuilder().build());
+	}
+
+	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client) {
+		this(configFragment, client, new Oauth2Login(configFragment.getSalesforceOauthUri(), client));
+
+	}
+
+	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client, Oauth2Login login) {
 		this.configFragment = configFragment;
-		client = HttpClient.newBuilder().build();
-		login = new Oauth2Login(baseUri, client);
+		this.client = client;
+		this.login = login;
 	}
 
 	/**
@@ -94,13 +128,20 @@ public class BulkApiClient {
 	 *            Query written in SOQL to submit for bulk query
 	 * @return Query Job Id
 	 */
-	public boolean submitQueryJob(String query) {
+	public String submitQueryJob(String query) {
 		try {
 			byte[] bytes = mapper.writeValueAsBytes(new BulkApiQuery(QUERY_OPERATION, query));
-			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(submitJobUri))
+			HttpRequest.Builder request = HttpRequest
+					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri,
+							configFragment.getSalesforceApiVersion()))
 					.POST(HttpRequest.BodyPublishers.ofByteArray(bytes));
-			HttpResponse<String> response = executeHttpRequest(request, 0);
-			return isSuccessStatusCode(response.statusCode());
+			HttpResponse<String> response = executeHttpRequest(request, 1);
+			if (isSuccessStatusCode(response.statusCode())) {
+				QueryResponse queryResponse = getQueryResponseFromJson(response);
+				return queryResponse.getId();
+			}
+
+			return null;
 			// TODO change to return the Job Id
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -115,20 +156,27 @@ public class BulkApiClient {
 	 *            The unique id of the job that is being queried
 	 * @return true if ready to return results, false if it is still being processed
 	 */
-	public boolean checkQueryJobStatus(String jobId) {
+	public JobState queryJobStatus(String jobId) {
 		try {
 
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.GET();
-			HttpResponse<String> response = executeHttpRequest(request, 0);
-			return isSuccessStatusCode(response.statusCode());
+			HttpResponse<String> response = executeHttpRequest(request, 1);
+
+			QueryResponse queryResponse = getQueryResponseFromJson(response);
+
+			return queryResponse.getState();
 			// TODO change to return if the Job State is JobComplete
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
 
+	}
+
+	private QueryResponse getQueryResponseFromJson(HttpResponse<String> response) {
+		return mapper.readValue(response.body(), QueryResponse.class);
 	}
 
 	/**
@@ -146,7 +194,7 @@ public class BulkApiClient {
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + getJobResultsUri,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.GET();
-			HttpResponse<String> response = executeHttpRequest(request, 0);
+			HttpResponse<String> response = executeHttpRequest(request, 1);
 
 			return isSuccessStatusCode(response.statusCode());
 		} catch (InterruptedException | ExecutionException e) {
@@ -168,7 +216,7 @@ public class BulkApiClient {
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + deleteJobUri,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.DELETE();
-			HttpResponse<String> response = executeHttpRequest(request, 0);
+			HttpResponse<String> response = executeHttpRequest(request, 1);
 
 			return isSuccessStatusCode(response.statusCode());
 
@@ -179,7 +227,8 @@ public class BulkApiClient {
 	}
 
 	/**
-	 * Abort an existing job
+	 * Abort an existing job it must be in a JobState of UploadComplete or
+	 * InProgress to abort
 	 * 
 	 * @param jobId
 	 *            The unique id of the job that is being queried
@@ -187,11 +236,12 @@ public class BulkApiClient {
 	 */
 	public boolean abortJob(String jobId) {
 		try {
+			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + abortJobUri,
 							configFragment.getSalesforceApiVersion(), jobId))
-					.DELETE();
-			HttpResponse<String> response = executeHttpRequest(request, 0);
+					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
+			HttpResponse<String> response = executeHttpRequest(request, 1);
 
 			return isSuccessStatusCode(response.statusCode());
 
@@ -214,7 +264,7 @@ public class BulkApiClient {
 	 */
 	private HttpResponse<String> executeHttpRequest(HttpRequest.Builder request, int attempt)
 			throws InterruptedException, ExecutionException {
-		if (attempt >= configFragment.getSalesforceMaxRecords()) {
+		if (attempt > configFragment.getSalesforceMaxRecords()) {
 			throw new RuntimeException("Too many retries");
 		}
 		CompletableFuture<HttpResponse<String>> future = client.sendAsync(
@@ -233,10 +283,10 @@ public class BulkApiClient {
 			throw new RuntimeException(
 					String.format("Forbidden from accessing this URI : %s", response.request().uri()));
 		} else {
-			Thread.sleep(timeWithJitter(attempt));
+			Thread.sleep(timeWithJitter(++attempt));
 		}
 
-		executeHttpRequest(request, ++attempt);
+		executeHttpRequest(request, attempt);
 
 		return response;
 	}
@@ -289,7 +339,7 @@ public class BulkApiClient {
 	private long timeWithJitter(int waitCount) {
 		// generate approx +/- 0.512 seconds of jitter
 		final int jitter = random.nextInt(MAX_JITTER) - JITTER_SUBTRAHEND;
-		return (long) Math.pow(2, waitCount) + jitter;
+		return (long) Math.abs(Math.pow(2, waitCount) + jitter);
 	}
 
 	/**

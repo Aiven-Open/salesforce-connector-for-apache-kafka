@@ -80,9 +80,14 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	public static final String SALESFORCE_PASSWORD = "salesforce.password";
 
 	/**
-	 * The salesforce organization uri for password
+	 * The salesforce organization uri for Bulk Api and pub sub queries
 	 */
 	public static final String SALESFORCE_URI = "salesforce.uri";
+
+	/**
+	 * The salesforce OAUTH organization uri for password
+	 */
+	public static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
 
 	/**
 	 * Allows data to be added directly into the config fragment
@@ -154,8 +159,12 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				++salesforceGroupCounter, ConfigDef.Width.NONE, SALESFORCE_CLIENT_SECRET);
 
 		configDef.define(SALESFORCE_URI, ConfigDef.Type.STRING, null, null, ConfigDef.Importance.MEDIUM,
-				"Salesforce domain uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.",
+				"Salesforce domain uri that is used to query the bulk api this is a uri specific to your organization and domain supplied by Salesforce.",
 				GROUP_SALESFORCE, ++salesforceGroupCounter, ConfigDef.Width.NONE, SALESFORCE_URI);
+
+		configDef.define(SALESFORCE_OAUTH_URI, ConfigDef.Type.STRING, null, null, ConfigDef.Importance.MEDIUM,
+				"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.",
+				GROUP_SALESFORCE, ++salesforceGroupCounter, ConfigDef.Width.NONE, SALESFORCE_OAUTH_URI);
 	}
 
 	/**
@@ -195,8 +204,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * The specific Salesforce uri used for all requests including authentication
-	 * and submitting queries
+	 * The specific Salesforce uri used for all requests to the bulk api
 	 * 
 	 * @return The target Salesforce Uri
 	 */
@@ -221,6 +229,16 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 */
 	public int getSalesforceMaxRecords() {
 		return dataAccess.getInt(SALESFORCE_MAX_RECORDS);
+	}
+
+	/**
+	 * The specific Salesforce uri used for all requests including authentication
+	 * and submitting queries
+	 *
+	 * @return The target Salesforce OAUTH Uri
+	 */
+	public String getSalesforceOauthUri() {
+		return dataAccess.getString(SALESFORCE_OAUTH_URI);
 	}
 
 }
