@@ -96,7 +96,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 *            A FragmentDataAccess with corresponding config
 	 *
 	 */
-	protected SalesforceConfigFragment(FragmentDataAccess dataAccess) {
+	public SalesforceConfigFragment(FragmentDataAccess dataAccess) {
 		super(dataAccess);
 	}
 

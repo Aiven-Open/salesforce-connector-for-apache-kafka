@@ -43,13 +43,7 @@
     </site>
   </distributionManagement>
 
-  <dependencies>
-    <dependency>
-      <groupId>io.aiven.commons</groupId>
-      <artifactId>kafka-config</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
+  <dependencies></dependencies>
 
   <repositories>
     <!-- TODO remove when commons version 2 -->

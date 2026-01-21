@@ -15,32 +15,67 @@
  */
 package io.aiven.kafka.connect.salesforce.common.config;
 
-import io.aiven.commons.kafka.config.CommonConfig;
-
-import java.util.Map;
-
 /**
- * Salesforce Common Config to instantiate all the required configuration for
- * the salesforce connector that is common to a source and a sink connector.
+ * Common methods for Authentication and communication with Salesforce
  */
-public class SalesforceCommonConfig extends CommonConfig {
+public interface SalesforceCommonConfig {
 
 	/**
-	 * Instantiation of the SalesforceCommonConfig class
-	 * 
-	 * @param definition
-	 *            The Common ConfigDef implementation that has all the configuration
-	 * @param originals
-	 *            The original configuration that is stored in a Map of String,
-	 *            String
+	 * Username used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce username
 	 */
-	public SalesforceCommonConfig(CommonConfigDef definition, Map<String, String> originals) { // NOPMD
-		super(definition, originals);
-		validate(); // NOPMD ConstructorCallsOverridableMethod
-	}
+	String getOauthUsername();
 
-	private void validate() {
+	/**
+	 * Password used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce password
+	 */
+	String getOauthPassword();
 
-	}
+	/**
+	 * Client Id used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce client Id
+	 */
+	String getOauthClientId();
+
+	/**
+	 * Client Secret used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce client secret
+	 */
+	String getOauthClientSecret();
+
+	/**
+	 * The specific Salesforce uri used for all requests to the bulk api
+	 *
+	 * @return The target Salesforce Uri
+	 */
+	String getSalesforceUri();
+
+	/**
+	 * The Salesforce Api version to be returned
+	 *
+	 * @return The target salesforce api version
+	 */
+	String getSalesforceApiVersion();
+
+	/**
+	 * The maximum number of records to return from the Bulk Api Query at a time.
+	 *
+	 * @return An int with the maximum number of records to retrieve on each page of
+	 *         the Bulk Api.
+	 */
+	int getSalesforceMaxRecords();
+
+	/**
+	 * The specific Salesforce uri used for all requests including authentication
+	 * and submitting queries
+	 *
+	 * @return The target Salesforce OAUTH Uri
+	 */
+	String getSalesforceOauthUri();
 
 }

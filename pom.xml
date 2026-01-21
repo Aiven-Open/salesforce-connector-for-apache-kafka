@@ -154,7 +154,11 @@
       <artifactId>kafka-config</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
-
+    <dependency>
+      <groupId>io.aiven.commons</groupId>
+      <artifactId>kafka-common-connector-framework</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
     <!-- kafka clients -->
     <!-- Source: https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
     <dependency>
