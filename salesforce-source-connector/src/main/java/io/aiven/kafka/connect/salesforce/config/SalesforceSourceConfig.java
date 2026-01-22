@@ -18,7 +18,6 @@ package io.aiven.kafka.connect.salesforce.config;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigDef;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import java.util.Map;
 
@@ -26,27 +25,19 @@ import java.util.Map;
  * Salesforce Common Config to instantiate all the required configuration for
  * the salesforce connector that is common to a source and a sink connector.
  */
-public class SalesforceSourceConfig extends SourceCommonConfig implements SalesforceCommonConfig {
+public final class SalesforceSourceConfig extends SourceCommonConfig implements SalesforceCommonConfig {
 
 	private final SalesforceConfigFragment configFragment;
 	/**
 	 * Instantiation of the SalesforceCommonConfig class
 	 * 
-	 * @param definition
-	 *            The SalesforceCommonConfigDef implementation that has all the
-	 *            configuration
 	 * @param originals
 	 *            The original configuration that is stored in a Map of String,
 	 *            String
 	 */
-	public SalesforceSourceConfig(SalesforceCommonConfigDef definition, Map<String, String> originals) {
+	public SalesforceSourceConfig(Map<String, String> originals) {
 		super(new SourceCommonConfigDef(), originals); // NOPMD
 		configFragment = new SalesforceConfigFragment(FragmentDataAccess.from(this));
-		validate(); // NOPMD ConstructorCallsOverridableMethod
-	}
-
-	private void validate() {
-
 	}
 
 	@Override

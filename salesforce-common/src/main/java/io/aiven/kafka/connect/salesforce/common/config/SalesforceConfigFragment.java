@@ -18,7 +18,9 @@ package io.aiven.kafka.connect.salesforce.common.config;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigValue;
 
+import java.util.Map;
 /**
  * The SalesforceConfigFragment has all the configuration needed to authenticate
  * and communicate with a configured Salesforce system. It makes for easy access
@@ -109,8 +111,22 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * @return the update configuration definition
 	 */
 	public static ConfigDef update(final ConfigDef configDef) {
+		// later
 		addSalesforceConnectionDetails(configDef);
 		return configDef;
+	}
+
+	/**
+	 * Override of the validate method
+	 * 
+	 * @param configMap
+	 *            The map of all values for configuration
+	 */
+	@Override
+	public void validate(Map<String, ConfigValue> configMap) {// NOPMD useless overriding method ignore as we will add
+		super.validate(configMap);
+		// handle any restrictions between options here.
+
 	}
 
 	/**
