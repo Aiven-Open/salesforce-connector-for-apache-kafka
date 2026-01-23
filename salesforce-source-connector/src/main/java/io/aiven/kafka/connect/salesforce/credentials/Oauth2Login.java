@@ -21,9 +21,11 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -33,11 +35,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class Oauth2Login {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Oauth2Login.class);
-	private final static String GRANT_TYPE = "grant_type";
-	private final static String CLIENT_ID = "client_id";
-	private final static String CLIENT_SECRET = "client_secret";
-	private final static String USERNAME = "username";
-	private final static String PASSWORD = "password";
 	private final String URI;
 	private final HttpClient client;
 	ObjectMapper mapper = new ObjectMapper();
@@ -63,6 +60,7 @@ public class Oauth2Login {
 	 * Validate the supplied URI to make sure it is using the proper scheme
 	 * 
 	 * @param uri
+	 *            the uri in string form that is to be validated
 	 */
 	private void validateUri(String uri) {
 		if (!uri.startsWith("https://")) {
@@ -75,31 +73,24 @@ public class Oauth2Login {
 	 * Gets an access token from salesforce for authentication using the username
 	 * password oauth2 flow
 	 *
-	 * @param grantType
-	 *            Specifies the type of grant you are seeking typically it is
-	 *            "password" - option to set this may be removed before release
 	 * @param clientId
 	 *            Specifies the clientId that is configured in Salesforce for Oauth
 	 *            authentication
 	 * @param clientSecret
 	 *            Specifies the client Secret that is configured in Salesforce for
 	 *            Oauth authentication
-	 * @param username
-	 *            Specifies the username that is configured in Salesforce for Oauth
-	 *            authentication
-	 * @param password
-	 *            Specifies the password that is configured in Salesforce for Oauth
-	 *            authentication
 	 * @return Access Token for the Salesforce organization
 	 */
-	public String getAccessToken(String grantType, String clientId, String clientSecret, String username,
-			String password) {
+	public String getAccessToken(String clientId, String clientSecret) {
 
-		String parameters = String.format("?%s=%s&%s=%s&%s=%s&%s=%s&%s=%s", GRANT_TYPE, grantType, CLIENT_ID, clientId,
-				CLIENT_SECRET, clientSecret, USERNAME, username, PASSWORD, password);
+		// For this flow, requests to https://login.salesforce.com and
+		// https://test.salesforce.com aren't supported. Use your My Domain URL instead.
+		SalesforceClientCredentials creds = new SalesforceClientCredentials(clientId, clientSecret);
 		try {
-			URI uri = new URI(URI + parameters);
-			HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
+			URI uri = new URI(URI);
+			HttpRequest request = HttpRequest.newBuilder(uri)
+					.header("Content-Type", "application/x-www-form-urlencoded")
+					.POST(HttpRequest.BodyPublishers.ofString(creds.toString())).build();
 			CompletableFuture<HttpResponse<String>> future = client.sendAsync(request,
 					HttpResponse.BodyHandlers.ofString());
 			HttpResponse<String> response = future.get();

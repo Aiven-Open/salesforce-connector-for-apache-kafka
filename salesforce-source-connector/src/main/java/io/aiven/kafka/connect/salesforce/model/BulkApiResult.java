@@ -86,4 +86,17 @@ public class BulkApiResult {
 	public void setContents(String contents) {
 		this.contents = contents;
 	}
+
+	/**
+	 * This method splits the csv String into individual records and allows them to
+	 * be returned as an array for processing
+	 * 
+	 * @param splitter
+	 *            the regex required to split each entry into its own line in an
+	 *            Array
+	 * @return A String array with the individual records from a CSV file
+	 */
+	public String[] getRecords(String splitter) {
+		return this.contents.split(splitter);
+	}
 }

@@ -34,7 +34,7 @@ public class BulkApiSourceRecord
 	 * @param bulkApiObject
 	 *            A plain java Object
 	 */
-	public BulkApiSourceRecord(Object bulkApiObject) {
+	public BulkApiSourceRecord(Object bulkApiObject) {//NOPMD not used yet
 		super(new NativeInfo<String, Object>() {
 
 			/**

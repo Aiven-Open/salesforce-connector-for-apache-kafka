@@ -202,7 +202,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				.since("0.0.1").type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
 				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
-						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
+						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce. and ends in /services/oauth2/token")
 				.width(ConfigDef.Width.NONE).build();
 
 		ExtendedConfigKey.builder(TOPIC_PREFIX).group(GROUP_SALESFORCE).orderInGroup(++salesforceGroupCounter)
@@ -232,8 +232,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * Client Id used for Oauth configuration
-	 * Also called the Client Key in Salesforce
+	 * Client Id used for Oauth configuration Also called the Client Key in
+	 * Salesforce
+	 * 
 	 * @return The Oauth Salesforce client Id
 	 */
 	public String getOauthClientId() {
@@ -287,4 +288,13 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		return dataAccess.getString(SALESFORCE_OAUTH_URI);
 	}
 
+	/**
+	 * The maximum number of retries to execute when making queries against the Bulk
+	 * API
+	 * 
+	 * @return An int that is the number of retries to allow
+	 */
+	public int getSalesforceMaxRetries() {
+		return dataAccess.getInt(SALESFORCE_MAX_RETRIES);
+	}
 }
