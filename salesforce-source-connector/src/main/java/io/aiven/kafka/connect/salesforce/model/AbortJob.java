@@ -13,26 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
-
+package io.aiven.kafka.connect.salesforce.model;
 /**
- * Hello world!
+ * Allow a job to be aborted, it can only be aborted if the state is InProgress
+ * or UploadComplete
  */
-public class App {
+public class AbortJob {
+	/**
+	 * Abort Job only has the abort state
+	 */
+	private final JobState state = JobState.Aborted;
 
 	/**
 	 * Default constructor
 	 */
-	public App() {
-		// Default constructor
+	public AbortJob() {
+
 	}
+
 	/**
-	 * Main method for Hello world state
+	 * Get the abort state
 	 * 
-	 * @param args
-	 *            normal main args given during start up of a java app
+	 * @return JobState.Abort
 	 */
-	public static void main(String[] args) {
-		System.out.println("Hello World!");
+	public JobState getState() {
+		return state;
 	}
 }

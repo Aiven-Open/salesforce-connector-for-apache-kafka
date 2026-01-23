@@ -1,0 +1,81 @@
+/*
+ * Copyright 2026 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aiven.kafka.connect.salesforce.common.config;
+
+/**
+ * Common methods for Authentication and communication with Salesforce
+ */
+public interface SalesforceCommonConfig {
+
+	/**
+	 * Username used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce username
+	 */
+	String getOauthUsername();
+
+	/**
+	 * Password used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce password
+	 */
+	String getOauthPassword();
+
+	/**
+	 * Client Id used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce client Id
+	 */
+	String getOauthClientId();
+
+	/**
+	 * Client Secret used for Oauth configuration
+	 *
+	 * @return The Oauth Salesforce client secret
+	 */
+	String getOauthClientSecret();
+
+	/**
+	 * The specific Salesforce uri used for all requests to the bulk api
+	 *
+	 * @return The target Salesforce Uri
+	 */
+	String getSalesforceUri();
+
+	/**
+	 * The Salesforce Api version to be returned
+	 *
+	 * @return The target salesforce api version
+	 */
+	String getSalesforceApiVersion();
+
+	/**
+	 * The maximum number of records to return from the Bulk Api Query at a time.
+	 *
+	 * @return An int with the maximum number of records to retrieve on each page of
+	 *         the Bulk Api.
+	 */
+	int getSalesforceMaxRecords();
+
+	/**
+	 * The specific Salesforce uri used for all requests including authentication
+	 * and submitting queries
+	 *
+	 * @return The target Salesforce OAUTH Uri
+	 */
+	String getSalesforceOauthUri();
+
+}
