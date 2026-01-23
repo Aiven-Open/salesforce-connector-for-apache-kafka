@@ -54,11 +54,12 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	 * Should check about adding this
 	 */
 	public SalesforceSourceTask() {
-		// super(LOGGER);
+
 	}
 
 	@Override
 	protected Iterator<SourceRecord> getIterator(io.aiven.commons.timing.BackoffConfig backoffConfig) {
+
 		return null;
 	}
 

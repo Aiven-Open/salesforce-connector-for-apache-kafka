@@ -41,16 +41,6 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	}
 
 	@Override
-	public String getOauthUsername() {
-		return configFragment.getOauthUsername();
-	}
-
-	@Override
-	public String getOauthPassword() {
-		return configFragment.getOauthPassword();
-	}
-
-	@Override
 	public String getOauthClientId() {
 		return configFragment.getOauthClientId();
 	}
