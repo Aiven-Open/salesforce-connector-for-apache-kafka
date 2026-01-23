@@ -77,24 +77,29 @@ public class BulkApiClient {
 	 * check the status of a query.
 	 */
 	protected final static String queryJobByIdUri = "/services/data/%s/jobs/query/%s";
+
 	/**
 	 * This is the URI endpoint which when added to the salesforce uri is used to
 	 * get the job results of a query.
 	 *
 	 */
 	protected final static String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
+
 	/**
 	 * This is the URI endpoint which when added to the salesforce uri is used to
 	 * delete a query. A job can only be deleted if the state is in JobComplete,
 	 * Aborted, or Failed.
 	 */
+
 	protected final static String deleteJobUri = "/services/data/%s/jobs/query/%s";
+
 	/**
 	 * This is the URI endpoint which when added to the salesforce uri is used to
 	 * abort a query. A query can only be aborted when its state is InProgress and
 	 * UploadComplete
 	 */
 	protected final static String abortJobUri = "/services/data/%s/jobs/query/%s";
+
 	// When retrieving results you can add maxRecords to specify the maixmum number
 	// of records to be returned at a time.
 	// Larger queries of data can mean that a timeout may be returned before
@@ -152,6 +157,7 @@ public class BulkApiClient {
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion()))
 					.POST(HttpRequest.BodyPublishers.ofString(bytes));
+
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 			if (isSuccessStatusCode(response.statusCode())) {
 				QueryResponse queryResponse = getQueryResponseFromJson(response);

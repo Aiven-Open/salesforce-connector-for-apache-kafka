@@ -69,5 +69,4 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	public String getSalesforceOauthUri() {
 		return configFragment.getSalesforceOauthUri();
 	}
-
 }

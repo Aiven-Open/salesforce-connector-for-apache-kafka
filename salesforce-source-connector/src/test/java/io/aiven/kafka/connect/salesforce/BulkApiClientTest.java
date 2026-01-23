@@ -174,6 +174,7 @@ public class BulkApiClientTest {
     // No 401's so this does not get called.
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
+
     // Submit job and delete job.
     verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
 
@@ -252,12 +253,16 @@ public class BulkApiClientTest {
     JobState jobStatus = apiClient.queryJobStatus(jobId);
     assertEquals(state, jobStatus);
     // No 401's so this does not get called.
+
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+
 
     // Submit job and delete job.
     verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
 
+
     var jobStatusRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").GET().build();
+
 
     //specifically ensure delete job is called.
     verify(client,times(1)).sendAsync(eq(jobStatusRequest),any());
