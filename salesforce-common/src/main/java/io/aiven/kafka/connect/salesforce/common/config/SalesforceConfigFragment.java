@@ -60,7 +60,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The version of the API that the connector should use to run its queries
 	 */
 	public static final String SALESFORCE_API_VERSION = "salesforce.api.version";
-	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66";
+	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
 
 	/**
 	 * The salesforce client secret for authentication
@@ -93,8 +93,8 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	public static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
 
 	/**
-	 * The prefix used to determine the topic names to send the events.
-	 * Events will be sent to topics with topic_prefix.[api_name].[object_name]
+	 * The prefix used to determine the topic names to send the events. Events will
+	 * be sent to topics with topic_prefix.[api_name].[object_name]
 	 */
 	public static final String TOPIC_PREFIX = "topic.prefix";
 
@@ -206,12 +206,11 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				.width(ConfigDef.Width.NONE).build();
 
 		ExtendedConfigKey.builder(TOPIC_PREFIX).group(GROUP_SALESFORCE).orderInGroup(++salesforceGroupCounter)
-		                 .since("0.0.1").type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
-		                 .importance(ConfigDef.Importance.MEDIUM)
-		                 .documentation(
-				                 "The topic prefix is used to determine the topic that events are produced to." +
-				                 "Events are produced to topics as <topic_prefix>.<api_name>.<Salesforce Object name> .")
-		                 .width(ConfigDef.Width.MEDIUM).build();
+				.since("0.0.1").type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
+				.documentation("The topic prefix is used to determine the topic that events are produced to."
+						+ "Events are produced to topics as <topic_prefix>.<api_name>.<Salesforce Object name> .")
+				.width(ConfigDef.Width.MEDIUM).build();
 	}
 
 	/**
@@ -234,7 +233,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 	/**
 	 * Client Id used for Oauth configuration
-	 * 
+	 * Also called the Client Key in Salesforce
 	 * @return The Oauth Salesforce client Id
 	 */
 	public String getOauthClientId() {

@@ -19,6 +19,8 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.model.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
+import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
+import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.JobState;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
 import tools.jackson.databind.ObjectMapper;
@@ -130,11 +132,11 @@ public class BulkApiClient {
 	 */
 	public String submitQueryJob(String query) {
 		try {
-			byte[] bytes = mapper.writeValueAsBytes(new BulkApiQuery(QUERY_OPERATION, query));
+			String bytes = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri,
 							configFragment.getSalesforceApiVersion()))
-					.POST(HttpRequest.BodyPublishers.ofByteArray(bytes));
+					.POST(HttpRequest.BodyPublishers.ofString(bytes));
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 			if (isSuccessStatusCode(response.statusCode())) {
 				QueryResponse queryResponse = getQueryResponseFromJson(response);
@@ -186,17 +188,22 @@ public class BulkApiClient {
 	 *            The unique id of the job that is being queried
 	 * @return true if ready to return results, false if it is still being processed
 	 */
-	public boolean getJobResults(String jobId) {
+	public BulkApiResultResponse getJobResults(String jobId) {
 		try {
 
 			// This needs to be able to handle multiple pages
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + getJobResultsUri,
 							configFragment.getSalesforceApiVersion(), jobId))
-					.GET();
+					.header("Accept", "text/csv").GET();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
-
-			return isSuccessStatusCode(response.statusCode());
+			BulkApiResultResponse resp = new BulkApiResultResponse();
+			if (isSuccessStatusCode(response.statusCode())) {
+				resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
+				resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
+				resp.setResult(new BulkApiResult(response.body()));
+			}
+			return resp;
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
@@ -268,7 +275,7 @@ public class BulkApiClient {
 			throw new RuntimeException("Too many retries");
 		}
 		CompletableFuture<HttpResponse<String>> future = client.sendAsync(
-				request.header("Authorization", BEARER + accessToken).build(), HttpResponse.BodyHandlers.ofString());
+				request.header("Authorization", BEARER + accessToken).header("Content-Type","application/json").build(), HttpResponse.BodyHandlers.ofString());
 
 		HttpResponse<String> response = future.get();
 
@@ -345,7 +352,7 @@ public class BulkApiClient {
 	/**
 	 * Authenticate with Salesforce will throw an error on failure to authenticate
 	 */
-	private void authenticate() {
+	public void authenticate() {
 		accessToken = login.getAccessToken("password", configFragment.getOauthClientId(),
 				configFragment.getOauthClientSecret(), configFragment.getOauthUsername(),
 				configFragment.getOauthPassword());

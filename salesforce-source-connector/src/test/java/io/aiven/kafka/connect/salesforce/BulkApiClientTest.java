@@ -19,6 +19,8 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
 
 import io.aiven.kafka.connect.salesforce.model.AbortJob;
+import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
+import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.JobState;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +60,7 @@ public class BulkApiClientTest {
 	public static final String TEST_ACCESS_TOKEN = "test_access_token";
 	public static final String TEST_GRANT_TYPE = "password";
 	public static final String TEST_JOB_ID = "test-job";
-	public static final String SALESFORCE_API_VERSION = "v66";
+	public static final String SALESFORCE_API_VERSION = "v66.0";
 
 	private Oauth2Login login;
 
@@ -271,5 +273,6 @@ public class BulkApiClientTest {
 		when(mockHttpResponse.statusCode()).thenReturn(statusCode);
 		return mockHttpResponse;
 	}
+
 
 }

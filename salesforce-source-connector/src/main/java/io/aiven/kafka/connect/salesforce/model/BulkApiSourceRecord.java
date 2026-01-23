@@ -1,0 +1,93 @@
+/*
+ * Copyright 2026 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aiven.kafka.connect.salesforce.model;
+
+import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
+import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+
+/**
+ * The Bulk Api Source record implements the AbstractSourceRecord. It allows the
+ * AbstractSourceRecordIterator to process all the returned records from the
+ * source. This implementation is specific to the Bulk Api for Salesforce.
+ */
+public class BulkApiSourceRecord
+		extends
+			AbstractSourceRecord<String, Object, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+
+	/**
+	 * The plain Object type here will be changed to one for the BulkApi response
+	 * 
+	 * @param bulkApiObject
+	 *            A plain java Object
+	 */
+	public BulkApiSourceRecord(Object bulkApiObject) {
+		super(new NativeInfo<String, Object>() {
+
+			/**
+			 * Returns the NativeItem
+			 * 
+			 * @return the NativeItem
+			 *
+			 */
+			@Override
+			public Object getNativeItem() {
+				return null;
+			}
+
+			/**
+			 * Returns the NativeKey
+			 * 
+			 * @return the NativeKey
+			 */
+			@Override
+			public String getNativeKey() {
+				return "";
+			}
+
+			/**
+			 * Get the size of the Native Item
+			 * 
+			 * @return the size of the NativeItem
+			 */
+			@Override
+			public long getNativeItemSize() {
+				return 0;
+			}
+		});
+	}
+
+	/**
+	 * Constructor to take a BulkApiSourceRecord for duplication()
+	 * 
+	 * @param bulkApiSourceRecord
+	 *            a duplicate BulkApiSourceRecord
+	 */
+	private BulkApiSourceRecord(final BulkApiSourceRecord bulkApiSourceRecord) {
+		super(bulkApiSourceRecord);
+	}
+
+	/**
+	 * Duplicates this record
+	 * 
+	 * @return duplicate record
+	 */
+	@Override
+	public BulkApiSourceRecord duplicate() {
+		return new BulkApiSourceRecord(this);
+	}
+
+}
