@@ -51,8 +51,6 @@ public class BulkApiClientTest {
 
 	public static final String TEST_CLIENT_ID = "test_client_id";
 	public static final String TEST_CLIENT_SECRET = "test_client_secret";
-	public static final String TEST_USER = "test_user";
-	public static final String TEST_PWD = "test_pwd";
 	public static final String TEST_OAUTH_URI = "https://localhost:1234/oauth";
 	public static final String TEST_SALESFORCE_URI = "https://localhost:1234/";
 	public static final String TEST_ACCESS_TOKEN = "test_access_token";
@@ -84,8 +82,6 @@ public class BulkApiClientTest {
 
     when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
     when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getOauthUsername()).thenReturn(TEST_USER);
-    when(configFragment.getOauthPassword()).thenReturn(TEST_PWD);
     when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
     when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
     when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
@@ -98,6 +94,7 @@ public class BulkApiClientTest {
 
     QueryResponse response = new QueryResponse();
     response.setId(TEST_JOB_ID);
+    response.setObject("Account");
     when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
 
     when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
@@ -116,8 +113,6 @@ public class BulkApiClientTest {
 		int expectedNumberOfRetries = 3;
 		when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
 		when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-		when(configFragment.getOauthUsername()).thenReturn(TEST_USER);
-		when(configFragment.getOauthPassword()).thenReturn(TEST_PWD);
 		when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
 		when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
 		when(configFragment.getSalesforceMaxRetries()).thenReturn(expectedNumberOfRetries);
@@ -129,6 +124,7 @@ public class BulkApiClientTest {
 
 		QueryResponse response = new QueryResponse();
 		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
 		when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
 
 		when(client.sendAsync(any(HttpRequest.class), any()))
@@ -151,8 +147,6 @@ public class BulkApiClientTest {
 
     when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
     when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getOauthUsername()).thenReturn(TEST_USER);
-    when(configFragment.getOauthPassword()).thenReturn(TEST_PWD);
     when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
     when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
     when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
@@ -161,6 +155,7 @@ public class BulkApiClientTest {
 
     QueryResponse response = new QueryResponse();
     response.setId(TEST_JOB_ID);
+    response.setObject("Account");
     HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
 
     when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
@@ -169,7 +164,7 @@ public class BulkApiClientTest {
 
     apiClient.deleteJob(jobId);
     //   Needs to be updated to initialise the access token correctly.
-    var deleteRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.deleteJobUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").DELETE().build();
+    var deleteRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").DELETE().build();
 
     // No 401's so this does not get called.
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
@@ -188,8 +183,6 @@ public class BulkApiClientTest {
 
     when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
     when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getOauthUsername()).thenReturn(TEST_USER);
-    when(configFragment.getOauthPassword()).thenReturn(TEST_PWD);
     when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
     when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
     when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
@@ -199,6 +192,7 @@ public class BulkApiClientTest {
 
     QueryResponse response = new QueryResponse();
     response.setId(TEST_JOB_ID);
+    response.setObject("Account");
     HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
 
     when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
@@ -208,7 +202,7 @@ public class BulkApiClientTest {
     apiClient.abortJob(jobId);
     String abortPayload = new ObjectMapper().writeValueAsString(new AbortJob());
     //   Needs to be updated to initialise the access token correctly.
-    var abortRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.abortJobUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
+    var abortRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
 
     // No 401's so this does not get called.
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
@@ -227,8 +221,6 @@ public class BulkApiClientTest {
 
     when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
     when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getOauthUsername()).thenReturn(TEST_USER);
-    when(configFragment.getOauthPassword()).thenReturn(TEST_PWD);
     when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
     when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
     when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
@@ -239,9 +231,10 @@ public class BulkApiClientTest {
 
     QueryResponse response = new QueryResponse();
     response.setId(TEST_JOB_ID);
-
+    response.setObject("Account");
     QueryResponse checkResponse = new QueryResponse();
     checkResponse.setId(TEST_JOB_ID);
+    checkResponse.setObject("Account");
     checkResponse.setState(state);
     HttpResponse<Object> mockCheckQueryResponse = mockResponse(mapper.writeValueAsString(checkResponse), 200);
     HttpResponse<Object> mockQuerySubmitResponse = mockResponse(mapper.writeValueAsString(response),200);
@@ -249,8 +242,8 @@ public class BulkApiClientTest {
                                                         .thenReturn(CompletableFuture.completedFuture(mockCheckQueryResponse));
 
     String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
-
-    JobState jobStatus = apiClient.queryJobStatus(jobId);
+    var queryResp = apiClient.queryJobStatus(jobId);
+    JobState jobStatus = queryResp.getState();
     assertEquals(state, jobStatus);
     // No 401's so this does not get called.
 

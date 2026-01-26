@@ -16,11 +16,12 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
+import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
-import io.aiven.commons.timing.Backoff;
 import io.aiven.commons.timing.BackoffConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
+import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
@@ -37,18 +38,14 @@ import org.apache.commons.collections4.IteratorUtils;
  * task.
  */
 public class SalesforceSourceTask extends AbstractSourceTask {
-	private static Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
-	// /**
-	// * The client for all communication with the Bulk Api queries
-	// */
-	// private BulkApiClient bulkApiClient;
 	/**
 	 * Iterator BulkApiSourceRecord to process results from the Bulk Api
 	 */
 	private Iterator<BulkApiSourceRecord> bulkApiSourceRecordIterator;
 	// /** The offset manager this task uses */
-	// private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
+	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
 	 * connector
@@ -75,22 +72,21 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	@Override
 	protected Iterator<SourceRecord> getIterator(BackoffConfig config) {
 		LOGGER.info("getIterator() query BulkApi");
-		Iterator<SourceRecord> sourceRecordIterator = new Iterator<SourceRecord>() {
-
-			/**
-			 * The backoff for exceptions
-			 */
-			final Backoff backoff = new Backoff(config);
+		Iterator<SourceRecord> sourceRecordIterator = new Iterator<>() {
 
 			@Override
 			public boolean hasNext() {
+				if (!stillPolling()) {
+					return false;
+				}
 				return bulkApiSourceRecordIterator.hasNext();
+
 			}
 
 			@Override
 			public SourceRecord next() {
-				// return bulkApiSourceRecordIterator.next();
-				return null;
+				final BulkApiSourceRecord bulkApiSourceRecord = bulkApiSourceRecordIterator.next();
+				return bulkApiSourceRecord.getSourceRecord(salesforceSourceConfig.getErrorsTolerance(), offsetManager);
 			}
 
 		};

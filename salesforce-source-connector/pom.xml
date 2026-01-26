@@ -61,7 +61,6 @@
       <artifactId>salesforce-connector-common</artifactId>
       <version>0.0.1-SNAPSHOT</version>
       <scope>compile</scope>
-
     </dependency>
 
     <!-- Source: https://mvnrepository.com/artifact/org.apache.commons/commons-collections4 -->

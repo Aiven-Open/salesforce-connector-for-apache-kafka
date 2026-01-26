@@ -1,7 +1,21 @@
+/*
+ * Copyright 2026 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
-import io.aiven.kafka.connect.salesforce.model.AbortJob;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,19 +25,27 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static io.aiven.kafka.connect.salesforce.model.JobState.Failed;
-
 /**
  * The BulkApiQueryEngine handles taking the config from the connector and
  * making the relevant queries to the Salesforce BulkApi 2.0 It handles the
  * lifecycle of the requests along ith exceptions
  */
 public class BulkApiQueryEngine {
-	private static Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
-	private SalesforceConfigFragment configFragment;
-	private BulkApiClient apiClient;
-	private LinkedList<String> queries;
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
+	private SalesforceConfigFragment configFragment; // NOPMD
+	private final BulkApiClient apiClient;
+	private final LinkedList<String> queries;
 
+	/**
+	 * The constructor for the BulkApiQueryEngine
+	 * 
+	 * @param configFragment
+	 *            the salesforceConfigFragment
+	 * @param apiClient
+	 *            the BulkApiClient used for communication
+	 * @param queries
+	 *            The queries defined in the configuration by the user
+	 */
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient,
 			LinkedList<String> queries) {
 		this.configFragment = configFragment;
@@ -32,50 +54,59 @@ public class BulkApiQueryEngine {
 	}
 
 	/**
-	 * The constructor to initialize the BulkApiQuery
+	 * The constructor for the BulkApiQueryEngine
+	 * 
+	 * @param configFragment
+	 *            the salesforceConfigFragment
+	 * @param apiClient
+	 *            the BulkApiClient used for communication
 	 */
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient) {
 		this(configFragment, apiClient, new LinkedList<>(List.of(configFragment.getBulkApiQueries().split(";"))));
 	}
 
 	/**
-	 *
+	 * GetRecords takes the preconfigured queries and executes those queries in
+	 * order until no records are left to be consumed.
+	 * 
 	 * @return a Stream of records
 	 */
 	public Stream<CSVRecord> getRecords() {
-
+		String objectName = "";
 		for (String query : queries) {
 			// Submit the job
 			String jobId = apiClient.submitQueryJob(query);
-			JobState state = apiClient.queryJobStatus(jobId);
-			String locator="";
+			var queryResult = apiClient.queryJobStatus(jobId);
+			objectName = queryResult.getObject();
+			JobState state = queryResult.getState();
 			// wait until the job is finished processing
 			waitUntilProcessingComplete(state);
-			switch(state){
-			case UploadComplete:
-				return apiClient.getResultStream(jobId, null);
-			case Aborted:
-			case Failed:
-			default:
-				apiClient.deleteJob(jobId);
-				return null;
+			switch (state) {
+				case UploadComplete :
+					return apiClient.getResultStream(jobId, null, objectName);
+				case Aborted :
+				case Failed :
+				default :
+					apiClient.deleteJob(jobId);
+					return null;
 			}
 		}
-    return Stream.empty();
-  }
+		return Stream.empty();
+	}
 
 	private void waitUntilProcessingComplete(JobState state) {
-		while (state.equals(JobState.InProgress) || state.equals(JobState.Submitted) || state.equals(JobState.JobComplete))
-		{
-      try {
+		while (state.equals(JobState.InProgress) || state.equals(JobState.Submitted)
+				|| state.equals(JobState.JobComplete)) {
+			try {
 				// TODO Add a max wait time before returning and updating the state to failed
-	      //e.g. wait for a max of 5 minutes for the job to process and then return fail if it isn't returned by then
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        LOGGER.error("Attempted to sleep until job was complete but an exception was thrown: ", e);
+				// e.g. wait for a max of 5 minutes for the job to process and then return fail
+				// if it isn't returned by then
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				LOGGER.error("Attempted to sleep until job was complete but an exception was thrown: ", e);
 				throw new RuntimeException(e);
-      }
-    }
+			}
+		}
 	}
 
 }

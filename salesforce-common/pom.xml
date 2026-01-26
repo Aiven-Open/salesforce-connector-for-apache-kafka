@@ -43,8 +43,7 @@
     </site>
   </distributionManagement>
 
-  <dependencies>
-  </dependencies>
+  <dependencies></dependencies>
 
   <repositories>
     <!-- TODO remove when commons version 2 -->

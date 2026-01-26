@@ -88,7 +88,7 @@ public class Oauth2Login {
 			URI uri = new URI(URI);
 			HttpRequest request = HttpRequest.newBuilder(uri)
 					.header("Content-Type", "application/x-www-form-urlencoded")
-					.POST(HttpRequest.BodyPublishers.ofString(creds.toString())).build();
+					.POST(HttpRequest.BodyPublishers.ofString(creds.toFormUrlEncodedFormat())).build();
 			CompletableFuture<HttpResponse<String>> future = client.sendAsync(request,
 					HttpResponse.BodyHandlers.ofString());
 			HttpResponse<String> response = future.get();

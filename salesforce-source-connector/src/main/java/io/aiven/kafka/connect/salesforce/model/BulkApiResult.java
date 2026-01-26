@@ -20,7 +20,6 @@ import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -30,14 +29,14 @@ import java.util.stream.Stream;
 public class BulkApiResult {
 
 	/**
+	 * An object in Salesforce is the table name, thie ObjectName is the object name
+	 * from the query submitted to the Salesforce bulk api.
+	 */
+	private String objectName;
+	/**
 	 * The first line of the CSV should contain the headers for the CSV
 	 */
-	private List<String> headers;
-	/**
-	 * The CSV returned from the API sill in String format Need to review size
-	 * constraints etc
-	 */
-	private String contents;
+	private Stream<CSVRecord> contents;
 
 	/**
 	 * This constructor allows you to create the object directly from the response
@@ -46,32 +45,18 @@ public class BulkApiResult {
 	 * @param csvString
 	 *            this is a String representation of a csv file downloaded from the
 	 *            API
+	 * @param objectName
+	 *            the name of the object that the results came from
+	 * @throws IOException
+	 *             An IOException can be thrown on creating a csv file from the
+	 *             returned query
 	 */
-	public BulkApiResult(String csvString) {
-		this.contents = csvString;
+	public BulkApiResult(String csvString, String objectName) throws IOException {
+		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).stream();
+		this.objectName = objectName;
+
 		// Add additional processing setup to pull
 		// out the header files
-	}
-
-	/**
-	 * The headers are the column names which are on the first line of the CSV file
-	 * they match with the contents as you move down
-	 * 
-	 * @return The headers from this resultSet
-	 */
-	public List<String> getHeaders() {
-		return headers;
-	}
-
-	/**
-	 * Set the headers for this result set these are the column names which are on
-	 * the first line of the CSV file they match with the contents as you move down
-	 * 
-	 * @param headers
-	 *            Set the headers for this resultSet
-	 */
-	public void setHeaders(List<String> headers) {
-		this.headers = headers;
 	}
 
 	/**
@@ -79,7 +64,7 @@ public class BulkApiResult {
 	 * 
 	 * @return The contents of the CSV file
 	 */
-	public String getContents() {
+	public Stream<CSVRecord> getContents() {
 		return contents;
 	}
 
@@ -89,18 +74,27 @@ public class BulkApiResult {
 	 * @param contents
 	 *            Set the contents for the bulk api result set
 	 */
-	public void setContents(String contents) {
+	public void setContents(Stream<CSVRecord> contents) {
 		this.contents = contents;
 	}
 
 	/**
-	 * This method splits the csv String into individual records and allows them to
-	 * be returned as an array for processing
-	 *
-	 * @return A String array with the individual records from a CSV file
+	 * Get the name of the object these results are from
+	 * 
+	 * @return the object name
 	 */
-	public Stream<CSVRecord> getRecords() throws IOException {
-		return CSVFormat.RFC4180.builder().setHeader(headers.toArray(String[]::new)).get()
-		                               .parse(new StringReader(contents)).stream();
+	public String getObjectName() {
+		return objectName;
 	}
+
+	/**
+	 * Set the ObjectName these queries are from
+	 * 
+	 * @param objectName
+	 *            the object name
+	 */
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
+	}
+
 }

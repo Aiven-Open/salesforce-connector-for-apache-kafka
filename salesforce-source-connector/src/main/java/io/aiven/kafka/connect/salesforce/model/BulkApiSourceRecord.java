@@ -29,15 +29,16 @@ public class BulkApiSourceRecord
 		extends
 			AbstractSourceRecord<String, CSVRecord, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
-	private CSVRecord record;
-
 	/**
 	 * The plain Object type here will be changed to one for the BulkApi response
 	 * 
-	 * @param bulkApiObject
+	 * @param record
 	 *            A plain java Object
+	 * @param nativeKey
+	 *            The native key or identifier for this record that comes from
+	 *            Salesforce
 	 */
-	public BulkApiSourceRecord(Bulk bulkApiObject) {// NOPMD not used yet
+	public BulkApiSourceRecord(CSVRecord record, String nativeKey) {// NOPMD not used yet
 		super(new NativeInfo<String, CSVRecord>() {
 
 			/**
@@ -58,7 +59,7 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public String getNativeKey() {
-				return "";
+				return nativeKey;
 			}
 
 			/**
@@ -68,7 +69,7 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public long getNativeItemSize() {
-				return csvRecord;
+				return record.size();
 			}
 		});
 	}

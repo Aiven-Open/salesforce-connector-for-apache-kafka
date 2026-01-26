@@ -21,7 +21,6 @@ import io.aiven.kafka.connect.salesforce.model.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
-import io.aiven.kafka.connect.salesforce.model.JobState;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
 import org.apache.commons.csv.CSVRecord;
 import tools.jackson.databind.ObjectMapper;
@@ -31,7 +30,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +77,7 @@ public class BulkApiClient {
 	protected final static String submitJobUri = "/services/data/%s/jobs/query";
 	/**
 	 * This is the URI endpoint which when added to the salesforce uri is used to
-	 * check the status of a query.
+	 * check the status of a query, abort a query or delete a query.
 	 */
 	protected final static String queryJobByIdUri = "/services/data/%s/jobs/query/%s";
 
@@ -89,21 +87,6 @@ public class BulkApiClient {
 	 *
 	 */
 	protected final static String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
-
-	/**
-	 * This is the URI endpoint which when added to the salesforce uri is used to
-	 * delete a query. A job can only be deleted if the state is in JobComplete,
-	 * Aborted, or Failed.
-	 */
-
-	protected final static String deleteJobUri = "/services/data/%s/jobs/query/%s";
-
-	/**
-	 * This is the URI endpoint which when added to the salesforce uri is used to
-	 * abort a query. A query can only be aborted when its state is InProgress and
-	 * UploadComplete
-	 */
-	protected final static String abortJobUri = "/services/data/%s/jobs/query/%s";
 
 	// When retrieving results you can add maxRecords to specify the maixmum number
 	// of records to be returned at a time.
@@ -184,7 +167,7 @@ public class BulkApiClient {
 	 *            The unique id of the job that is being queried
 	 * @return true if ready to return results, false if it is still being processed
 	 */
-	public JobState queryJobStatus(String jobId) {
+	public QueryResponse queryJobStatus(String jobId) {
 		try {
 
 			HttpRequest.Builder request = HttpRequest
@@ -193,9 +176,7 @@ public class BulkApiClient {
 					.GET();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
-			QueryResponse queryResponse = getQueryResponseFromJson(response);
-
-			return queryResponse.getState();
+			return getQueryResponseFromJson(response);
 			// TODO change to return if the Job State is JobComplete
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -215,9 +196,11 @@ public class BulkApiClient {
 	 * @param locator
 	 *            The locator is used for pagination in the salesforce bulk API an
 	 *            identifier returned in the first result set.
+	 * @param objectName
+	 *            The objectName the query results are coming from
 	 * @return True if ready to return results, False if it is still being processed
 	 */
-	public BulkApiResultResponse getJobResults(String jobId, String locator) {
+	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName) {
 		try {
 
 			// This needs to be able to handle multiple pages
@@ -228,7 +211,11 @@ public class BulkApiClient {
 			if (isSuccessStatusCode(response.statusCode())) {
 				resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
 				resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
-				resp.setResult(new BulkApiResult(response.body()));
+				try {
+					resp.setResult(new BulkApiResult(response.body(), objectName));
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 			return resp;
 		} catch (InterruptedException | ExecutionException e) {
@@ -239,26 +226,26 @@ public class BulkApiClient {
 
 	/**
 	 * Creates a stream from which we will create an iterator.
+	 * 
 	 * @param jobId
 	 *            the jobId to begin returning results from
+	 * @param locator
+	 *            the locator for the next set of results required
+	 * @param objectName
+	 *            the name of the Salesforce object being queried
+	 *
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<CSVRecord> getResultStream(String jobId, String locator) {
+	public Stream<CSVRecord> getResultStream(String jobId, String locator, String objectName) {
 
-		return Stream.iterate(getJobResults(jobId,locator), Objects::nonNull, response -> {
-			//This should be checking if another locator token exists
-			if(response.getLocator().isPresent()) {
-				return getJobResults(jobId, response.getLocator().get());
+		return Stream.iterate(getJobResults(jobId, locator, objectName), Objects::nonNull, response -> {
+			// This should be checking if another locator token exists
+			if (response.getLocator().isPresent()) {
+				return getJobResults(jobId, response.getLocator().get(), objectName);
 			} else {
 				return null;
 			}
-		}).flatMap(response -> {
-      try {
-        return response.getResult().getRecords();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
+		}).flatMap(response -> response.getResult().getContents());
 
 	}
 
@@ -292,12 +279,13 @@ public class BulkApiClient {
 	/**
 	 * Delete an existing job
 	 *
-	 * @param jobId The unique id of the job that is being queried
+	 * @param jobId
+	 *            The unique id of the job that is being queried
 	 */
 	public void deleteJob(String jobId) {
 		try {
 			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + deleteJobUri, EMPTY_QUERY_PARAM,
+					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.DELETE();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
@@ -314,13 +302,14 @@ public class BulkApiClient {
 	 * Abort an existing job it must be in a JobState of UploadComplete or
 	 * InProgress to abort
 	 *
-	 * @param jobId The unique id of the job that is being queried
+	 * @param jobId
+	 *            The unique id of the job that is being queried
 	 */
 	public void abortJob(String jobId) {
 		try {
 			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + abortJobUri, EMPTY_QUERY_PARAM,
+					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
 			HttpResponse<String> response = executeHttpRequest(request, 1);

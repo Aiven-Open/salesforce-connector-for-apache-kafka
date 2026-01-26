@@ -20,6 +20,7 @@ import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.function.IOSupplier;
 
 import java.io.InputStream;
@@ -32,7 +33,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData
 		implements
-			NativeSourceData<String, Object, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+			NativeSourceData<String, CSVRecord, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
 	/**
 	 * Default constructor
@@ -47,7 +48,7 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public String getSourceName() {
-		return "";
+		return "Salesforce Bulk API";
 	}
 
 	/**
@@ -58,7 +59,7 @@ public class BulkApiSourceData
 	 * @return A stream of data
 	 */
 	@Override
-	public Stream<Object> getNativeItemStream(String s) {
+	public Stream<CSVRecord> getNativeItemStream(String s) {
 		return Stream.empty();
 	}
 
@@ -82,7 +83,7 @@ public class BulkApiSourceData
 	 * @return The NativeKey
 	 */
 	@Override
-	public String getNativeKey(Object o) {
+	public String getNativeKey(CSVRecord o) {
 		return "";
 	}
 
@@ -95,7 +96,7 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public String parseNativeKey(String s) {
-		return "";
+		return s;
 	}
 
 	/**
@@ -106,7 +107,7 @@ public class BulkApiSourceData
 	 * @return Create a sourceRecord
 	 */
 	@Override
-	public BulkApiSourceRecord createSourceRecord(Object o) {
+	public BulkApiSourceRecord createSourceRecord(CSVRecord o) {
 		return null;
 	}
 
@@ -118,7 +119,7 @@ public class BulkApiSourceData
 	 * @return SalesforceOffsetManagerEntry
 	 */
 	@Override
-	public SalesforceOffsetManagerEntry createOffsetManagerEntry(Object o) {
+	public SalesforceOffsetManagerEntry createOffsetManagerEntry(CSVRecord o) {
 		return null;
 	}
 
@@ -136,13 +137,13 @@ public class BulkApiSourceData
 
 	/**
 	 * Returns the context if available in the record
-	 * 
-	 * @param o
-	 *            This needs to be updated
+	 *
+	 * @param records
+	 *            This is an individual CSVRecord
 	 * @return context if available reutnrs an empty Optional if not
 	 */
 	@Override
-	public Optional<Context<String>> extractContext(Object o) {
+	public Optional<Context<String>> extractContext(CSVRecord records) {
 		return Optional.empty();
 	}
 }

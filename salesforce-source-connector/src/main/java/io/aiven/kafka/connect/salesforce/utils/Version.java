@@ -28,6 +28,7 @@ public final class Version {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
 
 	private static final String PROPERTIES_FILENAME = "salesforce-source-connector-for-apache-kafka-version.properties";
+	private static final String DEPENDENCIES_PROPERTIES_FILENAME = "app.properties";
 	/**
 	 * Default constructor
 	 */
@@ -49,5 +50,11 @@ public final class Version {
 			LOGGER.warn("Error while loading {}: {}", PROPERTIES_FILENAME, e.getMessage());
 		}
 		VERSION = props.getProperty("version", "unknown").trim();
+		try (InputStream resourceStream = Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream(DEPENDENCIES_PROPERTIES_FILENAME)) {
+			props.load(resourceStream);
+		} catch (final Exception e) { // NOPMD AvoidCatchingGenericException
+			LOGGER.warn("Error while loading {}: {}", DEPENDENCIES_PROPERTIES_FILENAME, e.getMessage());
+		}
 	}
 }

@@ -100,7 +100,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The prefix used to determine the topic names to send the events. Events will
 	 * be sent to topics with topic_prefix.[api_name].[object_name]
 	 */
-	private static final String TOPIC_PREFIX = "topic.prefix";
+	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD will be used v shortly to put records on topics
 
 	/**
 	 * The String list of queries separated by a semicolon to distinguish between
@@ -241,24 +241,6 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * Username used for Oauth configuration
-	 * 
-	 * @return The Oauth Salesforce username
-	 */
-	public String getOauthUsername() {
-		return dataAccess.getString(SALESFORCE_USERNAME);
-	}
-
-	/**
-	 * Password used for Oauth configuration
-	 * 
-	 * @return The Oauth Salesforce password
-	 */
-	public String getOauthPassword() {
-		return dataAccess.getPassword(SALESFORCE_PASSWORD).value();
-	}
-
-	/**
 	 * Client Id used for Oauth configuration Also called the Client Key in
 	 * Salesforce
 	 * 
@@ -345,28 +327,6 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		private Setter(final Map<String, String> data) {
 			super(data);
-		}
-
-		/**
-		 * Set the Username used for Oauth configuration
-		 *
-		 * @param oAuthUserName
-		 *            The username used for Oauth authentication
-		 * @return The Oauth Salesforce username
-		 */
-		private Setter getOauthUsername(String oAuthUserName) {
-			return setValue(SALESFORCE_USERNAME, oAuthUserName);
-		}
-
-		/**
-		 * Set the Password used for Oauth configuration
-		 *
-		 * @param oAuthPassword
-		 *            The password used for Oauth authentication
-		 * @return The Oauth Salesforce password
-		 */
-		public Setter getOauthPassword(String oAuthPassword) {
-			return setValue(SALESFORCE_PASSWORD, oAuthPassword);
 		}
 
 		/**

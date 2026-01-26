@@ -17,7 +17,8 @@ package io.aiven.kafka.connect.salesforce.model;
 
 /**
  * The State of the Bulk API 2.0 Query Job states as described in the
- * documentation, in addition there is a `Submitted` and a 'fulfilled' state used internally in the connector.
+ * documentation, in addition there is a `Submitted` and a 'fulfilled' state
+ * used internally in the connector.
  * https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_job_states.htm
  */
 public enum JobState {
