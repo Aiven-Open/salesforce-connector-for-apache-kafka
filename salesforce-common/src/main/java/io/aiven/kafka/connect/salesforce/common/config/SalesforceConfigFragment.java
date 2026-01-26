@@ -40,7 +40,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	public static final String SALESFORCE_MAX_RECORDS = "max.records";
+	private static final String SALESFORCE_MAX_RECORDS = "max.records";
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
 	 * in one go
@@ -51,7 +51,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	public static final String SALESFORCE_MAX_RETRIES = "max.retries";
+	private static final String SALESFORCE_MAX_RETRIES = "max.retries";
 
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
@@ -62,44 +62,45 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	/**
 	 * The version of the API that the connector should use to run its queries
 	 */
-	public static final String SALESFORCE_API_VERSION = "salesforce.api.version";
+	private static final String SALESFORCE_API_VERSION = "salesforce.api.version";
 	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
 
 	/**
 	 * The salesforce client secret for authentication
 	 */
-	public static final String SALESFORCE_CLIENT_SECRET = "salesforce.client.secret";
+	private static final String SALESFORCE_CLIENT_SECRET = "salesforce.client.secret";
 
 	/**
 	 * The salesforce client id for authentication
 	 */
-	public static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
+	private static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
 
 	/**
 	 * The salesforce username for authentication
 	 */
-	public static final String SALESFORCE_USERNAME = "salesforce.username";
+	private static final String SALESFORCE_USERNAME = "salesforce.username";
 
 	/**
 	 * The salesforce username for password
 	 */
-	public static final String SALESFORCE_PASSWORD = "salesforce.password";
+	private static final String SALESFORCE_PASSWORD = "salesforce.password";
 
 	/**
 	 * The salesforce organization uri for Bulk Api and pub sub queries
 	 */
-	public static final String SALESFORCE_URI = "salesforce.uri";
+	private static final String SALESFORCE_URI = "salesforce.uri";
 
 	/**
 	 * The salesforce OAUTH organization uri for password
 	 */
-	public static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
+	private static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
 
 	/**
 	 * The prefix used to determine the topic names to send the events. Events will
 	 * be sent to topics with topic_prefix.[api_name].[object_name]
 	 */
-	public static final String TOPIC_PREFIX = "topic.prefix";
+	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD not yet used, will be in the future when
+																// publishing data to kafka
 
 	/**
 	 * Allows data to be added directly into the config fragment

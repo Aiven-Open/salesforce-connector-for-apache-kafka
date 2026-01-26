@@ -85,21 +85,6 @@ public class BulkApiClient {
 	 */
 	protected final static String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
 
-	/**
-	 * This is the URI endpoint which when added to the salesforce uri is used to
-	 * delete a query. A job can only be deleted if the state is in JobComplete,
-	 * Aborted, or Failed.
-	 */
-
-	protected final static String deleteJobUri = "/services/data/%s/jobs/query/%s";
-
-	/**
-	 * This is the URI endpoint which when added to the salesforce uri is used to
-	 * abort a query. A query can only be aborted when its state is InProgress and
-	 * UploadComplete
-	 */
-	protected final static String abortJobUri = "/services/data/%s/jobs/query/%s";
-
 	// When retrieving results you can add maxRecords to specify the maixmum number
 	// of records to be returned at a time.
 	// Larger queries of data can mean that a timeout may be returned before
@@ -269,7 +254,7 @@ public class BulkApiClient {
 	public boolean deleteJob(String jobId) {
 		try {
 			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + deleteJobUri, EMPTY_QUERY_PARAM,
+					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.DELETE();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
@@ -294,7 +279,7 @@ public class BulkApiClient {
 		try {
 			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + abortJobUri, EMPTY_QUERY_PARAM,
+					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion(), jobId))
 					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
 			HttpResponse<String> response = executeHttpRequest(request, 1);

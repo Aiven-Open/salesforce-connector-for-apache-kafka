@@ -47,7 +47,7 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public String getSourceName() {
-		return "";
+		return "Salesforce Bulk API";
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public String parseNativeKey(String s) {
-		return "";
+		return s;
 	}
 
 	/**

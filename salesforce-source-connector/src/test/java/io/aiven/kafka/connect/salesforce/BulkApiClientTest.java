@@ -169,7 +169,7 @@ public class BulkApiClientTest {
 
     apiClient.deleteJob(jobId);
     //   Needs to be updated to initialise the access token correctly.
-    var deleteRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.deleteJobUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").DELETE().build();
+    var deleteRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").DELETE().build();
 
     // No 401's so this does not get called.
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
@@ -208,7 +208,7 @@ public class BulkApiClientTest {
     apiClient.abortJob(jobId);
     String abortPayload = new ObjectMapper().writeValueAsString(new AbortJob());
     //   Needs to be updated to initialise the access token correctly.
-    var abortRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.abortJobUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
+    var abortRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer null").method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
 
     // No 401's so this does not get called.
     verify(login,times(0)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));

@@ -80,12 +80,11 @@ public class SalesforceClientCredentials {
 	}
 
 	/**
-	 * This toString override method provides the expected format for the client
-	 * credentials request that aligns with the application/x-www-form-urlencoded
-	 * that is expected by the login api
+	 * This method provides the expected format for the client credentials request
+	 * that aligns with the application/x-www-form-urlencoded that is expected by
+	 * the login api
 	 */
-	@Override
-	public String toString() {
+	String toFormUrlEncodedFormat() {
 		return "grant_type=" + GRANT_TYPE + "&client_id=" + clientId + "&client_secret=" + clientSecret;
 	}
 }

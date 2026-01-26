@@ -15,7 +15,13 @@
  */
 package io.aiven.kafka.connect.salesforce.model;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * This is a holder for the response from the Bulk Api It allows the storage and
@@ -88,15 +94,14 @@ public class BulkApiResult {
 	}
 
 	/**
-	 * This method splits the csv String into individual records and allows them to
-	 * be returned as an array for processing
-	 * 
-	 * @param splitter
-	 *            the regex required to split each entry into its own line in an
-	 *            Array
-	 * @return A String array with the individual records from a CSV file
+	 * This method creates a stream of CSVRecords that can be processed
+	 *
+	 * @return A stream of CSV Records
+	 * @throws IOException
+	 *             could be thrown when retrieving a stream of CSV Records
 	 */
-	public String[] getRecords(String splitter) {
-		return this.contents.split(splitter);
+	public Stream<CSVRecord> getRecords() throws IOException {
+		return CSVFormat.RFC4180.builder().setHeader(headers.toArray(String[]::new)).get()
+				.parse(new StringReader(contents)).stream();
 	}
 }

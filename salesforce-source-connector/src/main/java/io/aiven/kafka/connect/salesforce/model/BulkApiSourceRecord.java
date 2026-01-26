@@ -30,7 +30,7 @@ public class BulkApiSourceRecord
 
 	/**
 	 * The plain Object type here will be changed to one for the BulkApi response
-	 * 
+	 *
 	 * @param bulkApiObject
 	 *            A plain java Object
 	 */
@@ -39,7 +39,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Returns the NativeItem
-			 * 
+			 *
 			 * @return the NativeItem
 			 *
 			 */
@@ -50,7 +50,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Returns the NativeKey
-			 * 
+			 *
 			 * @return the NativeKey
 			 */
 			@Override
@@ -60,7 +60,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Get the size of the Native Item
-			 * 
+			 *
 			 * @return the size of the NativeItem
 			 */
 			@Override
@@ -87,7 +87,7 @@ public class BulkApiSourceRecord
 	 */
 	@Override
 	public BulkApiSourceRecord duplicate() {
-		return new BulkApiSourceRecord(this);
+		return new BulkApiSourceRecord(nativeInfo);
 	}
 
 }
