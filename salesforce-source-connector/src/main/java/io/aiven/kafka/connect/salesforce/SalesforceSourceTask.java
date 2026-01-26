@@ -16,17 +16,20 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
-import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
+import io.aiven.commons.timing.Backoff;
+import io.aiven.commons.timing.BackoffConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
-import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.commons.collections4.IteratorUtils;
 
 /**
  * The salesforce source task is called by the kafka connect framework to start
@@ -36,19 +39,21 @@ import java.util.Map;
 public class SalesforceSourceTask extends AbstractSourceTask {
 	private static Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
+	// /**
+	// * The client for all communication with the Bulk Api queries
+	// */
+	// private BulkApiClient bulkApiClient;
 	/**
-	 * The client for all communication with the Bulk Api queries
+	 * Iterator BulkApiSourceRecord to process results from the Bulk Api
 	 */
-	private BulkApiClient bulkApiClient;
-	/** The offset manager this task uses */
-	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
+	private Iterator<BulkApiSourceRecord> bulkApiSourceRecordIterator;
+	// /** The offset manager this task uses */
+	// private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
 	 * connector
 	 */
 	private SalesforceSourceConfig salesforceSourceConfig;
-	/** An iterator or S3SourceRecords */
-	private Iterator<BulkApiSourceRecord> bulkApiSourceRecordIterator;
 
 	/**
 	 * Should check about adding this
@@ -58,14 +63,39 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	}
 
 	@Override
-	protected Iterator<SourceRecord> getIterator(io.aiven.commons.timing.BackoffConfig backoffConfig) {
+	protected SourceCommonConfig configure(final Map<String, String> props) {
+		LOGGER.info("S3 Source task started.");
+		this.salesforceSourceConfig = new SalesforceSourceConfig(props);
 
-		return null;
+		// offsetManager = new OffsetManager<>(context);
+
+		return salesforceSourceConfig;
 	}
 
 	@Override
-	protected SourceCommonConfig configure(Map<String, String> map) {
-		return null;
+	protected Iterator<SourceRecord> getIterator(BackoffConfig config) {
+		LOGGER.info("getIterator() query BulkApi");
+		Iterator<SourceRecord> sourceRecordIterator = new Iterator<SourceRecord>() {
+
+			/**
+			 * The backoff for exceptions
+			 */
+			final Backoff backoff = new Backoff(config);
+
+			@Override
+			public boolean hasNext() {
+				return bulkApiSourceRecordIterator.hasNext();
+			}
+
+			@Override
+			public SourceRecord next() {
+				// return bulkApiSourceRecordIterator.next();
+				return null;
+			}
+
+		};
+
+		return IteratorUtils.filteredIterator(sourceRecordIterator, Objects::nonNull);
 	}
 
 	@Override
@@ -75,6 +105,12 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 
 	@Override
 	public String version() {
-		return "";
+		return Version.VERSION;
 	}
+
+	@Override
+	public void commit() {
+		LOGGER.info("Committed all records through last poll()");
+	}
+
 }

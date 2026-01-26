@@ -16,7 +16,9 @@
 package io.aiven.kafka.connect.salesforce.credentials;
 
 /**
- * Client credentials body for authenticating with salesforce
+ * Client credentials body for authenticating with salesforce The toString()
+ * method provides the appropriately formatted bod to be used with
+ * application/www-x-form-urlencoded
  */
 public class SalesforceClientCredentials {
 
