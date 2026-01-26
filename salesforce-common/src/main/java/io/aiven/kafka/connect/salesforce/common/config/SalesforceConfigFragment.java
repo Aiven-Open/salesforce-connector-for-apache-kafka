@@ -40,7 +40,8 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	public static final String SALESFORCE_MAX_RECORDS = "max.records";
+	private static final String SALESFORCE_MAX_RECORDS = "max.records";
+
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
 	 * in one go
@@ -51,7 +52,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	public static final String SALESFORCE_MAX_RETRIES = "max.retries";
+	private static final String SALESFORCE_MAX_RETRIES = "max.retries";
 
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
@@ -62,45 +63,50 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	/**
 	 * The version of the API that the connector should use to run its queries
 	 */
-	public static final String SALESFORCE_API_VERSION = "salesforce.api.version";
+	private static final String SALESFORCE_API_VERSION = "salesforce.api.version";
 	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
 
 	/**
 	 * The salesforce client secret for authentication
 	 */
-	public static final String SALESFORCE_CLIENT_SECRET = "salesforce.client.secret";
+	private static final String SALESFORCE_CLIENT_SECRET = "salesforce.client.secret";
 
 	/**
 	 * The salesforce client id for authentication
 	 */
-	public static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
+	private static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
 
 	/**
 	 * The salesforce username for authentication
 	 */
-	public static final String SALESFORCE_USERNAME = "salesforce.username";
+	private static final String SALESFORCE_USERNAME = "salesforce.username";
 
 	/**
 	 * The salesforce username for password
 	 */
-	public static final String SALESFORCE_PASSWORD = "salesforce.password";
+	private static final String SALESFORCE_PASSWORD = "salesforce.password";
 
 	/**
 	 * The salesforce organization uri for Bulk Api and pub sub queries
 	 */
-	public static final String SALESFORCE_URI = "salesforce.uri";
+	private static final String SALESFORCE_URI = "salesforce.uri";
 
 	/**
 	 * The salesforce OAUTH organization uri for password
 	 */
-	public static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
+	private static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
 
 	/**
 	 * The prefix used to determine the topic names to send the events. Events will
 	 * be sent to topics with topic_prefix.[api_name].[object_name]
 	 */
-	public static final String TOPIC_PREFIX = "topic.prefix";
+	private static final String TOPIC_PREFIX = "topic.prefix";
 
+	/**
+	 * The String list of queries separated by a semicolon to distinguish between
+	 * individual queries, it can be null if not sing the bulk api
+	 */
+	private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
 	/**
 	 * Allows data to be added directly into the config fragment
 	 * 
@@ -224,6 +230,14 @@ public class SalesforceConfigFragment extends ConfigFragment {
 						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
 
+		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(GROUP_SALESFORCE)
+				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
+				.importance(ConfigDef.Importance.MEDIUM)
+				.documentation(
+						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
+								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+				.width(ConfigDef.Width.LONG).build());
+
 	}
 
 	/**
@@ -313,6 +327,18 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
+	 * All Salesforce SOQL Queries that are to be executed against the Bulk Api
+	 * 
+	 * @return A String of queries that are to be made against the Bulk Api, if
+	 *         there are multiple they are deliminated by a semicolon The semicolon
+	 *         should not be sent to the Bulk Api as this is just a deliminator
+	 *
+	 */
+	public String getBulkApiQueries() {
+		return dataAccess.getString(SALESFORCE_BULK_API_QUERIES);
+	}
+
+	/**
 	 * A setter for the SalesforceConfigFragment.
 	 */
 	public final static class Setter extends AbstractFragmentSetter<Setter> {
@@ -328,7 +354,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 *            The username used for Oauth authentication
 		 * @return The Oauth Salesforce username
 		 */
-		public Setter getOauthUsername(String oAuthUserName) {
+		private Setter getOauthUsername(String oAuthUserName) {
 			return setValue(SALESFORCE_USERNAME, oAuthUserName);
 		}
 
@@ -412,6 +438,18 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 */
 		public Setter getSalesforceOauthUri(String salesforceOauthUri) {
 			return setValue(SALESFORCE_OAUTH_URI, salesforceOauthUri);
+		}
+
+		/**
+		 * Sets the queries which are to be used against the Bulk Api
+		 *
+		 * @param salesforceBulkApiQueries
+		 *            The queries to be made against the Bulk Api delimitated by a
+		 *            semicolon
+		 * @return The queries to be made against the Bulk Api delimitate by a semicolon
+		 */
+		public Setter getSalesforceBulkApiQueries(String salesforceBulkApiQueries) {
+			return setValue(SALESFORCE_BULK_API_QUERIES, salesforceBulkApiQueries);
 		}
 
 	}

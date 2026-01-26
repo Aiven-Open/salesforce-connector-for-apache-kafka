@@ -23,15 +23,20 @@ import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.JobState;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
+import org.apache.commons.csv.CSVRecord;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 /**
  * This is a client for communicating with the Salesforce Bulk Api 2.0 It allows
@@ -125,7 +130,7 @@ public class BulkApiClient {
 	/**
 	 * A random number generator to construct jitter.
 	 */
-	Random random = new Random();
+	private final Random random = new Random();
 
 	BulkApiClient(SalesforceConfigFragment configFragment) {
 		this(configFragment, HttpClient.newBuilder().build());
@@ -210,7 +215,7 @@ public class BulkApiClient {
 	 * @param locator
 	 *            The locator is used for pagination in the salesforce bulk API an
 	 *            identifier returned in the first result set.
-	 * @return true if ready to return results, false if it is still being processed
+	 * @return True if ready to return results, False if it is still being processed
 	 */
 	public BulkApiResultResponse getJobResults(String jobId, String locator) {
 		try {
@@ -229,6 +234,31 @@ public class BulkApiClient {
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
+
+	}
+
+	/**
+	 * Creates a stream from which we will create an iterator.
+	 * @param jobId
+	 *            the jobId to begin returning results from
+	 * @return a stream of BulkApiSourceRecords
+	 */
+	public Stream<CSVRecord> getResultStream(String jobId, String locator) {
+
+		return Stream.iterate(getJobResults(jobId,locator), Objects::nonNull, response -> {
+			//This should be checking if another locator token exists
+			if(response.getLocator().isPresent()) {
+				return getJobResults(jobId, response.getLocator().get());
+			} else {
+				return null;
+			}
+		}).flatMap(response -> {
+      try {
+        return response.getResult().getRecords();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
 
 	}
 
@@ -261,12 +291,10 @@ public class BulkApiClient {
 
 	/**
 	 * Delete an existing job
-	 * 
-	 * @param jobId
-	 *            The unique id of the job that is being queried
-	 * @return Boolean value indicating success or failure of the operation
+	 *
+	 * @param jobId The unique id of the job that is being queried
 	 */
-	public boolean deleteJob(String jobId) {
+	public void deleteJob(String jobId) {
 		try {
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + deleteJobUri, EMPTY_QUERY_PARAM,
@@ -274,7 +302,7 @@ public class BulkApiClient {
 					.DELETE();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
-			return isSuccessStatusCode(response.statusCode());
+			response.statusCode();
 
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -285,12 +313,10 @@ public class BulkApiClient {
 	/**
 	 * Abort an existing job it must be in a JobState of UploadComplete or
 	 * InProgress to abort
-	 * 
-	 * @param jobId
-	 *            The unique id of the job that is being queried
-	 * @return Boolean value indicating success or failure of the operation
+	 *
+	 * @param jobId The unique id of the job that is being queried
 	 */
-	public boolean abortJob(String jobId) {
+	public void abortJob(String jobId) {
 		try {
 			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
@@ -299,7 +325,7 @@ public class BulkApiClient {
 					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
-			return isSuccessStatusCode(response.statusCode());
+			response.statusCode();
 
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
