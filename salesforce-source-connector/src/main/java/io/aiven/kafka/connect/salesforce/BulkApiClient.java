@@ -198,9 +198,12 @@ public class BulkApiClient {
 	 *            identifier returned in the first result set.
 	 * @param objectName
 	 *            The objectName the query results are coming from
+	 * @param queryExecutionTime
+	 *            The original time the query was created at
 	 * @return True if ready to return results, False if it is still being processed
 	 */
-	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName) {
+	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName,
+			String queryExecutionTime) {
 		try {
 
 			// This needs to be able to handle multiple pages
@@ -212,7 +215,7 @@ public class BulkApiClient {
 				resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
 				resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
 				try {
-					resp.setResult(new BulkApiResult(response.body(), objectName));
+					resp.setResult(new BulkApiResult(response.body(), objectName, queryExecutionTime));
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -233,19 +236,22 @@ public class BulkApiClient {
 	 *            the locator for the next set of results required
 	 * @param objectName
 	 *            the name of the Salesforce object being queried
-	 *
+	 * @param queryExecutionTime
+	 *            The original time the query was created at
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<CSVRecord> getResultStream(String jobId, String locator, String objectName) {
+	public Stream<CSVRecord> getResultStream(String jobId, String locator, String objectName,
+			String queryExecutionTime) {
 
-		return Stream.iterate(getJobResults(jobId, locator, objectName), Objects::nonNull, response -> {
-			// This should be checking if another locator token exists
-			if (response.getLocator().isPresent()) {
-				return getJobResults(jobId, response.getLocator().get(), objectName);
-			} else {
-				return null;
-			}
-		}).flatMap(response -> response.getResult().getContents());
+		return Stream
+				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
+					// This should be checking if another locator token exists
+					if (response.getLocator().isPresent()) {
+						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
+					} else {
+						return null;
+					}
+				}).flatMap(response -> response.getResult().getContents());
 
 	}
 

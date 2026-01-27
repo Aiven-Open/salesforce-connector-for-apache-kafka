@@ -321,6 +321,16 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
+	 * Get the topic prefix which is used to determine the topic names that data is
+	 * sent to.
+	 * 
+	 * @return The topic prefix to send data to.
+	 */
+	public String getTopicPrefix() {
+		return dataAccess.getString(TOPIC_PREFIX);
+	}
+
+	/**
 	 * A setter for the SalesforceConfigFragment.
 	 */
 	public final static class Setter extends AbstractFragmentSetter<Setter> {
@@ -410,6 +420,19 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 */
 		public Setter getSalesforceBulkApiQueries(String salesforceBulkApiQueries) {
 			return setValue(SALESFORCE_BULK_API_QUERIES, salesforceBulkApiQueries);
+		}
+
+		/**
+		 * Sets the topic prefix which determines the name of the topic daata is sent
+		 * to.
+		 * 
+		 * @param topicPrefix
+		 *            the topic prefix
+		 * @return the topic prefix
+		 *
+		 */
+		public Setter getTopicPrefix(String topicPrefix) {
+			return setValue(TOPIC_PREFIX, topicPrefix);
 		}
 
 	}

@@ -33,7 +33,7 @@ public class BulkApiSourceRecord
 	 * The plain Object type here will be changed to one for the BulkApi response
 	 * 
 	 * @param record
-	 *            A plain java Object
+	 *            A CSVRecord
 	 * @param nativeKey
 	 *            The native key or identifier for this record that comes from
 	 *            Salesforce
@@ -69,7 +69,9 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public long getNativeItemSize() {
-				return record.size();
+				// TODO Double check this as it may be wrong, data is before the change into
+				// maps so could be smaller then actual
+				return record.toMap().size();
 			}
 		});
 	}

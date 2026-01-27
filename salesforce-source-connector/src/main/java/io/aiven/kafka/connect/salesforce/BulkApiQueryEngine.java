@@ -72,18 +72,18 @@ public class BulkApiQueryEngine {
 	 * @return a Stream of records
 	 */
 	public Stream<CSVRecord> getRecords() {
-		String objectName = "";
+
 		for (String query : queries) {
 			// Submit the job
 			String jobId = apiClient.submitQueryJob(query);
 			var queryResult = apiClient.queryJobStatus(jobId);
-			objectName = queryResult.getObject();
 			JobState state = queryResult.getState();
 			// wait until the job is finished processing
-			waitUntilProcessingComplete(state);
+			waitUntilProcessingComplete(state, jobId);
 			switch (state) {
 				case UploadComplete :
-					return apiClient.getResultStream(jobId, null, objectName);
+					return apiClient.getResultStream(jobId, null, queryResult.getObject(),
+							queryResult.getCreatedDate());
 				case Aborted :
 				case Failed :
 				default :
@@ -94,7 +94,7 @@ public class BulkApiQueryEngine {
 		return Stream.empty();
 	}
 
-	private void waitUntilProcessingComplete(JobState state) {
+	private void waitUntilProcessingComplete(JobState state, String jobId) {
 		while (state.equals(JobState.InProgress) || state.equals(JobState.Submitted)
 				|| state.equals(JobState.JobComplete)) {
 			try {
@@ -102,6 +102,8 @@ public class BulkApiQueryEngine {
 				// e.g. wait for a max of 5 minutes for the job to process and then return fail
 				// if it isn't returned by then
 				Thread.sleep(1000);
+				var queryResult = apiClient.queryJobStatus(jobId);
+				state = queryResult.getState();
 			} catch (InterruptedException e) {
 				LOGGER.error("Attempted to sleep until job was complete but an exception was thrown: ", e);
 				throw new RuntimeException(e);

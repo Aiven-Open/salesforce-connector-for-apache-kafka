@@ -33,10 +33,20 @@ public class BulkApiResult {
 	 * from the query submitted to the Salesforce bulk api.
 	 */
 	private String objectName;
+
+	/**
+	 * The time that the query was executed against the Salesforce Api
+	 */
+	private String queryExecutionTime;
 	/**
 	 * The first line of the CSV should contain the headers for the CSV
 	 */
 	private Stream<CSVRecord> contents;
+
+	/**
+	 * The length of the content
+	 */
+	private long contentSize;
 
 	/**
 	 * This constructor allows you to create the object directly from the response
@@ -47,16 +57,17 @@ public class BulkApiResult {
 	 *            API
 	 * @param objectName
 	 *            the name of the object that the results came from
+	 * @param queryExecutionTime
+	 *            * the time that the results came from
 	 * @throws IOException
 	 *             An IOException can be thrown on creating a csv file from the
 	 *             returned query
 	 */
-	public BulkApiResult(String csvString, String objectName) throws IOException {
+	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
 		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).stream();
+		this.contentSize = csvString.length();
 		this.objectName = objectName;
-
-		// Add additional processing setup to pull
-		// out the header files
+		this.queryExecutionTime = queryExecutionTime;
 	}
 
 	/**
@@ -97,4 +108,41 @@ public class BulkApiResult {
 		this.objectName = objectName;
 	}
 
+	/**
+	 * Get the time the query was executed at
+	 * 
+	 * @return time that the query was executed at
+	 */
+	public String getQueryExecutionTime() {
+		return queryExecutionTime;
+	}
+
+	/**
+	 * Set the time the query was executed at
+	 * 
+	 * @param queryExecutionTime
+	 *            the time the query was executed at
+	 */
+	public void setQueryExecutionTime(String queryExecutionTime) {
+		this.queryExecutionTime = queryExecutionTime;
+	}
+
+	/**
+	 * Get the size of the content stored in this result
+	 * 
+	 * @return the size of the content stored in this result
+	 */
+	public long getContentSize() {
+		return contentSize;
+	}
+
+	/**
+	 * Set the size of the content stored in this result
+	 * 
+	 * @param contentSize
+	 *            the size of the content stored in this result
+	 */
+	public void setContentSize(long contentSize) {
+		this.contentSize = contentSize;
+	}
 }
