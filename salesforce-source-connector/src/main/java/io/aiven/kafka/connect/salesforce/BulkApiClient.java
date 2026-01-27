@@ -21,8 +21,8 @@ import io.aiven.kafka.connect.salesforce.model.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
+import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
-import org.apache.commons.csv.CSVRecord;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -240,7 +240,7 @@ public class BulkApiClient {
 	 *            The original time the query was created at
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<CSVRecord> getResultStream(String jobId, String locator, String objectName,
+	public Stream<BulkApiSourceData> getResultStream(String jobId, String locator, String objectName,
 			String queryExecutionTime) {
 
 		return Stream
@@ -251,7 +251,8 @@ public class BulkApiClient {
 					} else {
 						return null;
 					}
-				}).flatMap(response -> response.getResult().getContents());
+				}).map(res -> new BulkApiSourceData(res.getResult().getContents(), objectName, queryExecutionTime,
+						configFragment));
 
 	}
 

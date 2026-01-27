@@ -15,11 +15,13 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import io.aiven.commons.kafka.connector.source.AbstractSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.timing.BackoffConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.utils.Version;
@@ -27,6 +29,7 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -41,11 +44,19 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
 	/**
-	 * Iterator BulkApiSourceRecord to process results from the Bulk Api
+	 * Iterator BulkApiSourceRecord to process individual results and returns
+	 * SourceRecords defaults to empty
 	 */
-	private Iterator<BulkApiSourceRecord> bulkApiSourceRecordIterator;
-	// /** The offset manager this task uses */
+	private Iterator<BulkApiSourceRecord> inner = Collections.emptyIterator();
+
+	/**
+	 * The source Data iterator pulls individual records out of the Bulk Api
+	 * defaults to empty
+	 */
+	private Iterator<BulkApiSourceData> bulkApiSourceRecordIterator = Collections.emptyIterator();
+	/** The offset manager this task uses */
 	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
+
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
 	 * connector
@@ -61,11 +72,20 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 
 	@Override
 	protected SourceCommonConfig configure(final Map<String, String> props) {
-		LOGGER.info("S3 Source task started.");
+		LOGGER.info("Salesforce Source task started.");
 		this.salesforceSourceConfig = new SalesforceSourceConfig(props);
+		offsetManager = new OffsetManager<>(context);
+		/**
+		 * The bulk api client for querying the Bulk api
+		 */
+		BulkApiClient apiClient = new BulkApiClient(salesforceSourceConfig.getSalesforceConfigFragment());
+		/**
+		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
+		 */
+		BulkApiQueryEngine engine = new BulkApiQueryEngine(salesforceSourceConfig.getSalesforceConfigFragment(),
+				apiClient);
 
-		// offsetManager = new OffsetManager<>(context);
-
+		setBulkApiSourceRecordIterator(engine.getRecords());
 		return salesforceSourceConfig;
 	}
 
@@ -76,22 +96,34 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 
 			@Override
 			public boolean hasNext() {
-				if (!stillPolling()) {
-					return false;
+				if (stillPolling()) {
+					if (inner.hasNext()) {
+						return true;
+					} else if (bulkApiSourceRecordIterator.hasNext()) {
+						inner = new AbstractSourceRecordIterator<>(salesforceSourceConfig, null, offsetManager,
+								bulkApiSourceRecordIterator.next());
+						return inner.hasNext();
+					} else {
+						return false;
+					}
 				}
-				return bulkApiSourceRecordIterator.hasNext();
 
+				return false;
 			}
 
 			@Override
 			public SourceRecord next() {
-				final BulkApiSourceRecord bulkApiSourceRecord = bulkApiSourceRecordIterator.next();
+				final BulkApiSourceRecord bulkApiSourceRecord = inner.next();
 				return bulkApiSourceRecord.getSourceRecord(salesforceSourceConfig.getErrorsTolerance(), offsetManager);
 			}
 
 		};
 
 		return IteratorUtils.filteredIterator(sourceRecordIterator, Objects::nonNull);
+	}
+
+	private void setBulkApiSourceRecordIterator(final Iterator<BulkApiSourceData> iterator) {
+		this.bulkApiSourceRecordIterator = iterator;
 	}
 
 	@Override

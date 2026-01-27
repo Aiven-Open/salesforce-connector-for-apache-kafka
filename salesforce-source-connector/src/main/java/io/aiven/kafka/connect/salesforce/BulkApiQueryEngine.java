@@ -16,14 +16,16 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
-import org.apache.commons.csv.CSVRecord;
+import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.aiven.kafka.connect.salesforce.model.JobState;
+
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * The BulkApiQueryEngine handles taking the config from the connector and
@@ -71,7 +73,7 @@ public class BulkApiQueryEngine {
 	 * 
 	 * @return a Stream of records
 	 */
-	public Stream<CSVRecord> getRecords() {
+	public Iterator<BulkApiSourceData> getRecords() {
 
 		for (String query : queries) {
 			// Submit the job
@@ -82,16 +84,16 @@ public class BulkApiQueryEngine {
 			waitUntilProcessingComplete(state, jobId);
 			switch (state) {
 				case UploadComplete :
-					return apiClient.getResultStream(jobId, null, queryResult.getObject(),
-							queryResult.getCreatedDate());
+					return apiClient.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate())
+							.iterator();
 				case Aborted :
 				case Failed :
 				default :
 					apiClient.deleteJob(jobId);
-					return null;
+					return Collections.emptyIterator();
 			}
 		}
-		return Stream.empty();
+		return Collections.emptyIterator();
 	}
 
 	private void waitUntilProcessingComplete(JobState state, String jobId) {

@@ -64,4 +64,12 @@ public interface SalesforceCommonConfig {
 	 */
 	String getSalesforceOauthUri();
 
+	/**
+	 * The Salesforce Config Fragment which contains a lot of the unique Salesforce
+	 * configuration details
+	 *
+	 * @return SalesforceConfigFragment
+	 */
+	SalesforceConfigFragment getSalesforceConfigFragment();
+
 }

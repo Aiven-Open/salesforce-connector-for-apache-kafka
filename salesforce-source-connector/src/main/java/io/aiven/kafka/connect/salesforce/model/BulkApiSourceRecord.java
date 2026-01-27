@@ -20,6 +20,8 @@ import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.apache.commons.csv.CSVRecord;
 
+import java.util.List;
+
 /**
  * The Bulk Api Source record implements the AbstractSourceRecord. It allows the
  * AbstractSourceRecordIterator to process all the returned records from the
@@ -27,7 +29,7 @@ import org.apache.commons.csv.CSVRecord;
  */
 public class BulkApiSourceRecord
 		extends
-			AbstractSourceRecord<String, CSVRecord, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+			AbstractSourceRecord<String, List<CSVRecord>, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
 	/**
 	 * The plain Object type here will be changed to one for the BulkApi response
@@ -38,8 +40,8 @@ public class BulkApiSourceRecord
 	 *            The native key or identifier for this record that comes from
 	 *            Salesforce
 	 */
-	public BulkApiSourceRecord(CSVRecord record, String nativeKey) {// NOPMD not used yet
-		super(new NativeInfo<String, CSVRecord>() {
+	public BulkApiSourceRecord(List<CSVRecord> record, String nativeKey) {// NOPMD not used yet
+		super(new NativeInfo<String, List<CSVRecord>>() {
 
 			/**
 			 * Returns the NativeItem
@@ -48,7 +50,7 @@ public class BulkApiSourceRecord
 			 *
 			 */
 			@Override
-			public CSVRecord getNativeItem() {
+			public List<CSVRecord> getNativeItem() {
 				return record;
 			}
 
@@ -71,7 +73,7 @@ public class BulkApiSourceRecord
 			public long getNativeItemSize() {
 				// TODO Double check this as it may be wrong, data is before the change into
 				// maps so could be smaller then actual
-				return record.toMap().size();
+				return record.size();
 			}
 		});
 	}

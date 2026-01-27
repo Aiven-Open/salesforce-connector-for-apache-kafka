@@ -20,7 +20,7 @@ import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.stream.Stream;
+import java.util.List;
 
 /**
  * This is a holder for the response from the Bulk Api It allows the storage and
@@ -41,7 +41,7 @@ public class BulkApiResult {
 	/**
 	 * The first line of the CSV should contain the headers for the CSV
 	 */
-	private Stream<CSVRecord> contents;
+	private List<CSVRecord> contents;
 
 	/**
 	 * The length of the content
@@ -64,7 +64,7 @@ public class BulkApiResult {
 	 *             returned query
 	 */
 	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
-		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).stream();
+		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).getRecords();
 		this.contentSize = csvString.length();
 		this.objectName = objectName;
 		this.queryExecutionTime = queryExecutionTime;
@@ -75,7 +75,7 @@ public class BulkApiResult {
 	 * 
 	 * @return The contents of the CSV file
 	 */
-	public Stream<CSVRecord> getContents() {
+	public List<CSVRecord> getContents() {
 		return contents;
 	}
 
@@ -85,7 +85,7 @@ public class BulkApiResult {
 	 * @param contents
 	 *            Set the contents for the bulk api result set
 	 */
-	public void setContents(Stream<CSVRecord> contents) {
+	public void setContents(List<CSVRecord> contents) {
 		this.contents = contents;
 	}
 

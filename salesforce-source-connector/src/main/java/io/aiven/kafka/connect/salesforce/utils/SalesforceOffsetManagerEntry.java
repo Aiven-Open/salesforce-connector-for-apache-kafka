@@ -111,7 +111,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	public static OffsetManager.OffsetManagerKey asKey(final String apiName, final String objectName,
 			final String queryExecutionTime) {
-		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName, QUERY_EXECUTION_TIME, queryExecutionTime);
+		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName);
 	}
 	/**
 	 * Creates an SalesforceOffsetManagerEntry. Will return {@code null} if
@@ -140,6 +140,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public Map<String, Object> getProperties() {
 		final Map<String, Object> result = new HashMap<>(data);
 		result.put(RECORD_COUNT, recordCount);
+		result.put(QUERY_EXECUTION_TIME, queryExecutionTime);
 		return result;
 	}
 
@@ -167,7 +168,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	@Override
 	public OffsetManager.OffsetManagerKey getManagerKey() {
-		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName, QUERY_EXECUTION_TIME, queryExecutionTime);
+		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName);
 	}
 
 	@Override
