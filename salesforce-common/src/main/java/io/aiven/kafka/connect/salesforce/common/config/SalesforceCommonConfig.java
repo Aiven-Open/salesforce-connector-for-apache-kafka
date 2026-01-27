@@ -21,20 +21,6 @@ package io.aiven.kafka.connect.salesforce.common.config;
 public interface SalesforceCommonConfig {
 
 	/**
-	 * Username used for Oauth configuration
-	 *
-	 * @return The Oauth Salesforce username
-	 */
-	String getOauthUsername();
-
-	/**
-	 * Password used for Oauth configuration
-	 *
-	 * @return The Oauth Salesforce password
-	 */
-	String getOauthPassword();
-
-	/**
 	 * Client Id used for Oauth configuration
 	 *
 	 * @return The Oauth Salesforce client Id

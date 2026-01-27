@@ -16,6 +16,7 @@
 package io.aiven.kafka.connect.salesforce.common.config;
 
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
+
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
@@ -51,6 +52,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * query at a time.
 	 */
 	private static final String SALESFORCE_MAX_RETRIES = "max.retries";
+
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
 	 * in one go
@@ -61,7 +63,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The version of the API that the connector should use to run its queries
 	 */
 	private static final String SALESFORCE_API_VERSION = "salesforce.api.version";
-	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66";
+	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
 
 	/**
 	 * The salesforce client secret for authentication
@@ -92,6 +94,13 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The salesforce OAUTH organization uri for password
 	 */
 	private static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
+
+	/**
+	 * The prefix used to determine the topic names to send the events. Events will
+	 * be sent to topics with topic_prefix.[api_name].[object_name]
+	 */
+	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD not yet used, will be in the future when
+																// publishing data to kafka
 
 	/**
 	 * Allows data to be added directly into the config fragment
@@ -215,6 +224,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				.documentation(
 						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
+
 	}
 
 	/**
@@ -236,7 +246,8 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * Client Id used for Oauth configuration
+	 * Client Id used for Oauth configuration Also called the Client Key in
+	 * Salesforce
 	 * 
 	 * @return The Oauth Salesforce client Id
 	 */
@@ -292,6 +303,17 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
+	 * 
+	 * The maximum number of retries to execute when making queries against the Bulk
+	 * API
+	 * 
+	 * @return An int that is the number of retries to allow
+	 */
+	public int getSalesforceMaxRetries() {
+		return dataAccess.getInt(SALESFORCE_MAX_RETRIES);
+	}
+
+	/**
 	 * A setter for the SalesforceConfigFragment.
 	 */
 	public final static class Setter extends AbstractFragmentSetter<Setter> {
@@ -302,7 +324,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the Username used for Oauth configuration
-		 * 
+		 *
 		 * @param oAuthUserName
 		 *            The username used for Oauth authentication
 		 * @return The Oauth Salesforce username
@@ -313,7 +335,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the Password used for Oauth configuration
-		 * 
+		 *
 		 * @param oAuthPassword
 		 *            The password used for Oauth authentication
 		 * @return The Oauth Salesforce password
@@ -324,7 +346,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the Client Id used for Oauth configuration
-		 * 
+		 *
 		 * @param clientId
 		 *            The clientId used for Oauth configuration
 		 * @return The Oauth Salesforce client Id
@@ -335,7 +357,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the Client Secret used for Oauth configuration
-		 * 
+		 *
 		 * @param clientSecret
 		 *            the client secret used for authentication
 		 * @return The Oauth Salesforce client secret
@@ -346,7 +368,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the specific Salesforce uri used for all requests to the bulk api
-		 * 
+		 *
 		 * @param salesforceUri
 		 *            A string representation of the uri to use with Salesforce
 		 * @return The target Salesforce Uri
@@ -357,7 +379,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		/**
 		 * Set the Salesforce Api version to be returned
-		 * 
+		 *
 		 * @param apiVersion
 		 *            A string that identifies the Salesforce apiVersion that the
 		 *            connector should execute against
@@ -370,7 +392,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		/**
 		 * Set the maximum number of records to return from the Bulk Api Query at a
 		 * time.
-		 * 
+		 *
 		 * @param maxRecords
 		 *            An int representing the maximum number of records to retrieve from
 		 *            Salesforce at a time
@@ -384,7 +406,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		/**
 		 * Set the specific Salesforce uri used for all requests including
 		 * authentication and submitting queries
-		 * 
+		 *
 		 * @param salesforceOauthUri
 		 *            A string representation of the oauth uri to use with Salesforce
 		 * @return The target Salesforce OAUTH Uri
@@ -394,5 +416,4 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		}
 
 	}
-
 }

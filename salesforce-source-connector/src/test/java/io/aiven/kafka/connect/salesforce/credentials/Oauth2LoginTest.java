@@ -49,7 +49,7 @@ final class Oauth2LoginTest {
 		when(mockClient.sendAsync(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
 				.thenReturn(CompletableFuture.completedFuture(response));
 
-		String accessToken = login.getAccessToken("password", clientId, clientSecret, username, password);
+		String accessToken = login.getAccessToken(clientId, clientSecret);
 		assertEquals("abcd", accessToken);
 	}
 
@@ -67,7 +67,7 @@ final class Oauth2LoginTest {
 		// The message is not being tested here correctly. seems to pass regardless of
 		// what is entered
 		assertThrowsExactly(RuntimeException.class, () -> {
-			login.getAccessToken("password", "clientId", "Z", "username", "password");
+			login.getAccessToken("clientId", "Z");
 		}, String.format("Invalid response code received from Salesforce oauth flow %d", statusCode));
 
 	}
