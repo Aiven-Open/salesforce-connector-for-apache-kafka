@@ -24,6 +24,7 @@ import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+
 import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ import org.apache.commons.collections4.IteratorUtils;
  * task.
  */
 public class SalesforceSourceTask extends AbstractSourceTask {
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
 	/**

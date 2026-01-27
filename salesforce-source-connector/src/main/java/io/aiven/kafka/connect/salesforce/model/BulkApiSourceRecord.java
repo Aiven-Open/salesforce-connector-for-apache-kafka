@@ -45,7 +45,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Returns the NativeItem
-			 * 
+			 *
 			 * @return the NativeItem
 			 *
 			 */
@@ -56,7 +56,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Returns the NativeKey
-			 * 
+			 *
 			 * @return the NativeKey
 			 */
 			@Override
@@ -66,7 +66,7 @@ public class BulkApiSourceRecord
 
 			/**
 			 * Get the size of the Native Item
-			 * 
+			 *
 			 * @return the size of the NativeItem
 			 */
 			@Override

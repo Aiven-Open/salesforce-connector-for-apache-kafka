@@ -166,7 +166,6 @@
     </dependency>
     <dependency>
       <groupId>io.aiven.commons</groupId>
-
       <artifactId>kafka-common-connector-framework</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
@@ -199,12 +198,12 @@
       <version>2.21.0</version>
       <scope>compile</scope>
     </dependency>
+    <!-- csv commons -->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-csv</artifactId>
       <version>1.14.1</version>
     </dependency>
-
   </dependencies>
 
   <build>
@@ -245,6 +244,22 @@
                 <include>salesforce-common/**.java</include>
                 <include>salesforce-source-connector/**.java</include>
               </inputIncludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.3.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>write-project-properties</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <outputFile>${project.build.outputDirectory}/app.properties</outputFile>
             </configuration>
           </execution>
         </executions>

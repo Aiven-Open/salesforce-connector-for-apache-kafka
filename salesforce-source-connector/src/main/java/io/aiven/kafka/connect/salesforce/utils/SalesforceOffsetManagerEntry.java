@@ -47,6 +47,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * The number of records read in this interaction
 	 */
 	public static final String RECORD_COUNT = "recordCount";
+
 	static final List<String> RESTRICTED_KEYS = List.of(RECORD_COUNT);
 	/** The data map that stores all the values */
 	private final Map<String, Object> data;

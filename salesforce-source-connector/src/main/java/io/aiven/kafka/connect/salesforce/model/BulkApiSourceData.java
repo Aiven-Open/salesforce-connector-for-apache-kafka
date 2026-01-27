@@ -83,7 +83,7 @@ public class BulkApiSourceData
 
 	/**
 	 * Get the native Item in a stream
-	 * 
+	 *
 	 * @param offset
 	 *            the native key to start from. May be {@code null} ot indicate *
 	 *            start at the beginning.
@@ -98,6 +98,7 @@ public class BulkApiSourceData
 	 * Get an inputStream for a SourceRecord
 	 * 
 	 * @param bulkApiSourceRecord
+	 * 
 	 *            This is the BulkApiSourceRecord that contains all the information
 	 *            required to construct the stream of records and offsets
 	 * @return An IOSupplier of csvRecords that have been transformed into maps
@@ -127,7 +128,7 @@ public class BulkApiSourceData
 
 	/**
 	 * Get the native key
-	 * 
+	 *
 	 * @param key
 	 *            The Native key
 	 * @return a parsed native key
@@ -139,7 +140,7 @@ public class BulkApiSourceData
 
 	/**
 	 * Creates a BulkApiSourceRecord
-	 * 
+	 *
 	 * @param csvRecord
 	 *            a CSVRecord
 	 * @return Create a BulkApiSourceRecord
@@ -151,7 +152,7 @@ public class BulkApiSourceData
 
 	/**
 	 * Create a SalesforceOffsetManagerEntry
-	 * 
+	 *
 	 * @param csvRecord
 	 *            This needs to be updated
 	 * @return SalesforceOffsetManagerEntry
