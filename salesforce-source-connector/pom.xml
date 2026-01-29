@@ -47,7 +47,7 @@
     <dependency>
       <groupId>io.aiven.commons</groupId>
       <artifactId>kafka-config</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.aiven.kafka.connect</groupId>
@@ -76,22 +76,12 @@
       <version>4.5.0</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>io.confluent</groupId>
+      <artifactId>kafka-connect-avro-data</artifactId>
+      <version>8.1.0</version>
+    </dependency>
   </dependencies>
-
-  <repositories>
-    <!-- TODO remove when commons version 2 -->
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>maven-repo</id>
-      <url>https://repo1.maven.org/maven2/</url>
-      <layout>default</layout>
-    </repository>
-  </repositories>
 
   <build>
     <plugins>

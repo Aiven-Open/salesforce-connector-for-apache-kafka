@@ -37,6 +37,7 @@ public class BulkApiQueryEngine {
 	private SalesforceConfigFragment configFragment; // NOPMD
 	private final BulkApiClient apiClient;
 	private final LinkedList<String> queries;
+	private boolean isRunning = false;
 
 	/**
 	 * The constructor for the BulkApiQueryEngine
@@ -73,32 +74,63 @@ public class BulkApiQueryEngine {
 	 * 
 	 * @return a Stream of records
 	 */
-	public Iterator<BulkApiSourceData> getRecords() {
+	public Iterator<BulkApiSourceData> getRecords(String query) {
 
-		for (String query : queries) {
-			// Submit the job
-			String jobId = apiClient.submitQueryJob(query);
-			var queryResult = apiClient.queryJobStatus(jobId);
-			JobState state = queryResult.getState();
-			// wait until the job is finished processing
-			waitUntilProcessingComplete(state, jobId);
-			switch (state) {
-				case UploadComplete :
-					return apiClient.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate())
-							.iterator();
-				case Aborted :
-				case Failed :
-				default :
-					apiClient.deleteJob(jobId);
-					return Collections.emptyIterator();
-			}
+		// Submit the job
+		String jobId = apiClient.submitQueryJob(query);
+		var queryResult = apiClient.queryJobStatus(jobId);
+		JobState state = queryResult.getState();
+		// wait until the job is finished processing
+		JobState completedState = waitUntilProcessingComplete(state, jobId);
+		switch (completedState) {
+			case UploadComplete :
+				LOGGER.warn("Upload complete State returned while waiting for query which was unexpected");
+			case JobComplete :
+				return apiClient.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate())
+						.iterator();
+			case Aborted :
+			case Failed :
+			default :
+				LOGGER.warn("State {} returned while waiting for query which was unexpected", completedState);
+				apiClient.deleteJob(jobId);
+				return Collections.emptyIterator();
 		}
-		return Collections.emptyIterator();
+
 	}
 
-	private void waitUntilProcessingComplete(JobState state, String jobId) {
+	public Iterator<BulkApiSourceData> getSalesforceBulkIterator() {
+
+		return new Iterator<BulkApiSourceData>() {
+
+			/**
+			 * Returns {@code true} if the iteration has more elements. (In other words,
+			 * returns {@code true} if {@link #next} would return an element rather than
+			 * throwing an exception.)
+			 *
+			 * @return {@code true} if the iteration has more elements
+			 */
+			@Override
+			public boolean hasNext() {
+				return !queries.isEmpty();
+			}
+
+			/**
+			 * Returns the next element in the iteration.
+			 *
+			 * @return the next element in the iteration
+			 *
+			 */
+			@Override
+			public BulkApiSourceData next() {
+				return getRecords(queries.element()).next();
+			}
+		};
+
+	}
+
+	private JobState waitUntilProcessingComplete(JobState state, String jobId) {
 		while (state.equals(JobState.InProgress) || state.equals(JobState.Submitted)
-				|| state.equals(JobState.JobComplete)) {
+				|| state.equals(JobState.UploadComplete)) {
 			try {
 				// TODO Add a max wait time before returning and updating the state to failed
 				// e.g. wait for a max of 5 minutes for the job to process and then return fail
@@ -111,6 +143,17 @@ public class BulkApiQueryEngine {
 				throw new RuntimeException(e);
 			}
 		}
+		return state;
+	}
+
+	/**
+	 * Allows the source task to specify if the connector is still running.
+	 * 
+	 * @param isRunning
+	 *            boolean to specify if the connector is actively running
+	 */
+	public void setRunning(boolean isRunning) {
+		this.isRunning = isRunning;
 	}
 
 }

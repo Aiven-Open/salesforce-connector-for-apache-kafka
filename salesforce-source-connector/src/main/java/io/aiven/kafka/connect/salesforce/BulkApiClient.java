@@ -345,9 +345,11 @@ public class BulkApiClient {
 		if (attempt > configFragment.getSalesforceMaxRetries()) {
 			throw new RuntimeException("Too many retries");
 		}
-		CompletableFuture<HttpResponse<String>> future = client.sendAsync(request
-				.header("Authorization", BEARER + accessToken).header("Content-Type", "application/json").build(),
-				HttpResponse.BodyHandlers.ofString());
+		CompletableFuture<HttpResponse<String>> future = client
+				.sendAsync(
+						request.header("Authorization", BEARER + getAccessToken())
+								.header("Content-Type", "application/json").build(),
+						HttpResponse.BodyHandlers.ofString());
 
 		HttpResponse<String> response = future.get();
 
@@ -445,6 +447,13 @@ public class BulkApiClient {
 			throw new RuntimeException(
 					"Unable to authenticate with Salesforce please review your configuration settings and try again.");
 		}
+	}
+
+	private String getAccessToken() {
+		if (accessToken == null) {
+			authenticate();
+		}
+		return accessToken;
 	}
 
 }

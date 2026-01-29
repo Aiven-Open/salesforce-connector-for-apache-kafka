@@ -171,7 +171,7 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public OffsetManager.OffsetManagerKey getOffsetManagerKey(String s) {
-		return SalesforceOffsetManagerEntry.asKey(getSourceName(), objectName, queryExecutionTime);
+		return SalesforceOffsetManagerEntry.asKey(getSourceName(), objectName);
 	}
 
 	/**
@@ -189,6 +189,7 @@ public class BulkApiSourceData
 		context.setTopic(configFragment.getTopicPrefix() + BULK_API_TOPIC_DELIMINATOR + objectName);
 		context.setStorageKey(getNativeKey(record));
 		context.setPartition(null);
+		context.setStorageKey(objectName);
 
 		return Optional.of(context);
 	}

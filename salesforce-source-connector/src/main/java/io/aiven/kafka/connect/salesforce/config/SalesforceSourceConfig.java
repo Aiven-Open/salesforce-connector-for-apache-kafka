@@ -19,6 +19,7 @@ import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+
 import java.util.Map;
 
 /**
@@ -36,8 +37,17 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	 *            String
 	 */
 	public SalesforceSourceConfig(Map<String, String> originals) {
-		super(new SourceCommonConfigDef(), originals); // NOPMD
+		super(configDef(), originals); // NOPMD
+
 		configFragment = new SalesforceConfigFragment(FragmentDataAccess.from(this));
+	}
+
+	public static SourceCommonConfigDef configDef() {
+		final var configDef = new SourceCommonConfigDef();
+
+		SalesforceConfigFragment.update(configDef);
+
+		return configDef;
 	}
 
 	@Override

@@ -19,14 +19,18 @@ import io.aiven.commons.kafka.connector.source.AbstractSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
+import io.aiven.commons.kafka.connector.source.transformer.Transformer;
 import io.aiven.commons.timing.BackoffConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
+import io.aiven.kafka.connect.salesforce.transformers.JsonTransformer;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
+import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceRecord;
+import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +50,10 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
 	/**
+	 * transformer from csv to AVRO
+	 */
+	private Transformer transformer; // NOPMD
+	/**
 	 * Iterator BulkApiSourceRecord to process individual results and returns
 	 * SourceRecords defaults to empty
 	 */
@@ -60,6 +68,11 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
 
 	/**
+	 * JsonConverter
+	 */
+	private JsonConverter jsonConverter;
+
+	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
 	 * connector
 	 */
@@ -70,6 +83,13 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	 */
 	public SalesforceSourceTask() {
 
+	}
+
+	/**
+	 * Should check about adding this
+	 */
+	public SalesforceSourceTask(SourceTaskContext context) {
+		this.context = context;
 	}
 
 	@Override
@@ -86,8 +106,10 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 		 */
 		BulkApiQueryEngine engine = new BulkApiQueryEngine(salesforceSourceConfig.getSalesforceConfigFragment(),
 				apiClient);
-
-		setBulkApiSourceRecordIterator(engine.getRecords());
+		// This should maybe be in start
+		setBulkApiSourceRecordIterator(engine.getSalesforceBulkIterator());
+		jsonConverter = new JsonConverter();
+		jsonConverter.configure(Map.of("schemas.enable", "false"), false);
 		return salesforceSourceConfig;
 	}
 
@@ -102,8 +124,8 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 					if (inner.hasNext()) {
 						return true;
 					} else if (bulkApiSourceRecordIterator.hasNext()) {
-						inner = new AbstractSourceRecordIterator<>(salesforceSourceConfig, null, offsetManager,
-								bulkApiSourceRecordIterator.next());
+						inner = new AbstractSourceRecordIterator<>(salesforceSourceConfig,
+								new JsonTransformer(jsonConverter), offsetManager, bulkApiSourceRecordIterator.next());
 						return inner.hasNext();
 					} else {
 						return false;

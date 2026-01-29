@@ -106,12 +106,9 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the api we are using.
 	 * @param objectName
 	 *            the Object the entry comes from
-	 * @param queryExecutionTime
-	 *            the time the record was executed at
 	 * @return a new instance of OffsetManagerKey
 	 */
-	public static OffsetManager.OffsetManagerKey asKey(final String apiName, final String objectName,
-			final String queryExecutionTime) {
+	public static OffsetManager.OffsetManagerKey asKey(final String apiName, final String objectName) {
 		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName);
 	}
 	/**

@@ -17,6 +17,7 @@ package io.aiven.kafka.connect.salesforce.common.config;
 
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
 
+import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
@@ -64,7 +65,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The version of the API that the connector should use to run its queries
 	 */
 	private static final String SALESFORCE_API_VERSION = "salesforce.api.version";
-	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
+	private static final String SALESFORCE_API_VERSION_DEFAULT = "v65.0";
 
 	/**
 	 * The salesforce client secret for authentication
@@ -165,28 +166,30 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 */
 	static void addSalesforceConnectionDetails(final ConfigDef configDef) {
 		var salesforceGroupCounter = 0;
+		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
+				.artifactId("salesforce-connector-for-kafka-connect");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_MAX_RECORDS).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT)
-				.type(ConfigDef.Type.LONG).validator(ConfigDef.Range.between(1L, 15000L))
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT).type(ConfigDef.Type.INT)
+				.validator(ConfigDef.Range.between(1, 150000)).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce default maximum number of records to retrieve from the Bulk API. Must be at least 100 and at most 100000, default value is "
 								+ SALESFORCE_MAX_RECORDS_DEFAULT)
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_MAX_RETRIES).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_MAX_RETRIES_DEFAULT)
-				.type(ConfigDef.Type.LONG).validator(ConfigDef.Range.between(1L, 5L))
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_MAX_RETRIES_DEFAULT).type(ConfigDef.Type.INT)
+				.validator(ConfigDef.Range.between(1, 5)).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce default maximum number of retries against API. Must be at least 1 and at most 5, default value is "
 								+ SALESFORCE_MAX_RETRIES_DEFAULT)
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_API_VERSION).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_API_VERSION_DEFAULT)
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_API_VERSION_DEFAULT).type(ConfigDef.Type.STRING)
+				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"API version of the Salesforce API to use when communicating with Salesforce, default value is "
 								+ SALESFORCE_API_VERSION_DEFAULT)
@@ -194,48 +197,62 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		// Salesforce authentication config
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_USERNAME).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce username that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_PASSWORD).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce password that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_ID).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client id that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_SECRET).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client secret that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_URI).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce domain uri that is used to query the bulk api this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_OAUTH_URI).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
 								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+				.width(ConfigDef.Width.LONG).build());
+
+		configDef.define(ExtendedConfigKey.builder(TOPIC_PREFIX).group(GROUP_SALESFORCE)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.HIGH)
+				.documentation(TOPIC_PREFIX
+						+ " is a required to determine what topic to put the events onto, the prefix is used as `<topic.prefix>.<api_name>.<object_name>` for example if set to history then events from the Account table from "
+						+ "the bulk api will be produced to history.bulkApi.Account.")
 				.width(ConfigDef.Width.LONG).build());
 
 	}
@@ -256,7 +273,8 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * @return The Oauth Salesforce client secret
 	 */
 	public String getOauthClientSecret() {
-		return dataAccess.getPassword(SALESFORCE_CLIENT_SECRET).value();
+		// TODO make password
+		return dataAccess.getString(SALESFORCE_CLIENT_SECRET);
 	}
 
 	/**

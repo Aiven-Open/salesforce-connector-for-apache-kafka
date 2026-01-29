@@ -204,7 +204,35 @@
       <artifactId>commons-csv</artifactId>
       <version>1.14.1</version>
     </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/org.apache.avro/avro -->
+    <!-- Avro dependency -->
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+      <version>1.12.1</version>
+      <!--      <scope>compile</scope>-->
+    </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Central Repository</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+    <!-- This repo is for avro converter -->
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
@@ -240,7 +268,6 @@
                 <expression>**/*.md</expression>
               </inputExcludes>
               <inputIncludes>
-
                 <include>salesforce-common/**.java</include>
                 <include>salesforce-source-connector/**.java</include>
               </inputIncludes>
