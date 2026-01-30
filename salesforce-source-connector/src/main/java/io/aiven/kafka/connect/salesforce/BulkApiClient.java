@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.model.AbortJob;
@@ -23,7 +25,6 @@ import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.model.QueryResponse;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -154,7 +155,7 @@ public class BulkApiClient {
 
 			return null;
 			// TODO change to return the Job Id
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
 
@@ -180,11 +181,13 @@ public class BulkApiClient {
 			// TODO change to return if the Job State is JobComplete
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
 		}
 
 	}
 
-	private QueryResponse getQueryResponseFromJson(HttpResponse<String> response) {
+	private QueryResponse getQueryResponseFromJson(HttpResponse<String> response) throws JsonProcessingException {
 		return mapper.readValue(response.body(), QueryResponse.class);
 	}
 
@@ -325,6 +328,8 @@ public class BulkApiClient {
 
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
+		} catch (JsonProcessingException ex) {
+			throw new RuntimeException(ex);
 		}
 
 	}

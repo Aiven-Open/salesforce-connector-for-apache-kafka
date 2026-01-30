@@ -42,6 +42,12 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 		configFragment = new SalesforceConfigFragment(FragmentDataAccess.from(this));
 	}
 
+	/**
+	 * Create a cCommonSourceConfig and include the SalesforceConfigFragment in the
+	 * configDef as well
+	 * 
+	 * @return A SourceCommonConfigDef
+	 */
 	public static SourceCommonConfigDef configDef() {
 		final var configDef = new SourceCommonConfigDef();
 

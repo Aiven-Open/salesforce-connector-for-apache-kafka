@@ -22,10 +22,9 @@ import org.slf4j.LoggerFactory;
 
 import io.aiven.kafka.connect.salesforce.model.JobState;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * The BulkApiQueryEngine handles taking the config from the connector and
@@ -34,10 +33,10 @@ import java.util.List;
  */
 public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
+	private static final int WAIT_INBETWEEN_QUERIES = 1000;
 	private SalesforceConfigFragment configFragment; // NOPMD
 	private final BulkApiClient apiClient;
-	private final LinkedList<String> queries;
-	private boolean isRunning = false;
+	private final Iterator<String> queries;
 
 	/**
 	 * The constructor for the BulkApiQueryEngine
@@ -50,7 +49,7 @@ public class BulkApiQueryEngine {
 	 *            The queries defined in the configuration by the user
 	 */
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient,
-			LinkedList<String> queries) {
+			Iterator<String> queries) {
 		this.configFragment = configFragment;
 		this.apiClient = apiClient;
 		this.queries = queries;
@@ -65,16 +64,18 @@ public class BulkApiQueryEngine {
 	 *            the BulkApiClient used for communication
 	 */
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient) {
-		this(configFragment, apiClient, new LinkedList<>(List.of(configFragment.getBulkApiQueries().split(";"))));
+		this(configFragment, apiClient, Arrays.stream(configFragment.getBulkApiQueries().split(";")).iterator());
 	}
 
 	/**
 	 * GetRecords takes the preconfigured queries and executes those queries in
 	 * order until no records are left to be consumed.
 	 * 
+	 * @param query
+	 *            The query to execute against the Bulk Api
 	 * @return a Stream of records
 	 */
-	public Iterator<BulkApiSourceData> getRecords(String query) {
+	private Iterator<BulkApiSourceData> getRecords(String query) {
 
 		// Submit the job
 		String jobId = apiClient.submitQueryJob(query);
@@ -97,7 +98,14 @@ public class BulkApiQueryEngine {
 		}
 
 	}
-
+	/**
+	 * getSalesforceBulkIterator takes the preconfigured queries and executes those
+	 * queries in order until no records are left to be consumed. If the iterator of
+	 * results is empty on hasNext it checks if there is another query to execute
+	 * and on next() it executes said query
+	 * 
+	 * @return an Iterator of records
+	 */
 	public Iterator<BulkApiSourceData> getSalesforceBulkIterator() {
 
 		return new Iterator<BulkApiSourceData>() {
@@ -111,7 +119,7 @@ public class BulkApiQueryEngine {
 			 */
 			@Override
 			public boolean hasNext() {
-				return !queries.isEmpty();
+				return !queries.hasNext();
 			}
 
 			/**
@@ -122,7 +130,7 @@ public class BulkApiQueryEngine {
 			 */
 			@Override
 			public BulkApiSourceData next() {
-				return getRecords(queries.element()).next();
+				return getRecords(queries.next()).next();
 			}
 		};
 
@@ -135,7 +143,7 @@ public class BulkApiQueryEngine {
 				// TODO Add a max wait time before returning and updating the state to failed
 				// e.g. wait for a max of 5 minutes for the job to process and then return fail
 				// if it isn't returned by then
-				Thread.sleep(1000);
+				Thread.sleep(WAIT_INBETWEEN_QUERIES);
 				var queryResult = apiClient.queryJobStatus(jobId);
 				state = queryResult.getState();
 			} catch (InterruptedException e) {
@@ -144,16 +152,6 @@ public class BulkApiQueryEngine {
 			}
 		}
 		return state;
-	}
-
-	/**
-	 * Allows the source task to specify if the connector is still running.
-	 * 
-	 * @param isRunning
-	 *            boolean to specify if the connector is actively running
-	 */
-	public void setRunning(boolean isRunning) {
-		this.isRunning = isRunning;
 	}
 
 }

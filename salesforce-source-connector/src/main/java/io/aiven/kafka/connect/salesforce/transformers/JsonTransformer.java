@@ -24,7 +24,6 @@ import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,8 +40,12 @@ public class JsonTransformer extends Transformer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JsonTransformer.class);
 
-	final ObjectMapper objectMapper = new ObjectMapper();
-
+	/**
+	 * Set the JsonConverter for this transformer
+	 * 
+	 * @param jsonConverter
+	 *            A configured JsonConverter
+	 */
 	public JsonTransformer(final JsonConverter jsonConverter) {
 		super();
 		this.jsonConverter = jsonConverter;

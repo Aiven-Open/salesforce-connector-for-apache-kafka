@@ -67,6 +67,11 @@
       <version>0.0.1-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>io.aiven.kafka.connect</groupId>
+      <artifactId>salesforce-connector-common</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
 
     <!-- Source: https://mvnrepository.com/artifact/org.apache.commons/commons-collections4 -->
     <!-- Used for IteratorUtils-->
@@ -85,6 +90,35 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>config-docs</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>io.aiven.kafka.connect.salesforce.SalesforceSourceConnector</mainClass>
+              <classpathScope>compile</classpathScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <finalName>salesforce-connector-for-apache-kafka-${project.version}</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
+          <descriptors>
+            <descriptor>src/main/assembly/release-tar.xml</descriptor>
+            <descriptor>src/main/assembly/release-zip.xml</descriptor>
+          </descriptors>
+          <tarLongFileMode>posix</tarLongFileMode>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

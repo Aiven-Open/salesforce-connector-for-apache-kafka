@@ -86,7 +86,10 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	}
 
 	/**
-	 * Should check about adding this
+	 * This allows for testing to inject a context
+	 * 
+	 * @param context
+	 *            A SourceTaskContext
 	 */
 	public SalesforceSourceTask(SourceTaskContext context) {
 		this.context = context;

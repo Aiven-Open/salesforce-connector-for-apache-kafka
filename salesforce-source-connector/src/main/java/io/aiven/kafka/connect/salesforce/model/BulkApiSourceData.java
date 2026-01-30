@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
@@ -23,7 +25,6 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.function.IOSupplier;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -106,8 +107,14 @@ public class BulkApiSourceData
 	@Override
 	public IOSupplier<InputStream> getInputStream(BulkApiSourceRecord bulkApiSourceRecord) {
 		// return the list of entries as an IOSupplier<InputStream>
-		List<byte[]> allRecords = new ArrayList<>();
-		bulkApiSourceRecord.getNativeItem().forEach(record -> allRecords.add(mapper.writeValueAsBytes(record.toMap())));
+		List<byte[]> allRecords = new ArrayList<>();// NOPMD Will be re-used shortly
+		bulkApiSourceRecord.getNativeItem().forEach(record -> {
+			try {
+				allRecords.add(mapper.writeValueAsBytes(record.toMap()));
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+		});
 		return () -> new ByteArrayInputStream(mapper.writeValueAsBytes(allRecords));
 	}
 

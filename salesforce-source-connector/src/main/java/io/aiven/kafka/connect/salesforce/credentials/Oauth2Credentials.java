@@ -15,10 +15,13 @@
  */
 package io.aiven.kafka.connect.salesforce.credentials;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * This is a POJO for receiving an authentication response from salesforce in
  * the username-password oauth2 flow.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Oauth2Credentials {
 
 	private String id;
@@ -26,6 +29,7 @@ public class Oauth2Credentials {
 	private String signature;
 	private String access_token;
 	private String token_type;
+	// private String token_format;
 
 	/**
 	 * Default constructor
