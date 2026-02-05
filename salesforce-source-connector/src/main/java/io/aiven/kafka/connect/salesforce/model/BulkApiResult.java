@@ -21,7 +21,6 @@ import org.apache.commons.csv.CSVRecord;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * This is a holder for the response from the Bulk Api It allows the storage and
@@ -30,14 +29,24 @@ import java.util.stream.Stream;
 public class BulkApiResult {
 
 	/**
+	 * An object in Salesforce is the table name, thie ObjectName is the object name
+	 * from the query submitted to the Salesforce bulk api.
+	 */
+	private String objectName;
+
+	/**
+	 * The time that the query was executed against the Salesforce Api
+	 */
+	private String queryExecutionTime;
+	/**
 	 * The first line of the CSV should contain the headers for the CSV
 	 */
-	private List<String> headers;
+	private List<CSVRecord> contents;
+
 	/**
-	 * The CSV returned from the API sill in String format Need to review size
-	 * constraints etc
+	 * The length of the content
 	 */
-	private String contents;
+	private long contentSize;
 
 	/**
 	 * This constructor allows you to create the object directly from the response
@@ -46,32 +55,19 @@ public class BulkApiResult {
 	 * @param csvString
 	 *            this is a String representation of a csv file downloaded from the
 	 *            API
+	 * @param objectName
+	 *            the name of the object that the results came from
+	 * @param queryExecutionTime
+	 *            * the time that the results came from
+	 * @throws IOException
+	 *             An IOException can be thrown on creating a csv file from the
+	 *             returned query
 	 */
-	public BulkApiResult(String csvString) {
-		this.contents = csvString;
-		// Add additional processing setup to pull
-		// out the header files
-	}
-
-	/**
-	 * The headers are the column names which are on the first line of the CSV file
-	 * they match with the contents as you move down
-	 * 
-	 * @return The headers from this resultSet
-	 */
-	public List<String> getHeaders() {
-		return headers;
-	}
-
-	/**
-	 * Set the headers for this result set these are the column names which are on
-	 * the first line of the CSV file they match with the contents as you move down
-	 * 
-	 * @param headers
-	 *            Set the headers for this resultSet
-	 */
-	public void setHeaders(List<String> headers) {
-		this.headers = headers;
+	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
+		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).getRecords();
+		this.contentSize = csvString.length();
+		this.objectName = objectName;
+		this.queryExecutionTime = queryExecutionTime;
 	}
 
 	/**
@@ -79,7 +75,7 @@ public class BulkApiResult {
 	 * 
 	 * @return The contents of the CSV file
 	 */
-	public String getContents() {
+	public List<CSVRecord> getContents() {
 		return contents;
 	}
 
@@ -89,19 +85,64 @@ public class BulkApiResult {
 	 * @param contents
 	 *            Set the contents for the bulk api result set
 	 */
-	public void setContents(String contents) {
+	public void setContents(List<CSVRecord> contents) {
 		this.contents = contents;
 	}
 
 	/**
-	 * This method creates a stream of CSVRecords that can be processed
-	 *
-	 * @return A stream of CSV Records
-	 * @throws IOException
-	 *             could be thrown when retrieving a stream of CSV Records
+	 * Get the name of the object these results are from
+	 * 
+	 * @return the object name
 	 */
-	public Stream<CSVRecord> getRecords() throws IOException {
-		return CSVFormat.RFC4180.builder().setHeader(headers.toArray(String[]::new)).get()
-				.parse(new StringReader(contents)).stream();
+	public String getObjectName() {
+		return objectName;
+	}
+
+	/**
+	 * Set the ObjectName these queries are from
+	 * 
+	 * @param objectName
+	 *            the object name
+	 */
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
+	}
+
+	/**
+	 * Get the time the query was executed at
+	 * 
+	 * @return time that the query was executed at
+	 */
+	public String getQueryExecutionTime() {
+		return queryExecutionTime;
+	}
+
+	/**
+	 * Set the time the query was executed at
+	 * 
+	 * @param queryExecutionTime
+	 *            the time the query was executed at
+	 */
+	public void setQueryExecutionTime(String queryExecutionTime) {
+		this.queryExecutionTime = queryExecutionTime;
+	}
+
+	/**
+	 * Get the size of the content stored in this result
+	 * 
+	 * @return the size of the content stored in this result
+	 */
+	public long getContentSize() {
+		return contentSize;
+	}
+
+	/**
+	 * Set the size of the content stored in this result
+	 * 
+	 * @param contentSize
+	 *            the size of the content stored in this result
+	 */
+	public void setContentSize(long contentSize) {
+		this.contentSize = contentSize;
 	}
 }

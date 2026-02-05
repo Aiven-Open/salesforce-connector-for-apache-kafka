@@ -17,6 +17,7 @@ package io.aiven.kafka.connect.salesforce.common.config;
 
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
 
+import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
@@ -41,6 +42,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * query at a time.
 	 */
 	private static final String SALESFORCE_MAX_RECORDS = "max.records";
+
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
 	 * in one go
@@ -63,7 +65,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The version of the API that the connector should use to run its queries
 	 */
 	private static final String SALESFORCE_API_VERSION = "salesforce.api.version";
-	private static final String SALESFORCE_API_VERSION_DEFAULT = "v66.0";
+	private static final String SALESFORCE_API_VERSION_DEFAULT = "v65.0";
 
 	/**
 	 * The salesforce client secret for authentication
@@ -99,9 +101,13 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The prefix used to determine the topic names to send the events. Events will
 	 * be sent to topics with topic_prefix.[api_name].[object_name]
 	 */
-	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD not yet used, will be in the future when
-																// publishing data to kafka
+	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD will be used v shortly to put records on topics
 
+	/**
+	 * The String list of queries separated by a semicolon to distinguish between
+	 * individual queries, it can be null if not sing the bulk api
+	 */
+	private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
 	/**
 	 * Allows data to be added directly into the config fragment
 	 * 
@@ -160,28 +166,30 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 */
 	static void addSalesforceConnectionDetails(final ConfigDef configDef) {
 		var salesforceGroupCounter = 0;
+		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
+				.artifactId("salesforce-connector-for-kafka-connect");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_MAX_RECORDS).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT)
-				.type(ConfigDef.Type.LONG).validator(ConfigDef.Range.between(1L, 15000L))
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT).type(ConfigDef.Type.INT)
+				.validator(ConfigDef.Range.between(1, 150000)).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce default maximum number of records to retrieve from the Bulk API. Must be at least 100 and at most 100000, default value is "
 								+ SALESFORCE_MAX_RECORDS_DEFAULT)
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_MAX_RETRIES).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_MAX_RETRIES_DEFAULT)
-				.type(ConfigDef.Type.LONG).validator(ConfigDef.Range.between(1L, 5L))
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_MAX_RETRIES_DEFAULT).type(ConfigDef.Type.INT)
+				.validator(ConfigDef.Range.between(1, 5)).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce default maximum number of retries against API. Must be at least 1 and at most 5, default value is "
 								+ SALESFORCE_MAX_RETRIES_DEFAULT)
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_API_VERSION).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").defaultValue(SALESFORCE_API_VERSION_DEFAULT)
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.defaultValue(SALESFORCE_API_VERSION_DEFAULT).type(ConfigDef.Type.STRING)
+				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"API version of the Salesforce API to use when communicating with Salesforce, default value is "
 								+ SALESFORCE_API_VERSION_DEFAULT)
@@ -189,60 +197,64 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		// Salesforce authentication config
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_USERNAME).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce username that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_PASSWORD).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce password that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_ID).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client id that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_SECRET).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client secret that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_URI).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce domain uri that is used to query the bulk api this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_OAUTH_URI).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since("1.0.0").type(ConfigDef.Type.STRING)
-				.validator(new ConfigDef.NonEmptyString()).importance(ConfigDef.Importance.MEDIUM)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
 
-	}
+		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(GROUP_SALESFORCE)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.MEDIUM)
+				.documentation(
+						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
+								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+				.width(ConfigDef.Width.LONG).build());
 
-	/**
-	 * Username used for Oauth configuration
-	 * 
-	 * @return The Oauth Salesforce username
-	 */
-	public String getOauthUsername() {
-		return dataAccess.getString(SALESFORCE_USERNAME);
-	}
+		configDef.define(ExtendedConfigKey.builder(TOPIC_PREFIX).group(GROUP_SALESFORCE)
+				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.HIGH)
+				.documentation(TOPIC_PREFIX
+						+ " is a required to determine what topic to put the events onto, the prefix is used as `<topic.prefix>.<api_name>.<object_name>` for example if set to history then events from the Account table from "
+						+ "the bulk api will be produced to history.bulkApi.Account.")
+				.width(ConfigDef.Width.LONG).build());
 
-	/**
-	 * Password used for Oauth configuration
-	 * 
-	 * @return The Oauth Salesforce password
-	 */
-	public String getOauthPassword() {
-		return dataAccess.getPassword(SALESFORCE_PASSWORD).value();
 	}
 
 	/**
@@ -261,7 +273,8 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * @return The Oauth Salesforce client secret
 	 */
 	public String getOauthClientSecret() {
-		return dataAccess.getPassword(SALESFORCE_CLIENT_SECRET).value();
+		// TODO make password
+		return dataAccess.getString(SALESFORCE_CLIENT_SECRET);
 	}
 
 	/**
@@ -314,34 +327,34 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
+	 * All Salesforce SOQL Queries that are to be executed against the Bulk Api
+	 * 
+	 * @return A String of queries that are to be made against the Bulk Api, if
+	 *         there are multiple they are deliminated by a semicolon The semicolon
+	 *         should not be sent to the Bulk Api as this is just a deliminator
+	 *
+	 */
+	public String getBulkApiQueries() {
+		return dataAccess.getString(SALESFORCE_BULK_API_QUERIES);
+	}
+
+	/**
+	 * Get the topic prefix which is used to determine the topic names that data is
+	 * sent to.
+	 * 
+	 * @return The topic prefix to send data to.
+	 */
+	public String getTopicPrefix() {
+		return dataAccess.getString(TOPIC_PREFIX);
+	}
+
+	/**
 	 * A setter for the SalesforceConfigFragment.
 	 */
 	public final static class Setter extends AbstractFragmentSetter<Setter> {
 
 		private Setter(final Map<String, String> data) {
 			super(data);
-		}
-
-		/**
-		 * Set the Username used for Oauth configuration
-		 *
-		 * @param oAuthUserName
-		 *            The username used for Oauth authentication
-		 * @return The Oauth Salesforce username
-		 */
-		public Setter getOauthUsername(String oAuthUserName) {
-			return setValue(SALESFORCE_USERNAME, oAuthUserName);
-		}
-
-		/**
-		 * Set the Password used for Oauth configuration
-		 *
-		 * @param oAuthPassword
-		 *            The password used for Oauth authentication
-		 * @return The Oauth Salesforce password
-		 */
-		public Setter getOauthPassword(String oAuthPassword) {
-			return setValue(SALESFORCE_PASSWORD, oAuthPassword);
 		}
 
 		/**
@@ -413,6 +426,31 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 */
 		public Setter getSalesforceOauthUri(String salesforceOauthUri) {
 			return setValue(SALESFORCE_OAUTH_URI, salesforceOauthUri);
+		}
+
+		/**
+		 * Sets the queries which are to be used against the Bulk Api
+		 *
+		 * @param salesforceBulkApiQueries
+		 *            The queries to be made against the Bulk Api delimitated by a
+		 *            semicolon
+		 * @return The queries to be made against the Bulk Api delimitate by a semicolon
+		 */
+		public Setter getSalesforceBulkApiQueries(String salesforceBulkApiQueries) {
+			return setValue(SALESFORCE_BULK_API_QUERIES, salesforceBulkApiQueries);
+		}
+
+		/**
+		 * Sets the topic prefix which determines the name of the topic daata is sent
+		 * to.
+		 * 
+		 * @param topicPrefix
+		 *            the topic prefix
+		 * @return the topic prefix
+		 *
+		 */
+		public Setter getTopicPrefix(String topicPrefix) {
+			return setValue(TOPIC_PREFIX, topicPrefix);
 		}
 
 	}

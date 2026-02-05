@@ -16,11 +16,20 @@
 package io.aiven.kafka.connect.salesforce.model;
 
 /**
- * The State of the Bulk API 2.0 Query Job states as descibed in the
- * documentation
+ * The State of the Bulk API 2.0 Query Job states as described in the
+ * documentation, in addition there is a `Submitted` and a 'fulfilled' state
+ * used internally in the connector.
  * https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_job_states.htm
  */
 public enum JobState {
+	/**
+	 * A new job has been submitted to the API
+	 */
+	Submitted("Submitted"),
+	/**
+	 * The job has been completed and all results have been successfully returned
+	 */
+	Fulfilled("Fulfilled"),
 	/**
 	 * An ingest job was created and is open for data uploads.
 	 */
@@ -38,15 +47,15 @@ public enum JobState {
 	InProgress("InProgress"),
 	/**
 	 * The job was canceled by the job creator, or by a user with the “Manage Data
-	 * Integrations” permission.
+	 * Integrations” permission. It should be deleted
 	 */
 	Aborted("Aborted"),
 	/**
-	 * The job was processed.
+	 * The job was processed. It is now able to be queried for the results
 	 */
 	JobComplete("JobComplete"),
 	/**
-	 * The job couldn’t be processed successfully.
+	 * The job couldn’t be processed successfully. It should be deleted
 	 */
 	Failed("Failed");
 

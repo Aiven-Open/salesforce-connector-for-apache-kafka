@@ -18,6 +18,9 @@ package io.aiven.kafka.connect.salesforce.model;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+import org.apache.commons.csv.CSVRecord;
+
+import java.util.List;
 
 /**
  * The Bulk Api Source record implements the AbstractSourceRecord. It allows the
@@ -26,16 +29,19 @@ import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
  */
 public class BulkApiSourceRecord
 		extends
-			AbstractSourceRecord<String, Object, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+			AbstractSourceRecord<String, List<CSVRecord>, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
 	/**
 	 * The plain Object type here will be changed to one for the BulkApi response
-	 *
-	 * @param bulkApiObject
-	 *            A plain java Object
+	 * 
+	 * @param record
+	 *            A CSVRecord
+	 * @param nativeKey
+	 *            The native key or identifier for this record that comes from
+	 *            Salesforce
 	 */
-	public BulkApiSourceRecord(Object bulkApiObject) {// NOPMD not used yet
-		super(new NativeInfo<String, Object>() {
+	public BulkApiSourceRecord(List<CSVRecord> record, String nativeKey) {// NOPMD not used yet
+		super(new NativeInfo<String, List<CSVRecord>>() {
 
 			/**
 			 * Returns the NativeItem
@@ -44,8 +50,8 @@ public class BulkApiSourceRecord
 			 *
 			 */
 			@Override
-			public Object getNativeItem() {
-				return null;
+			public List<CSVRecord> getNativeItem() {
+				return record;
 			}
 
 			/**
@@ -55,7 +61,7 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public String getNativeKey() {
-				return "";
+				return nativeKey;
 			}
 
 			/**
@@ -65,7 +71,9 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public long getNativeItemSize() {
-				return 0;
+				// TODO Double check this as it may be wrong, data is before the change into
+				// maps so could be smaller then actual
+				return record.size();
 			}
 		});
 	}
@@ -87,7 +95,7 @@ public class BulkApiSourceRecord
 	 */
 	@Override
 	public BulkApiSourceRecord duplicate() {
-		return new BulkApiSourceRecord(nativeInfo);
+		return new BulkApiSourceRecord(this);
 	}
 
 }

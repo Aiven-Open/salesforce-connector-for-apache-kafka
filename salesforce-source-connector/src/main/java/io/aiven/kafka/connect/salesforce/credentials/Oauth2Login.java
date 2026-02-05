@@ -15,9 +15,10 @@
  */
 package io.aiven.kafka.connect.salesforce.credentials;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -101,7 +102,7 @@ public class Oauth2Login {
 						response.statusCode()));
 			}
 
-		} catch (URISyntaxException | ExecutionException | InterruptedException e) {
+		} catch (URISyntaxException | ExecutionException | InterruptedException | JsonProcessingException e) {
 			LOGGER.error("Exception thrown authenticating with oauth", e);
 			throw new RuntimeException(e);
 		}
