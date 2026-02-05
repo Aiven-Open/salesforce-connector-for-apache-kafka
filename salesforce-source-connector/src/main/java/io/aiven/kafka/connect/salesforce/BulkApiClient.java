@@ -17,14 +17,14 @@ package io.aiven.kafka.connect.salesforce;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
-import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
-import io.aiven.kafka.connect.salesforce.model.AbortJob;
+import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
-import io.aiven.kafka.connect.salesforce.model.BulkApiResult;
-import io.aiven.kafka.connect.salesforce.model.BulkApiResultResponse;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
-import io.aiven.kafka.connect.salesforce.model.QueryResponse;
 
 import java.io.IOException;
 import java.net.URI;

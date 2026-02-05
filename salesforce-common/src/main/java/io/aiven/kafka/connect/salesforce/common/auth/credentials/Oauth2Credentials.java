@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.credentials;
+package io.aiven.kafka.connect.salesforce.common.auth.credentials;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

@@ -17,12 +17,12 @@ package io.aiven.kafka.connect.salesforce;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
-import io.aiven.kafka.connect.salesforce.credentials.Oauth2Login;
+import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 
-import io.aiven.kafka.connect.salesforce.model.AbortJob;
-import io.aiven.kafka.connect.salesforce.model.JobState;
-import io.aiven.kafka.connect.salesforce.model.QueryResponse;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
