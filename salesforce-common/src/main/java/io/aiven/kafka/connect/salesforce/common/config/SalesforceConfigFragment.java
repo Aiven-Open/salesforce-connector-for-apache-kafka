@@ -212,14 +212,14 @@ public class SalesforceConfigFragment extends ConfigFragment {
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_ID).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.type(ConfigDef.Type.PASSWORD).validator(new ConfigDef.NonEmptyString())
 				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client id that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_SECRET).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
+				.type(ConfigDef.Type.PASSWORD).validator(new ConfigDef.NonEmptyString())
 				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client secret that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
@@ -264,7 +264,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * @return The Oauth Salesforce client Id
 	 */
 	public String getOauthClientId() {
-		return dataAccess.getString(SALESFORCE_CLIENT_ID);
+		return dataAccess.getPassword(SALESFORCE_CLIENT_ID).value();
 	}
 
 	/**
@@ -273,8 +273,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * @return The Oauth Salesforce client secret
 	 */
 	public String getOauthClientSecret() {
-		// TODO make password
-		return dataAccess.getString(SALESFORCE_CLIENT_SECRET);
+		return dataAccess.getPassword(SALESFORCE_CLIENT_SECRET).value();
 	}
 
 	/**
