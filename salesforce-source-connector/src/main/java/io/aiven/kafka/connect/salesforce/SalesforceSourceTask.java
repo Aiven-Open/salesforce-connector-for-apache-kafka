@@ -15,19 +15,30 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import io.aiven.commons.kafka.connector.source.AbstractSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
-import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
+import io.aiven.commons.kafka.connector.source.transformer.Transformer;
+import io.aiven.commons.timing.BackoffConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
+import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
+import io.aiven.kafka.connect.salesforce.transformers.JsonTransformer;
+import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
+import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.commons.collections4.IteratorUtils;
 
 /**
  * The salesforce source task is called by the kafka connect framework to start
@@ -38,8 +49,28 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
+	/**
+	 * transformer from csv to AVRO
+	 */
+	private Transformer transformer; // NOPMD
+	/**
+	 * Iterator BulkApiSourceRecord to process individual results and returns
+	 * SourceRecords defaults to empty
+	 */
+	private Iterator<BulkApiSourceRecord> inner = Collections.emptyIterator();
+
+	/**
+	 * The source Data iterator pulls individual records out of the Bulk Api
+	 * defaults to empty
+	 */
+	private Iterator<BulkApiSourceData> bulkApiSourceRecordIterator = Collections.emptyIterator();
 	/** The offset manager this task uses */
-	private OffsetManager offsetManager;
+	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
+
+	/**
+	 * JsonConverter
+	 */
+	private JsonConverter jsonConverter;
 
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
@@ -64,49 +95,63 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 		this.context = context;
 	}
 
-	/**
-	 * Called by {@link #start} to allows the concrete implementation to configure
-	 * itself based on properties.
-	 *
-	 * @param props
-	 *            The properties to use for configuration.
-	 * @param offsetManager
-	 *            the OffsetManager to use.
-	 * @return A SourceCommonConfig based configuration.
-	 */
 	@Override
-	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
+	protected SourceCommonConfig configure(final Map<String, String> props) {
 		LOGGER.info("Salesforce Source task started.");
-		// set the csv transformer for bulk api
-		props.put("transformer.class", "io.aiven.commons.kafka.connector.source.transformer.CsvTransformer");
 		this.salesforceSourceConfig = new SalesforceSourceConfig(props);
-
-		this.offsetManager = new OffsetManager(context);
-
+		offsetManager = new OffsetManager<>(context);
+		/**
+		 * The bulk api client for querying the Bulk api
+		 */
+		BulkApiClient apiClient = new BulkApiClient(salesforceSourceConfig.getSalesforceConfigFragment());
+		/**
+		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
+		 */
+		BulkApiQueryEngine engine = new BulkApiQueryEngine(salesforceSourceConfig.getSalesforceConfigFragment(),
+				apiClient);
+		// This should maybe be in start
+		setBulkApiSourceRecordIterator(engine.getSalesforceBulkIterator());
+		jsonConverter = new JsonConverter();
+		jsonConverter.configure(Map.of("schemas.enable", "false"), false);
 		return salesforceSourceConfig;
 	}
 
-	/**
-	 * Gets the iterator of SourceRecords. The iterator that SourceRecords are
-	 * extracted from for a poll event. When this iterator runs out of records it
-	 * should attempt to reset and read more records from the backend on the next
-	 * {@code hasNext()} call. In this way it should detect when new data has been
-	 * added to the backend and continue processing.
-	 * <p>
-	 * This method should handle any backend exception that can be retried. Any
-	 * runtime exceptions that are thrown when this iterator executes may cause the
-	 * task to abort.
-	 * </p>
-	 *
-	 * @param config
-	 *            the SourceCommonConfig instance.
-	 * @return The iterator of SourceRecords.
-	 */
 	@Override
-	protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
+	protected Iterator<SourceRecord> getIterator(BackoffConfig config) {
 		LOGGER.info("getIterator() query BulkApi");
-		return new EvolvingSourceRecordIterator(salesforceSourceConfig,
-				new BulkApiSourceData((SalesforceSourceConfig) config, offsetManager));
+		Iterator<SourceRecord> sourceRecordIterator = new Iterator<>() {
+
+			@Override
+			public boolean hasNext() {
+				if (stillPolling()) {
+					if (inner.hasNext()) {
+						return true;
+					} else if (bulkApiSourceRecordIterator.hasNext()) {
+						inner = new AbstractSourceRecordIterator<>(salesforceSourceConfig,
+								new JsonTransformer(jsonConverter, salesforceSourceConfig), offsetManager,
+								bulkApiSourceRecordIterator.next());
+						return inner.hasNext();
+					} else {
+						return false;
+					}
+				}
+
+				return false;
+			}
+
+			@Override
+			public SourceRecord next() {
+				final BulkApiSourceRecord bulkApiSourceRecord = inner.next();
+				return bulkApiSourceRecord.getSourceRecord(salesforceSourceConfig.getErrorsTolerance(), offsetManager);
+			}
+
+		};
+
+		return IteratorUtils.filteredIterator(sourceRecordIterator, Objects::nonNull);
+	}
+
+	private void setBulkApiSourceRecordIterator(final Iterator<BulkApiSourceData> iterator) {
+		this.bulkApiSourceRecordIterator = iterator;
 	}
 
 	@Override
