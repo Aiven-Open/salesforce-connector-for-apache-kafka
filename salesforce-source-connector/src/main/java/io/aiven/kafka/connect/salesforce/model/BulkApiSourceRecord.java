@@ -17,9 +17,11 @@ package io.aiven.kafka.connect.salesforce.model;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
+import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.apache.commons.csv.CSVRecord;
 
+import java.net.ContentHandler;
 import java.util.List;
 
 /**
@@ -75,6 +77,7 @@ public class BulkApiSourceRecord
 				// maps so could be smaller then actual
 				return record.size();
 			}
+
 		});
 	}
 

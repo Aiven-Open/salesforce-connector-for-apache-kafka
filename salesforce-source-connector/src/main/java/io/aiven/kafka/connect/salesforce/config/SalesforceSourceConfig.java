@@ -37,8 +37,7 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	 *            String
 	 */
 	public SalesforceSourceConfig(Map<String, String> originals) {
-		super(configDef(), originals); // NOPMD
-
+		super(configDef(), originals);
 		configFragment = new SalesforceConfigFragment(FragmentDataAccess.from(this));
 	}
 
@@ -49,7 +48,7 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	 * @return A SourceCommonConfigDef
 	 */
 	public static SourceCommonConfigDef configDef() {
-		final var configDef = new SourceCommonConfigDef();
+		final var configDef = new SourceCommonConfig.SourceCommonConfigDef();
 
 		SalesforceConfigFragment.update(configDef);
 
