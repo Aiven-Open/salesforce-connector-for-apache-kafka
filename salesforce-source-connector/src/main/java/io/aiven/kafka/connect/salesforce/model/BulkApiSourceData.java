@@ -28,7 +28,8 @@ import org.apache.commons.io.function.IOSupplier;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -51,6 +52,7 @@ public class BulkApiSourceData
 	private final String objectName;
 	private final SalesforceConfigFragment configFragment;
 	private final ObjectMapper mapper = new ObjectMapper();
+	private final byte[] lineSeparator = System.lineSeparator().getBytes(Charset.defaultCharset());
 
 	/**
 	 * Bulk Api Source Record
@@ -106,16 +108,19 @@ public class BulkApiSourceData
 	 */
 	@Override
 	public IOSupplier<InputStream> getInputStream(BulkApiSourceRecord bulkApiSourceRecord) {
-		// return the list of entries as an IOSupplier<InputStream>
-		List<byte[]> allRecords = new ArrayList<>();// NOPMD Will be re-used shortly
+		byte[] allRecords = new byte[4096];
+		ByteBuffer buffer = ByteBuffer.wrap(allRecords);
+
 		bulkApiSourceRecord.getNativeItem().forEach(record -> {
 			try {
-				allRecords.add(mapper.writeValueAsBytes(record.toMap()));
+				buffer.put(mapper.writeValueAsBytes(record.toMap()));
+				//Seperate out each record
+				buffer.put(lineSeparator);
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
 			}
 		});
-		return () -> new ByteArrayInputStream(mapper.writeValueAsBytes(allRecords));
+		return () -> new ByteArrayInputStream(buffer.array());
 	}
 
 	/**

@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.transformers;
+package io.aiven.kafka.connect.salesforce.common.Transformer;
 
-import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
-import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.commons.kafka.connector.source.transformer.InputStreamTransformer;
-import io.aiven.commons.kafka.connector.source.transformer.Transformer;
 import org.apache.commons.io.function.IOSupplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.connect.data.SchemaAndValue;
@@ -33,48 +30,51 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
- * A test to run this particular source connector with csv data onto topics
+ * This is a csv transformer taking CSV and changing it to a JSON payload for
+ * Kafka
  */
-public class JsonTransformer extends Transformer {
+public class CsvTransformer extends InputStreamTransformer {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CsvTransformer.class);
 	private final JsonConverter jsonConverter;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(JsonTransformer.class);
-
 	/**
-	 * Set the JsonConverter for this transformer
+	 * Initialize the CsvTransformer and configure the converter and add the
+	 * configuration for the transformer
 	 * 
+	 * @param config
+	 *            The source common config used to configure the transformer
 	 * @param jsonConverter
-	 *            A configured JsonConverter
-	 *
-	 * @param sourceCommonConfig
-	 *            A source Common Config
+	 *            The converter used to convert the byte data into the right format
+	 *            for Kafka
 	 */
-	public JsonTransformer(final JsonConverter jsonConverter, SourceCommonConfig sourceCommonConfig) {
-		super(sourceCommonConfig);
+	public CsvTransformer(SourceCommonConfig config, JsonConverter jsonConverter) {
+		super(config);
 		this.jsonConverter = jsonConverter;
+		jsonConverter.configure(Map.of("schemas.enable", "false"), false);
 	}
 
 	/**
-	 * This is here as I transition to the new Transformers
-	 * 
-	 * @param inputStreamIOSupplier
-	 *            boop
+	 * The createSpliterator will take the input stream and then parse through it,
+	 * adding SchemaAndValue Consumer Object for each of the identified csv entries,
+	 * each entry should be separated by
+	 * System.lineSeparator().getBytes(Charset.defaultCharset());
+	 *
+	 * @param ioSupplier
+	 *            The input stream wrapped in a supplier
 	 * @param streamLength
-	 *            boop
+	 *            The total length of the stream can be null
 	 * @param context
-	 *            boop
-	 * @param sourceConfig
-	 *            boop
-	 * @return boop
+	 *            The context of the data record
+	 * @return A StreamSpliterator which chunks the stream into individual records
 	 */
-	public InputStreamTransformer.StreamSpliterator createSpliterator(
-			final IOSupplier<InputStream> inputStreamIOSupplier, final long streamLength, final Context<?> context,
-			final SourceCommonConfig sourceConfig) {
-		return new InputStreamTransformer.StreamSpliterator(LOGGER, inputStreamIOSupplier) {
+	@Override
+	protected StreamSpliterator createSpliterator(IOSupplier<InputStream> ioSupplier, long streamLength,
+			Context<?> context) {
+		return new StreamSpliterator(LOGGER, ioSupplier) {
 			BufferedReader reader;
 
 			@Override
@@ -120,31 +120,4 @@ public class JsonTransformer extends Transformer {
 		};
 	}
 
-	/**
-	 * 
-	 * @param nativeSourceData
-	 *            boop
-	 * @param t
-	 *            di boop
-	 * @return dada
-	 * @param <T>
-	 *            as boop
-	 */
-	@Override
-	public <T extends AbstractSourceRecord<?, ?, ?, T>> Stream<SchemaAndValue> generateRecords(
-			NativeSourceData<?, ?, ?, T> nativeSourceData, T t) {
-		return Stream.empty();
-	}
-
-	/**
-	 * 
-	 * @param abstractSourceRecord
-	 *            la di da
-	 * @return Schema and Value of the Schema da li la
-	 */
-	@Override
-	public SchemaAndValue generateKeyData(AbstractSourceRecord<?, ?, ?, ?> abstractSourceRecord) {
-		return new SchemaAndValue(abstractSourceRecord.getValue().schema(),
-				((String) abstractSourceRecord.getValue().value()).getBytes(StandardCharsets.UTF_8));
-	}
 }

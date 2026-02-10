@@ -128,7 +128,8 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 						return true;
 					} else if (bulkApiSourceRecordIterator.hasNext()) {
 						inner = new AbstractSourceRecordIterator<>(salesforceSourceConfig,
-								new JsonTransformer(jsonConverter), offsetManager, bulkApiSourceRecordIterator.next());
+								new JsonTransformer(jsonConverter, salesforceSourceConfig), offsetManager,
+								bulkApiSourceRecordIterator.next());
 						return inner.hasNext();
 					} else {
 						return false;
