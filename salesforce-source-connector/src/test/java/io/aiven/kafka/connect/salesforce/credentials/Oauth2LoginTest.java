@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 final class Oauth2LoginTest {
 
-	private Oauth2Login login;
+	private io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login login;
 	private String testUri = "https://localhost";
 
 	@ParameterizedTest
@@ -42,7 +42,7 @@ final class Oauth2LoginTest {
 	void testOauthParametersSetCorrectly(String username, String password, String clientId, String clientSecret) {
 		HttpClient mockClient = mock(HttpClient.class);
 		String credentials = "{\"access_token\":\"abcd\"}";
-		login = new Oauth2Login(testUri, mockClient);
+		login = new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login(testUri, mockClient);
 		HttpResponse<String> response = mock(HttpResponse.class);
 		when(response.statusCode()).thenReturn(200);
 		when(response.body()).thenReturn(credentials);
@@ -58,7 +58,7 @@ final class Oauth2LoginTest {
 	void testNonsuccessStatusCode(int statusCode) {
 		HttpClient mockClient = mock(HttpClient.class);
 		String credentials = "{\"access_token\":\"abcd\"}";
-		login = new Oauth2Login(testUri, mockClient);
+		login = new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login(testUri, mockClient);
 		HttpResponse<String> response = mock(HttpResponse.class);
 		when(response.statusCode()).thenReturn(statusCode);
 		when(response.body()).thenReturn(credentials);
@@ -77,7 +77,7 @@ final class Oauth2LoginTest {
 	void testHttpUriReturnsException() {
 		HttpClient mockClient = mock(HttpClient.class);
 		assertThrowsExactly(IllegalArgumentException.class, () -> {
-			new Oauth2Login("localhost:8080", mockClient);
+			new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login("localhost:8080", mockClient);
 		});
 
 	}

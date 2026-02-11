@@ -15,12 +15,11 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.aiven.kafka.connect.salesforce.model.JobState;
 
 import java.util.Arrays;
 import java.util.Collections;
