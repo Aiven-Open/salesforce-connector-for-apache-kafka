@@ -17,12 +17,7 @@ package io.aiven.kafka.connect.salesforce.model;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceRecord;
-import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
-import org.apache.commons.csv.CSVRecord;
-
-import java.net.ContentHandler;
-import java.util.List;
 
 /**
  * The Bulk Api Source record implements the AbstractSourceRecord. It allows the
@@ -31,19 +26,19 @@ import java.util.List;
  */
 public class BulkApiSourceRecord
 		extends
-			AbstractSourceRecord<String, List<CSVRecord>, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+			AbstractSourceRecord<String, String, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
 	/**
 	 * The plain Object type here will be changed to one for the BulkApi response
 	 * 
 	 * @param record
-	 *            A CSVRecord
+	 *            A csv record in String format
 	 * @param nativeKey
 	 *            The native key or identifier for this record that comes from
 	 *            Salesforce
 	 */
-	public BulkApiSourceRecord(List<CSVRecord> record, String nativeKey) {// NOPMD not used yet
-		super(new NativeInfo<String, List<CSVRecord>>() {
+	public BulkApiSourceRecord(String record, String nativeKey) {// NOPMD not used yet
+		super(new NativeInfo<String, String>() {
 
 			/**
 			 * Returns the NativeItem
@@ -52,7 +47,7 @@ public class BulkApiSourceRecord
 			 *
 			 */
 			@Override
-			public List<CSVRecord> getNativeItem() {
+			public String getNativeItem() {
 				return record;
 			}
 
@@ -73,9 +68,11 @@ public class BulkApiSourceRecord
 			 */
 			@Override
 			public long getNativeItemSize() {
-				// TODO Double check this as it may be wrong, data is before the change into
-				// maps so could be smaller then actual
-				return record.size();
+				// Do a deep check of each item to see the overall size of all items that have
+				// to be returned.
+				// This item size checks the size of each map in the CSVRecord allowing to give
+				// an accurate size of the data.
+				return record.length();
 			}
 
 		});
