@@ -15,22 +15,17 @@
  */
 package io.aiven.kafka.connect.salesforce.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.function.IOSupplier;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -40,19 +35,17 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData
 		implements
-			NativeSourceData<String, List<CSVRecord>, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+			NativeSourceData<String, String, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
 
 	/**
 	 * This deliminator is used to identify the API the data came from so that it is
 	 * not mixed with data from other data streams from Salesforce
 	 */
 	private static final String BULK_API_TOPIC_DELIMINATOR = ".bulkapi.";
-	private final List<CSVRecord> record;
+	private final String record;
 	private final String queryExecutionTime;
 	private final String objectName;
 	private final SalesforceConfigFragment configFragment;
-	private final ObjectMapper mapper = new ObjectMapper();
-	private final byte[] lineSeparator = System.lineSeparator().getBytes(Charset.defaultCharset());
 
 	/**
 	 * Bulk Api Source Record
@@ -67,7 +60,7 @@ public class BulkApiSourceData
 	 *            The SalesforceConfigFragment with all the relevant config for
 	 *            configuring the BulkApiSourceData
 	 */
-	public BulkApiSourceData(final List<CSVRecord> csvRecords, final String objectName, String queryExecutionTime,
+	public BulkApiSourceData(final String csvRecords, final String objectName, String queryExecutionTime,
 			final SalesforceConfigFragment configFragment) {
 		this.record = csvRecords;
 		this.queryExecutionTime = queryExecutionTime;
@@ -93,7 +86,7 @@ public class BulkApiSourceData
 	 * @return A stream of native objects. May be empty but not {@code null}.
 	 */
 	@Override
-	public Stream<List<CSVRecord>> getNativeItemStream(String offset) {
+	public Stream<String> getNativeItemStream(String offset) {
 		return Stream.of(record);
 	}
 
@@ -104,23 +97,11 @@ public class BulkApiSourceData
 	 * 
 	 *            This is the BulkApiSourceRecord that contains all the information
 	 *            required to construct the stream of records and offsets
-	 * @return An IOSupplier of csvRecords that have been transformed into maps
+	 * @return An IOSupplier of csv records that have been transformed into maps
 	 */
 	@Override
 	public IOSupplier<InputStream> getInputStream(BulkApiSourceRecord bulkApiSourceRecord) {
-		byte[] allRecords = new byte[4096];
-		ByteBuffer buffer = ByteBuffer.wrap(allRecords);
-
-		bulkApiSourceRecord.getNativeItem().forEach(record -> {
-			try {
-				buffer.put(mapper.writeValueAsBytes(record.toMap()));
-				//Seperate out each record
-				buffer.put(lineSeparator);
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
-		});
-		return () -> new ByteArrayInputStream(buffer.array());
+		return () -> new ByteArrayInputStream(record.getBytes(StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -131,7 +112,7 @@ public class BulkApiSourceData
 	 * @return The NativeKey
 	 */
 	@Override
-	public String getNativeKey(List<CSVRecord> bulkApiResult) {
+	public String getNativeKey(String bulkApiResult) {
 		// TODO is this right?
 		// It looks like it should be more unique perhaps like
 		// the offset managment key
@@ -154,11 +135,11 @@ public class BulkApiSourceData
 	 * Creates a BulkApiSourceRecord
 	 *
 	 * @param csvRecord
-	 *            a CSVRecord
+	 *            a csv record in String format
 	 * @return Create a BulkApiSourceRecord
 	 */
 	@Override
-	public BulkApiSourceRecord createSourceRecord(List<CSVRecord> csvRecord) {
+	public BulkApiSourceRecord createSourceRecord(String csvRecord) {
 		return new BulkApiSourceRecord(csvRecord, getNativeKey(csvRecord));
 	}
 
@@ -170,7 +151,7 @@ public class BulkApiSourceData
 	 * @return SalesforceOffsetManagerEntry
 	 */
 	@Override
-	public SalesforceOffsetManagerEntry createOffsetManagerEntry(List<CSVRecord> csvRecord) {
+	public SalesforceOffsetManagerEntry createOffsetManagerEntry(String csvRecord) {
 		return new SalesforceOffsetManagerEntry(getSourceName(), objectName, queryExecutionTime);
 	}
 
@@ -196,7 +177,7 @@ public class BulkApiSourceData
 	 * @return context if available reutnrs an empty Optional if not
 	 */
 	@Override
-	public Optional<Context<String>> extractContext(List<CSVRecord> record) {
+	public Optional<Context<String>> extractContext(String record) {
 		Context<String> context = new Context<>(getNativeKey(record));
 		context.setTopic(configFragment.getTopicPrefix() + BULK_API_TOPIC_DELIMINATOR + objectName);
 		context.setStorageKey(getNativeKey(record));
