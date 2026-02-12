@@ -259,6 +259,8 @@
             <configuration>
               <inputExcludes>
                 <expression>**/*.md</expression>
+                <!-- Test csv files -->
+                <expression>**/test/**/*.csv</expression>
               </inputExcludes>
               <inputIncludes>
                 <include>salesforce-common/**.java</include>

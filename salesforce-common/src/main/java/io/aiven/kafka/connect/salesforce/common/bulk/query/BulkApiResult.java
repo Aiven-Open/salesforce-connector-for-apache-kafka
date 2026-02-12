@@ -15,12 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.common.bulk.query;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-
 import java.io.IOException;
-import java.io.StringReader;
-import java.util.List;
 
 /**
  * This is a holder for the response from the Bulk Api It allows the storage and
@@ -39,9 +34,10 @@ public class BulkApiResult {
 	 */
 	private String queryExecutionTime;
 	/**
-	 * The first line of the CSV should contain the headers for the CSV
+	 * The first line of the CSV should contain the headers for the CSV This is a
+	 * string representation of a CSV file
 	 */
-	private List<CSVRecord> contents;
+	private String contents;
 
 	/**
 	 * The length of the content
@@ -64,7 +60,7 @@ public class BulkApiResult {
 	 *             returned query
 	 */
 	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
-		this.contents = CSVFormat.RFC4180.builder().setHeader().get().parse(new StringReader(csvString)).getRecords();
+		this.contents = csvString;
 		this.contentSize = csvString.length();
 		this.objectName = objectName;
 		this.queryExecutionTime = queryExecutionTime;
@@ -75,7 +71,7 @@ public class BulkApiResult {
 	 * 
 	 * @return The contents of the CSV file
 	 */
-	public List<CSVRecord> getContents() {
+	public String getContents() {
 		return contents;
 	}
 
@@ -85,7 +81,7 @@ public class BulkApiResult {
 	 * @param contents
 	 *            Set the contents for the bulk api result set
 	 */
-	public void setContents(List<CSVRecord> contents) {
+	public void setContents(String contents) {
 		this.contents = contents;
 	}
 
