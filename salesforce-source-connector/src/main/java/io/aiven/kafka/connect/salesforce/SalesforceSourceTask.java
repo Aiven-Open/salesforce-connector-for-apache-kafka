@@ -25,7 +25,7 @@ import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
-import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,11 +52,6 @@ public class SalesforceSourceTask
 	private Iterator<BulkApiSourceData> bulkApiSourceRecordIterator = Collections.emptyIterator();
 	/** The offset manager this task uses */
 	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
-
-	/**
-	 * JsonConverter
-	 */
-	private JsonConverter jsonConverter;
 
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
@@ -101,8 +96,6 @@ public class SalesforceSourceTask
 
 		// This should maybe be in start
 		setBulkApiSourceRecordIterator(engine.getSalesforceBulkIterator());
-		jsonConverter = new JsonConverter();
-		jsonConverter.configure(Map.of("schemas.enable", "false"), false);
 		return salesforceSourceConfig;
 	}
 
@@ -126,9 +119,8 @@ public class SalesforceSourceTask
 	protected AbstractSourceRecordIterator<String, String, SalesforceOffsetManagerEntry, BulkApiSourceRecord> getIterator(
 			SourceCommonConfig config) {
 		LOGGER.info("getIterator() query BulkApi");
-
 		return new AbstractSourceRecordIterator<>(salesforceSourceConfig, offsetManager,
-				bulkApiSourceRecordIterator.next());
+		                                          bulkApiSourceRecordIterator.next());
 	}
 
 	private void setBulkApiSourceRecordIterator(final Iterator<BulkApiSourceData> iterator) {

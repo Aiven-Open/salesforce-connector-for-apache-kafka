@@ -25,12 +25,15 @@ import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +47,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiClient {
 
+	private static Logger LOGGER = LoggerFactory.getLogger(BulkApiClient.class);
 	/**
 	 * The type of operation that is to be made against the Bulk API At the moment
 	 * only Query operations are supported later this may become an enum to also
@@ -141,6 +145,7 @@ public class BulkApiClient {
 	 */
 	public String submitQueryJob(String query) {
 		try {
+			LOGGER.info("Query to be submitted : {}", query);
 			String bytes = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri, EMPTY_QUERY_PARAM,
@@ -241,17 +246,29 @@ public class BulkApiClient {
 	 *            the name of the Salesforce object being queried
 	 * @param queryExecutionTime
 	 *            The original time the query was created at
+	 * @param query
+	 *            The query that is being processed
+	 * @param onComplete
+	 *            A map that is updated once the job is fully processed to update
+	 *            the last time a particular query was executed at.
 	 * @return a stream of BulkApiSourceRecords
 	 */
 	public Stream<BulkApiSourceData> getResultStream(String jobId, String locator, String objectName,
-			String queryExecutionTime) {
-
+			String queryExecutionTime, String query, Map<String, String> onComplete) {
+		LOGGER.info("objectName: {}, query: {}", objectName, query);
 		return Stream
 				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
 					// This should be checking if another locator token exists
 					if (response.getLocator().isPresent()) {
 						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
 					} else {
+						// Update the completion time as the entire block has been consumed and
+						// processed.
+						LOGGER.info("Update into map");
+						onComplete.put(query, queryExecutionTime);
+						LOGGER.info("Delete existing job");
+						deleteJob(jobId);
+						LOGGER.info("Job Deleted");
 						return null;
 					}
 				}).map(res -> new BulkApiSourceData(res.getResult().getContents(), objectName, queryExecutionTime,
@@ -326,13 +343,11 @@ public class BulkApiClient {
 
 			response.statusCode();
 
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
 			throw new RuntimeException(e);
-		} catch (JsonProcessingException ex) {
-			throw new RuntimeException(ex);
 		}
 
-	}
+  }
 
 	/**
 	 * This method executes Http requests to the bulk api and handles retries and

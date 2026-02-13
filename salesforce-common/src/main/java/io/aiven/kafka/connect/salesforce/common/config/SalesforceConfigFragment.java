@@ -78,16 +78,6 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	private static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
 
 	/**
-	 * The salesforce username for authentication
-	 */
-	private static final String SALESFORCE_USERNAME = "salesforce.username";
-
-	/**
-	 * The salesforce username for password
-	 */
-	private static final String SALESFORCE_PASSWORD = "salesforce.password";
-
-	/**
 	 * The salesforce organization uri for Bulk Api and pub sub queries
 	 */
 	private static final String SALESFORCE_URI = "salesforce.uri";
@@ -196,31 +186,15 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				.width(ConfigDef.Width.NONE).build());
 
 		// Salesforce authentication config
-		configDef.define(ExtendedConfigKey.builder(SALESFORCE_USERNAME).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
-				.documentation("Salesforce username that is used to authenticate over oauth with the api.")
-				.width(ConfigDef.Width.NONE).build());
-
-		configDef.define(ExtendedConfigKey.builder(SALESFORCE_PASSWORD).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.STRING).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
-				.documentation("Salesforce password that is used to authenticate over oauth with the api.")
-				.width(ConfigDef.Width.NONE).build());
-
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_ID).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.PASSWORD).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
+				.type(ConfigDef.Type.PASSWORD).validator(null).importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client id that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_CLIENT_SECRET).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.PASSWORD).validator(new ConfigDef.NonEmptyString())
-				.importance(ConfigDef.Importance.MEDIUM)
+				.type(ConfigDef.Type.PASSWORD).validator(null).importance(ConfigDef.Importance.MEDIUM)
 				.documentation("Salesforce client secret that is used to authenticate over oauth with the api.")
 				.width(ConfigDef.Width.NONE).build());
 
