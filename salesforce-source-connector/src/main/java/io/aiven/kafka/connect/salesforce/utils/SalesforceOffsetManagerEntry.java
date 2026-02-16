@@ -26,7 +26,7 @@ import java.util.Map;
  * offsets which are stored in Kafka and allows us to read themback out again as
  * well so we can make sure we don't re-read the data as well.
  */
-public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry<SalesforceOffsetManagerEntry> {
+public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
 
 	/**
 	 * Specifies if the data is coming from the bulk api, streaming api or pub/sub
@@ -53,7 +53,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	private final Map<String, Object> data;
 	private final String apiName;
 	private final String objectName;
-	private final String queryExecutionTime;
+	private String queryExecutionTime;
 	private long recordCount;
 
 	/**
@@ -63,14 +63,10 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the api we are using.
 	 * @param objectName
 	 *            the Object the entry comes from
-	 * @param queryExecutionTime
-	 *            the time the query was executed at and thus the entry comes from
 	 */
-	public SalesforceOffsetManagerEntry(final String apiName, final String objectName,
-			final String queryExecutionTime) {
+	public SalesforceOffsetManagerEntry(final String apiName, final String objectName) {
 		this.apiName = apiName;
 		this.objectName = objectName;
-		this.queryExecutionTime = queryExecutionTime;
 		data = new HashMap<>();
 	}
 
@@ -83,14 +79,12 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the api we are using.
 	 * @param objectName
 	 *            the Object the entry comes from
-	 * @param queryExecutionTime
-	 *            the time the query was executed at and thus the entry comes from
 	 * @param properties
 	 *            the property map.
 	 */
-	private SalesforceOffsetManagerEntry(final String apiName, final String objectName, final String queryExecutionTime,
+	private SalesforceOffsetManagerEntry(final String apiName, final String objectName,
 			final Map<String, Object> properties) {
-		this(apiName, objectName, queryExecutionTime);
+		this(apiName, objectName);
 		data.putAll(properties);
 		final Object recordCountProperty = data.computeIfAbsent(RECORD_COUNT, s -> 0L);
 		if (recordCountProperty instanceof Number) {
@@ -126,7 +120,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		if (properties == null) {
 			return null;
 		}
-		return new SalesforceOffsetManagerEntry(apiName, objectName, queryExecutionTime, properties);
+		return new SalesforceOffsetManagerEntry(apiName, objectName, properties);
 	}
 
 	/**
@@ -211,7 +205,14 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		return objectName;
 	}
 
-	@Override
+	/**
+	 * CompareTo method implementation for SalesforceOffsetManagerEntry
+	 * 
+	 * @param other
+	 *            SalesforceOffsetManagerEntry that this is being compared against
+	 *            this instance
+	 * @return 0 if match non 0 if it does not match
+	 */
 	public int compareTo(SalesforceOffsetManagerEntry other) {
 
 		if (this == other) { // NOPMD comparing instance

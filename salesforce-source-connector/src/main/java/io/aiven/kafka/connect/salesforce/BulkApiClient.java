@@ -21,10 +21,11 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
+import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
+import io.aiven.kafka.connect.salesforce.model.BulkApiNativeItem;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
-import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -120,15 +120,40 @@ public class BulkApiClient {
 	 */
 	private final Random random = new Random();
 
-	BulkApiClient(SalesforceConfigFragment configFragment) {
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 */
+	public BulkApiClient(SalesforceConfigFragment configFragment) {
 		this(configFragment, HttpClient.newBuilder().build());
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 * @param client
+	 *            A HttpClient for initializing the BulkApiClient
+	 */
 	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client) {
 		this(configFragment, client, new Oauth2Login(configFragment.getSalesforceOauthUri(), client));
 
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 * @param client
+	 *            A HttpClient for initializing the BulkApiClient
+	 * @param login
+	 *            The Oauth2Login used to authenticate against the Salesforce api
+	 *            and return a usable token
+	 */
 	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client, Oauth2Login login) {
 		this.configFragment = configFragment;
 		this.client = client;
@@ -248,13 +273,10 @@ public class BulkApiClient {
 	 *            The original time the query was created at
 	 * @param query
 	 *            The query that is being processed
-	 * @param onComplete
-	 *            A map that is updated once the job is fully processed to update
-	 *            the last time a particular query was executed at.
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<BulkApiSourceData> getResultStream(String jobId, String locator, String objectName,
-			String queryExecutionTime, String query, Map<String, String> onComplete) {
+	public Stream<BulkApiNativeInfo> getResultStream(String jobId, String locator, String objectName,
+			String queryExecutionTime, String query) {
 		LOGGER.info("objectName: {}, query: {}", objectName, query);
 		return Stream
 				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
@@ -262,17 +284,12 @@ public class BulkApiClient {
 					if (response.getLocator().isPresent()) {
 						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
 					} else {
-						// Update the completion time as the entire block has been consumed and
-						// processed.
-						LOGGER.info("Update into map");
-						onComplete.put(query, queryExecutionTime);
-						LOGGER.info("Delete existing job");
+						LOGGER.info("Delete existing job, as it has been processed completely");
 						deleteJob(jobId);
-						LOGGER.info("Job Deleted");
 						return null;
 					}
-				}).map(res -> new BulkApiSourceData(res.getResult().getContents(), objectName, queryExecutionTime,
-						configFragment));
+				}).map(res -> new BulkApiNativeInfo(
+						new BulkApiNativeItem(objectName + queryExecutionTime, res.getResult().getContents())));
 
 	}
 
@@ -347,7 +364,7 @@ public class BulkApiClient {
 			throw new RuntimeException(e);
 		}
 
-  }
+	}
 
 	/**
 	 * This method executes Http requests to the bulk api and handles retries and

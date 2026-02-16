@@ -17,7 +17,7 @@ package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
-import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
+import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
@@ -27,8 +27,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,7 +45,7 @@ public class BulkApiQueryEngine {
 	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
 	private SalesforceConfigFragment configFragment; // NOPMD
 	private final BulkApiClient apiClient;
-	private final LinkedList<String> queries;
+	// private final LinkedList<String> queries;
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
 	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
 	private final Map<String, String> lastExecutionTime;
@@ -59,28 +57,11 @@ public class BulkApiQueryEngine {
 	 *            the salesforceConfigFragment
 	 * @param apiClient
 	 *            the BulkApiClient used for communication
-	 * @param queries
-	 *            The queries defined in the configuration by the user
-	 */
-	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient,
-			LinkedList<String> queries) {
-		this.configFragment = configFragment;
-		this.apiClient = apiClient;
-		this.queries = queries;
-		this.lastExecutionTime = new HashMap<>();
-	}
-
-	/**
-	 * The constructor for the BulkApiQueryEngine
-	 * 
-	 * @param configFragment
-	 *            the salesforceConfigFragment
-	 * @param apiClient
-	 *            the BulkApiClient used for communication
 	 */
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient) {
-
-		this(configFragment, apiClient, new LinkedList<>(List.of(configFragment.getBulkApiQueries().split(";"))));
+		this.configFragment = configFragment;
+		this.apiClient = apiClient;
+		this.lastExecutionTime = new HashMap<>();
 	}
 
 	/**
@@ -91,7 +72,7 @@ public class BulkApiQueryEngine {
 	 *            The query to execute against the Bulk Api
 	 * @return a Stream of records
 	 */
-	private Iterator<BulkApiSourceData> getRecords(String query) {
+	public Iterator<BulkApiNativeInfo> getRecords(String query) {
 		String lastModifiedDate = lastExecutionTime.getOrDefault(query, null);
 		if (lastModifiedDate != null && LocalDateTime.now().plusSeconds(DELTA_BETWEEN_QUERIES)
 				.isBefore(LocalDateTime.parse(lastModifiedDate))) {
@@ -114,8 +95,9 @@ public class BulkApiQueryEngine {
 			case UploadComplete :
 				LOGGER.warn("Upload complete State returned while waiting for query which was unexpected");
 			case JobComplete :
-				return apiClient.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate(),
-						query, lastExecutionTime).iterator();
+				return apiClient
+						.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate(), query)
+						.iterator();
 			case Aborted :
 			case Failed :
 			default :
@@ -140,48 +122,6 @@ public class BulkApiQueryEngine {
 		} else {
 			return query + " " + WHERE_LAST_MODIFIED_DATE + lastModifiedDate;
 		}
-	}
-
-	/**
-	 * getSalesforceBulkIterator takes the preconfigured queries and executes those
-	 * queries in order until no records are left to be consumed. If the iterator of
-	 * results is empty on hasNext it checks if there is another query to execute
-	 * and on next() it executes said query
-	 * 
-	 * @return an Iterator of records
-	 */
-	public Iterator<BulkApiSourceData> getSalesforceBulkIterator() {
-
-		return new Iterator<BulkApiSourceData>() {
-
-			/**
-			 * Returns {@code true} if the iteration has more elements. (In other words,
-			 * returns {@code true} if {@link #next} would return an element rather than
-			 * throwing an exception.)
-			 *
-			 * @return {@code true} if the iteration has more elements
-			 */
-			@Override
-			public boolean hasNext() {
-				return !queries.isEmpty();
-			}
-
-			/**
-			 * Returns the next element in the iteration.
-			 *
-			 * @return the next element in the iteration
-			 *
-			 */
-			@Override
-			public BulkApiSourceData next() {
-				String element = queries.pop();
-				// Re queue to end of the list
-				LOGGER.info("Get next query {}", element);
-				queries.offerLast(element);
-				return getRecords(element).next();
-			}
-		};
-
 	}
 
 	private JobState waitUntilProcessingComplete(JobState state, String jobId) {

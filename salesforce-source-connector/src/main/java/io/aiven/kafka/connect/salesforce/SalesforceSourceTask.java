@@ -15,23 +15,18 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
-import io.aiven.commons.kafka.connector.source.AbstractSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
+import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
-import io.aiven.kafka.connect.salesforce.model.BulkApiSourceRecord;
-import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
-import org.apache.commons.collections4.IteratorUtils;
 import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -39,19 +34,12 @@ import java.util.Map;
  * the Salesforce source connector. It configures the connector and starts the
  * task.
  */
-public class SalesforceSourceTask
-		extends
-			AbstractSourceTask<String, String, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+public class SalesforceSourceTask extends AbstractSourceTask {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
-	/**
-	 * The source Data iterator pulls individual records out of the Bulk Api
-	 * defaults to empty
-	 */
-	private Iterator<BulkApiSourceData> bulkApiSourceRecordIterator = Collections.emptyIterator();
 	/** The offset manager this task uses */
-	private OffsetManager<SalesforceOffsetManagerEntry> offsetManager;
+	private OffsetManager offsetManager;
 
 	/**
 	 * SalesforceSourceConfig which has all the configuration for the source
@@ -76,26 +64,25 @@ public class SalesforceSourceTask
 		this.context = context;
 	}
 
+	/**
+	 * Called by {@link #start} to allows the concrete implementation to configure
+	 * itself based on properties.
+	 *
+	 * @param props
+	 *            The properties to use for configuration.
+	 * @param offsetManager
+	 *            the OffsetManager to use.
+	 * @return A SourceCommonConfig based configuration.
+	 */
 	@Override
-	protected SourceCommonConfig configure(final Map<String, String> props) {
+	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
 		LOGGER.info("Salesforce Source task started.");
 		// set the csv transformer for bulk api
 		props.put("transformer.class", "io.aiven.commons.kafka.connector.source.transformer.CsvTransformer");
 		this.salesforceSourceConfig = new SalesforceSourceConfig(props);
 
-		offsetManager = new OffsetManager<>(context);
-		/**
-		 * The bulk api client for querying the Bulk api
-		 */
-		BulkApiClient apiClient = new BulkApiClient(salesforceSourceConfig.getSalesforceConfigFragment());
-		/**
-		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
-		 */
-		BulkApiQueryEngine engine = new BulkApiQueryEngine(salesforceSourceConfig.getSalesforceConfigFragment(),
-				apiClient);
+		this.offsetManager = new OffsetManager(context);
 
-		// This should maybe be in start
-		setBulkApiSourceRecordIterator(engine.getSalesforceBulkIterator());
 		return salesforceSourceConfig;
 	}
 
@@ -116,15 +103,10 @@ public class SalesforceSourceTask
 	 * @return The iterator of SourceRecords.
 	 */
 	@Override
-	protected AbstractSourceRecordIterator<String, String, SalesforceOffsetManagerEntry, BulkApiSourceRecord> getIterator(
-			SourceCommonConfig config) {
+	protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
 		LOGGER.info("getIterator() query BulkApi");
-		return new AbstractSourceRecordIterator<>(salesforceSourceConfig, offsetManager,
-		                                          bulkApiSourceRecordIterator.next());
-	}
-
-	private void setBulkApiSourceRecordIterator(final Iterator<BulkApiSourceData> iterator) {
-		this.bulkApiSourceRecordIterator = iterator;
+		return new EvolvingSourceRecordIterator(salesforceSourceConfig,
+				new BulkApiSourceData((SalesforceSourceConfig) config, offsetManager));
 	}
 
 	@Override

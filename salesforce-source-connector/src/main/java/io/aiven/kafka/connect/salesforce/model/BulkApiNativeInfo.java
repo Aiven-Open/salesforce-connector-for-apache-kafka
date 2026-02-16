@@ -1,0 +1,77 @@
+/*
+ * Copyright 2026 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aiven.kafka.connect.salesforce.model;
+
+import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.commons.kafka.connector.source.AbstractSourceNativeInfo;
+import io.aiven.commons.kafka.connector.source.task.Context;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * BulkApiNativeInfo is an implementation of AbstractSourceNativeInfo for the
+ * Bulk Api.
+ */
+public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> {
+	/**
+	 * Constructor.
+	 *
+	 * @param nativeInfo
+	 *            the native info to process.
+	 */
+	public BulkApiNativeInfo(BulkApiNativeItem nativeInfo) {
+		super(new NativeInfo<String, String>(nativeInfo.key(), nativeInfo.data()));
+	}
+
+	/**
+	 * Creates the context for the native info.
+	 *
+	 * @return the context for the native Info.
+	 */
+	@Override
+	public Context getContext() {
+		return new Context(nativeKey());
+	}
+
+	/**
+	 * Read the input data from the nativeInfo.
+	 *
+	 * @return the input stream
+	 * @throws UnsupportedOperationException
+	 *             on Unsupported operation error.
+	 * @throws UnsupportedOperationException
+	 *             if the underlying NativeInfo does not support input streams.
+	 */
+	@Override
+	protected InputStream getInputStream() throws UnsupportedOperationException {
+		return new ByteArrayInputStream(nativeInfo.nativeItem().getBytes(StandardCharsets.UTF_8));
+	}
+
+	/**
+	 * Gets an estimate of the input stream length.
+	 *
+	 * @return an estimate of the input stream length, or
+	 *         {@link #UNKNOWN_STREAM_LENGTH} if not known.
+	 * @throws UnsupportedOperationException
+	 *             if the underlying NativeInfo does not support input streams.
+	 */
+	@Override
+	public long estimateInputStreamLength() throws UnsupportedOperationException {
+		return nativeInfo.nativeItem().length();
+	}
+}
