@@ -50,7 +50,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 
 	static final List<String> RESTRICTED_KEYS = List.of(RECORD_COUNT);
 	/** The data map that stores all the values */
-	private final Map<String, Object> data;
+	private final Map<String, Object> data = new HashMap<>();
 	private final String apiName;
 	private final String objectName;
 	private String queryExecutionTime;
@@ -67,7 +67,6 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public SalesforceOffsetManagerEntry(final String apiName, final String objectName) {
 		this.apiName = apiName;
 		this.objectName = objectName;
-		data = new HashMap<>();
 	}
 
 	/**
@@ -82,7 +81,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * @param properties
 	 *            the property map.
 	 */
-	private SalesforceOffsetManagerEntry(final String apiName, final String objectName,
+	public SalesforceOffsetManagerEntry(final String apiName, final String objectName,
 			final Map<String, Object> properties) {
 		this(apiName, objectName);
 		data.putAll(properties);

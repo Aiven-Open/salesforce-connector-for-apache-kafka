@@ -61,7 +61,7 @@ public class BulkApiResult {
 	 */
 	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
 		this.contents = csvString;
-		this.contentSize = csvString.length();
+		this.contentSize = csvString != null ? csvString.length() : 0;
 		this.objectName = objectName;
 		this.queryExecutionTime = queryExecutionTime;
 	}

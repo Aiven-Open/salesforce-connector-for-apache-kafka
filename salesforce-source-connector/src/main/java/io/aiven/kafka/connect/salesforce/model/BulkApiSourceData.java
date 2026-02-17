@@ -45,7 +45,6 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 * This deliminator is used to identify the API the data came from so that it is
 	 * not mixed with data from other data streams from Salesforce
 	 */
-	private static final String BULK_API_TOPIC_DELIMINATOR = ".bulkapi."; // NOPMD
 	private static final String apiName = "bulkapi";
 	private final SalesforceConfigFragment configFragment;
 	private final BulkApiQueryEngine engine;
@@ -106,8 +105,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Map<String, Object> data) {
-		return null;
-		// new SalesforceOffsetManagerEntry(data);
+		return new SalesforceOffsetManagerEntry(apiName, queries.getLast(), data);
 	}
 
 	/**
@@ -180,7 +178,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 			public BulkApiNativeInfo next() {
 				String element = queries.pop();
 				// Re queue to end of the list
-				LOGGER.info("Get next query {}", element);
+				LOGGER.debug("Get Records for Query {}", element);
 				queries.offerLast(element);
 				return engine.getRecords(element).next();
 			}

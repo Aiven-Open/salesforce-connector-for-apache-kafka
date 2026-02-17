@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -104,6 +105,7 @@ public class BulkApiClient {
 	private final Oauth2Login login;
 	private final ObjectMapper mapper = new ObjectMapper();
 	private String accessToken;
+	private Predicate<BulkApiResultResponse> filterPredicate = response -> response.getResult().getContentSize() > 0;
 
 	private final SalesforceConfigFragment configFragment;
 
@@ -170,12 +172,11 @@ public class BulkApiClient {
 	 */
 	public String submitQueryJob(String query) {
 		try {
-			LOGGER.info("Query to be submitted : {}", query);
-			String bytes = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
+			String queryObject = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion()))
-					.POST(HttpRequest.BodyPublishers.ofString(bytes));
+					.POST(HttpRequest.BodyPublishers.ofString(queryObject));
 
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 			if (isSuccessStatusCode(response.statusCode())) {
@@ -277,19 +278,21 @@ public class BulkApiClient {
 	 */
 	public Stream<BulkApiNativeInfo> getResultStream(String jobId, String locator, String objectName,
 			String queryExecutionTime, String query) {
-		LOGGER.info("objectName: {}, query: {}", objectName, query);
+
 		return Stream
 				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
 					// This should be checking if another locator token exists
 					if (response.getLocator().isPresent()) {
 						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
 					} else {
-						LOGGER.info("Delete existing job, as it has been processed completely");
+						LOGGER.info("Delete job {}, it has been processed completely", jobId);
 						deleteJob(jobId);
 						return null;
 					}
-				}).map(res -> new BulkApiNativeInfo(
-						new BulkApiNativeItem(objectName + queryExecutionTime, res.getResult().getContents())));
+				}).filter(filterPredicate)
+				.map(res -> new BulkApiNativeInfo(
+						new BulkApiNativeItem(objectName + queryExecutionTime, res.getResult().getContents()),
+						configFragment.getTopicPrefix() + ".bulkapi." + objectName, null, null));
 
 	}
 

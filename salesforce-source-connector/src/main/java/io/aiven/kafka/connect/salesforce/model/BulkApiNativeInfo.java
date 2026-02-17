@@ -28,14 +28,37 @@ import java.nio.charset.StandardCharsets;
  * Bulk Api.
  */
 public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> {
+	private String topic;
+	private Integer partition;
+	private Long offset;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param nativeInfo
+	 * @param bulkApiNativeItem
 	 *            the native info to process.
 	 */
-	public BulkApiNativeInfo(BulkApiNativeItem nativeInfo) {
-		super(new NativeInfo<String, String>(nativeInfo.key(), nativeInfo.data()));
+	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem) {
+		super(new NativeInfo<String, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
+	}
+
+	/**
+	 * Constructor.
+	 *
+	 * @param bulkApiNativeItem
+	 *            the native info to process.
+	 * @param topic
+	 *            The name of the topic to produce the event to
+	 * @param partition
+	 *            The partition id to produce the event to
+	 * @param offset
+	 *            The offset id to produce the event to
+	 */
+	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem, String topic, Integer partition, Long offset) {
+		super(new NativeInfo<String, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
+		this.topic = topic;
+		this.partition = partition;
+		this.offset = offset;
 	}
 
 	/**
@@ -45,7 +68,12 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> 
 	 */
 	@Override
 	public Context getContext() {
-		return new Context(nativeKey());
+
+		Context ctx = new Context(nativeKey());
+		ctx.setTopic(topic);
+		ctx.setPartition(partition);
+		ctx.setOffset(offset);
+		return ctx;
 	}
 
 	/**
