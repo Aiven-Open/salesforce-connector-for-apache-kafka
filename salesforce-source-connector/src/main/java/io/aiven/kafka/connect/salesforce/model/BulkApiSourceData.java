@@ -28,6 +28,9 @@ import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,6 +52,9 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	private final SalesforceConfigFragment configFragment;
 	private final BulkApiQueryEngine engine;
 	private final LinkedList<String> queries;
+	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
+	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
+	private final Map<String, String> lastExecutionTime;
 
 	/**
 	 * Bulk Api Source Record
@@ -72,6 +78,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
 		 */
 		this.engine = new BulkApiQueryEngine(configFragment, apiClient);
+		this.lastExecutionTime = new HashMap<>();
 	}
 	/**
 	 * get the source name from the data
@@ -176,11 +183,17 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 			 */
 			@Override
 			public BulkApiNativeInfo next() {
+
 				String element = queries.pop();
 				// Re queue to end of the list
 				LOGGER.debug("Get Records for Query {}", element);
 				queries.offerLast(element);
-				return engine.getRecords(element).next();
+				String newLastModifiedDate = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
+				try {
+					return engine.getRecords(element, lastExecutionTime.getOrDefault(element, null)).next();
+				} finally {
+					lastExecutionTime.put(element, newLastModifiedDate);
+				}
 			}
 		});
 

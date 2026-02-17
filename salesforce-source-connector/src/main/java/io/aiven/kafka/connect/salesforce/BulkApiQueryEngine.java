@@ -18,16 +18,13 @@ package io.aiven.kafka.connect.salesforce;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * The BulkApiQueryEngine handles taking the config from the connector and
@@ -43,12 +40,8 @@ public class BulkApiQueryEngine {
 	 */
 	private static final int DELTA_BETWEEN_QUERIES = 60000;
 	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
-	private SalesforceConfigFragment configFragment; // NOPMD
+	private SalesforceConfigFragment configFragment; // NOPMD i will need this
 	private final BulkApiClient apiClient;
-	// private final LinkedList<String> queries;
-	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
-	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
-	private final Map<String, String> lastExecutionTime;
 
 	/**
 	 * The constructor for the BulkApiQueryEngine
@@ -61,7 +54,6 @@ public class BulkApiQueryEngine {
 	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient) {
 		this.configFragment = configFragment;
 		this.apiClient = apiClient;
-		this.lastExecutionTime = new HashMap<>();
 	}
 
 	/**
@@ -70,12 +62,17 @@ public class BulkApiQueryEngine {
 	 * 
 	 * @param query
 	 *            The query to execute against the Bulk Api
+	 * @param lastModifiedDate
+	 *            The last time this query was executed, null to be used to return
+	 *            everything in the object, add a ZonedDateTime to query from a
+	 *            particular time
 	 * @return a Stream of records
 	 */
-	public Iterator<BulkApiNativeInfo> getRecords(String query) {
-		String lastModifiedDate = lastExecutionTime.getOrDefault(query, null);
-		if (lastModifiedDate != null && LocalDateTime.now().plusSeconds(DELTA_BETWEEN_QUERIES)
-				.isBefore(LocalDateTime.parse(lastModifiedDate))) {
+	public Iterator<BulkApiNativeInfo> getRecords(String query, String lastModifiedDate) {
+
+		LOGGER.info("lastModifiedDate {}", lastModifiedDate);
+		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(DELTA_BETWEEN_QUERIES)
+				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
 			try {
 				// Look at using backoff class
 				LOGGER.info("Waiting to re-execute query");
@@ -108,7 +105,7 @@ public class BulkApiQueryEngine {
 
 	}
 
-	private static @NonNull String updateQuery(String query, String lastModifiedDate) {
+	private String updateQuery(String query, String lastModifiedDate) {
 		if (StringUtils.isBlank(lastModifiedDate)) {
 			return query;
 		}
@@ -120,6 +117,7 @@ public class BulkApiQueryEngine {
 			// then add an AND to append the existing query.
 			return query.replace("WHERE", WHERE_LAST_MODIFIED_DATE + lastModifiedDate + "AND ");
 		} else {
+			LOGGER.info("Actual query {}", query + " " + WHERE_LAST_MODIFIED_DATE + lastModifiedDate);
 			return query + " " + WHERE_LAST_MODIFIED_DATE + lastModifiedDate;
 		}
 	}

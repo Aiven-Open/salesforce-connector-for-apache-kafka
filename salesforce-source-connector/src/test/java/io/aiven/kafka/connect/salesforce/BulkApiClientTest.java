@@ -89,8 +89,8 @@ public class BulkApiClientTest {
     when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
     apiClient = new BulkApiClient(configFragment, client, login);
     HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
-    //return 401 twice as its different checks for success and authentication failure.
-    when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(200);
+    //return 401 three times as its different checks for success and authentication failure and the success check prints the status code so it gets returned there as well.
+    when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
     when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(
         TEST_ACCESS_TOKEN);
 

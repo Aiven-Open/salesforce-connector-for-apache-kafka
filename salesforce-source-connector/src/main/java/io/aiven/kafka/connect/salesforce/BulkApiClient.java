@@ -395,6 +395,10 @@ public class BulkApiClient {
 
 		if (isSuccessStatusCode(response.statusCode())) {
 			return response;
+		} else {
+			LOGGER.warn(
+					"Unsuccessful attempt to query bulk api, attempt number: {}, response code: {}, response message: {}",
+					attempt, response.statusCode(), response.body());
 		}
 
 		if (isAuthenticationError(response.statusCode())) {
@@ -407,9 +411,7 @@ public class BulkApiClient {
 			Thread.sleep(timeWithJitter(++attempt));
 		}
 
-		executeHttpRequest(request, attempt);
-
-		return response;
+		return executeHttpRequest(request, attempt);
 	}
 
 	/**
