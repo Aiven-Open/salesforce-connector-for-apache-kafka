@@ -41,14 +41,13 @@ import java.util.stream.Stream;
  * This BulkApiSourceData facilitates sending BulkApi data into a SourceRecord
  * along with creating the OffsetManager entry for it.
  */
-public class BulkApiSourceData extends NativeSourceData<String> {
+public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 	/**
 	 * This deliminator is used to identify the API the data came from so that it is
 	 * not mixed with data from other data streams from Salesforce
 	 */
-	private static final String apiName = "bulkapi";
 	private final SalesforceConfigFragment configFragment;
 	private final BulkApiQueryEngine engine;
 	private final LinkedList<String> queries;
@@ -99,8 +98,8 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 * @return A stream of native objects. May be empty but not {@code null}.
 	 */
 	@Override
-	public Stream<BulkApiNativeInfo> getNativeItemStream(String offset) {
-		return getSalesforceBulkIterator();
+	public Stream<BulkApiNativeInfo> getNativeItemStream(BulkApiKey offset) {
+		return getSalesforceBulkApiStream();
 	}
 
 	/**
@@ -112,7 +111,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Map<String, Object> data) {
-		return new SalesforceOffsetManagerEntry(apiName, queries.getLast(), data);
+		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast(), ""), data);
 	}
 
 	/**
@@ -124,7 +123,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 */
 	@Override
 	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Context context) {
-		return new SalesforceOffsetManagerEntry(apiName, (String) context.getNativeKey());
+		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey());
 	}
 
 	/**
@@ -135,8 +134,8 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 * @return The native Key.
 	 */
 	@Override
-	protected String parseNativeKey(String keyString) {
-		return "";
+	protected BulkApiKey parseNativeKey(String keyString) {
+		return new BulkApiKey("bulkApi", queries.getLast(), lastExecutionTime.get(queries.getLast()));
 	}
 
 	/**
@@ -147,8 +146,8 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 * @return An offset manager key.
 	 */
 	@Override
-	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(String nativeKey) {
-		return new SalesforceOffsetManagerEntry(apiName, nativeKey).getManagerKey();
+	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(BulkApiKey nativeKey) {
+		return new SalesforceOffsetManagerEntry(nativeKey).getManagerKey();
 	}
 
 	/**
@@ -159,7 +158,7 @@ public class BulkApiSourceData extends NativeSourceData<String> {
 	 *
 	 * @return a stream of records
 	 */
-	public Stream<BulkApiNativeInfo> getSalesforceBulkIterator() {
+	public Stream<BulkApiNativeInfo> getSalesforceBulkApiStream() {
 
 		return Streams.stream(new Iterator<>() {
 

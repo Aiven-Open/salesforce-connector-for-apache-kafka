@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
  * BulkApiNativeInfo is an implementation of AbstractSourceNativeInfo for the
  * Bulk Api.
  */
-public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> {
+public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, String> {
 	private String topic;
 	private Integer partition;
 	private Long offset;
@@ -39,7 +39,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> 
 	 *            the native info to process.
 	 */
 	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem) {
-		super(new NativeInfo<String, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
+		super(new NativeInfo<BulkApiKey, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
 	}
 
 	/**
@@ -55,7 +55,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<String, String> 
 	 *            The offset id to produce the event to
 	 */
 	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem, String topic, Integer partition, Long offset) {
-		super(new NativeInfo<String, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
+		super(new NativeInfo<BulkApiKey, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
 		this.topic = topic;
 		this.partition = partition;
 		this.offset = offset;

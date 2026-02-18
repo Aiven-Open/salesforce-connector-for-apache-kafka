@@ -89,8 +89,6 @@ public class BulkApiQueryEngine {
 		// wait until the job is finished processing
 		JobState completedState = waitUntilProcessingComplete(state, jobId);
 		switch (completedState) {
-			case UploadComplete :
-				LOGGER.warn("Upload complete State returned while waiting for query which was unexpected");
 			case JobComplete :
 				return apiClient
 						.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate(), query)

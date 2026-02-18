@@ -23,6 +23,6 @@ package io.aiven.kafka.connect.salesforce.model;
  * @param data
  *            The data that is specific to this record
  */
-public record BulkApiNativeItem(String key, String data) {
+public record BulkApiNativeItem(BulkApiKey key, String data) {
 
 }

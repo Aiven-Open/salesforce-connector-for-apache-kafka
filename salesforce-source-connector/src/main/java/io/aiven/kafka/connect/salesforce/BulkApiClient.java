@@ -21,6 +21,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
+import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeItem;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
@@ -291,7 +292,8 @@ public class BulkApiClient {
 					}
 				}).filter(filterPredicate)
 				.map(res -> new BulkApiNativeInfo(
-						new BulkApiNativeItem(objectName + queryExecutionTime, res.getResult().getContents()),
+						new BulkApiNativeItem(new BulkApiKey("bulkApi", query, res.getResult().getQueryExecutionTime()),
+								res.getResult().getContents()),
 						configFragment.getTopicPrefix() + ".bulkapi." + objectName, null, null));
 
 	}
