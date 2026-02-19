@@ -54,7 +54,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <grpc.version>1.64.0</grpc.version>
     <protoc.version>3.25.3</protoc.version>
     <protocJava.version>1.78.0</protocJava.version>
