@@ -129,8 +129,8 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * Adds the configuration options for compression to the configuration
-	 * definition.
+	 * Adds the configuration options that are common to all Salesforce
+	 * configurations.
 	 *
 	 * @param configDef
 	 *            the Configuration definition.
@@ -296,7 +296,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 *
 		 * @param clientId
 		 *            The clientId used for Oauth configuration
-		 * @return The Oauth Salesforce client Id
+		 * @return this
 		 */
 		public Setter oauthClientId(String clientId) {
 			return setValue(SALESFORCE_CLIENT_ID, clientId);
@@ -307,7 +307,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 *
 		 * @param clientSecret
 		 *            the client secret used for authentication
-		 * @return The Oauth Salesforce client secret
+		 * @return this
 		 */
 		public Setter oauthClientSecret(String clientSecret) {
 			return setValue(SALESFORCE_CLIENT_SECRET, clientSecret);
@@ -330,7 +330,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 * @param apiVersion
 		 *            A string that identifies the Salesforce apiVersion that the
 		 *            connector should execute against
-		 * @return The target Salesforce api version
+		 * @return this
 		 */
 		public Setter apiVersion(String apiVersion) {
 			return setValue(SALESFORCE_API_VERSION, apiVersion);
@@ -343,8 +343,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 * @param maxRecords
 		 *            An int representing the maximum number of records to retrieve from
 		 *            Salesforce at a time
-		 * @return An int with the maximum number of records to retrieve on each page of
-		 *         the Bulk Api.
+		 * @return this
 		 */
 		public Setter maxRecords(int maxRecords) {
 			return setValue(SALESFORCE_MAX_RECORDS, maxRecords);
@@ -356,7 +355,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 *
 		 * @param salesforceOauthUri
 		 *            A string representation of the oauth uri to use with Salesforce
-		 * @return The target Salesforce OAUTH Uri
+		 * @return this
 		 */
 		public Setter oauthUri(String salesforceOauthUri) {
 			return setValue(SALESFORCE_OAUTH_URI, salesforceOauthUri);
@@ -367,13 +366,20 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 		 *
 		 * @param topicPrefix
 		 *            the topic prefix
-		 * @return the topic prefix
+		 * @return this
 		 *
 		 */
 		public Setter topicPrefix(String topicPrefix) {
 			return setValue(TOPIC_PREFIX, topicPrefix);
 		}
 
+		/**
+		 * Sets the maximum retries for connections to Salesforce.
+		 * 
+		 * @param maxRetries
+		 *            the maximum retries for connections.
+		 * @return this
+		 */
 		public Setter maxRetries(int maxRetries) {
 			return setValue(SALESFORCE_MAX_RETRIES, maxRetries);
 		}

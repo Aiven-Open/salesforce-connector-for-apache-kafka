@@ -19,13 +19,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfigFragment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +70,7 @@ public class BulkApiClientTest {
 	@InjectMocks
 	private BulkApiClient apiClient;
 
-    private Map<String, String> props;
+	private Map<String, String> props;
 
 	ObjectMapper mapper = new ObjectMapper();
 
@@ -80,45 +78,44 @@ public class BulkApiClientTest {
 	public void setup() {
 		login = mock(Oauth2Login.class);
 		client = mock(HttpClient.class);
-        props = new HashMap<>();
-        // set the testing property defaults.
-        SalesforceCommonConfigFragment.setter(props)
-                .oauthClientId(TEST_CLIENT_ID)
-                .oauthClientSecret(TEST_CLIENT_SECRET)
-                .oauthUri(TEST_OAUTH_URI)
-                .uri(TEST_SALESFORCE_URI);
+		props = new HashMap<>();
+		// set the testing property defaults.
+		SalesforceCommonConfigFragment.setter(props).oauthClientId(TEST_CLIENT_ID).oauthClientSecret(TEST_CLIENT_SECRET)
+				.oauthUri(TEST_OAUTH_URI).uri(TEST_SALESFORCE_URI);
 	}
 
 	@Test
-  public void testAutomaticRetryOfCredentials() throws JsonProcessingException {
-    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
-    HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
-    //return 401 three times as its different checks for success and authentication failure and the success check prints the status code so it gets returned there as well.
-    when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
-    when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(
-        TEST_ACCESS_TOKEN);
+	public void testAutomaticRetryOfCredentials() throws JsonProcessingException {
+		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+		HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
+		// return 401 three times as its different checks for success and authentication
+		// failure and the success check prints the status code so it gets returned
+		// there as well.
+		when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(TEST_ACCESS_TOKEN);
 
-    QueryResponse response = new QueryResponse();
-    response.setId(TEST_JOB_ID);
-    response.setObject("Account");
-    when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
+		QueryResponse response = new QueryResponse();
+		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
+		when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
 
-    when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
+		when(client.sendAsync(any(HttpRequest.class), any()))
+				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
 
-    String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
-    assertEquals(TEST_JOB_ID,jobId);
-    //Initial accessToken plus retry
-    verify(login,times(2)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
+		assertEquals(TEST_JOB_ID, jobId);
+		// Initial accessToken plus retry
+		verify(login, times(2)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
-    // Retries and returns successfully the second time
-    verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
+		// Retries and returns successfully the second time
+		verify(client, times(2)).sendAsync(any(HttpRequest.class), any());
 
-  }
+	}
 
 	@Test
 	public void testRetryExpectedNumberOfTimes() throws JsonProcessingException {
 		int expectedNumberOfRetries = 3;
-        SalesforceCommonConfigFragment.setter(props).maxRetries(expectedNumberOfRetries);
+		SalesforceCommonConfigFragment.setter(props).maxRetries(expectedNumberOfRetries);
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 		HttpResponse<Object> mockQueryResponse = Mockito.mock(HttpResponse.class);
@@ -149,105 +146,115 @@ public class BulkApiClientTest {
 	}
 
 	@Test
-  public void testDeleteJob() throws JsonProcessingException {
-    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+	public void testDeleteJob() throws JsonProcessingException {
+		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 
-    QueryResponse response = new QueryResponse();
-    response.setId(TEST_JOB_ID);
-    response.setObject("Account");
-    HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
+		QueryResponse response = new QueryResponse();
+		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
+		HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
 
-    when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
-    when(login.getAccessToken(eq(TEST_CLIENT_ID),eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
-    String jobId = apiClient.submitQueryJob("SELECT Id, Name FROM ACCOUNT");
+		when(client.sendAsync(any(HttpRequest.class), any()))
+				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+		String jobId = apiClient.submitQueryJob("SELECT Id, Name FROM ACCOUNT");
 
-    apiClient.deleteJob(jobId);
-    //   Needs to be updated to initialise the access token correctly.
-    var deleteRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).DELETE().build();
+		apiClient.deleteJob(jobId);
+		// Needs to be updated to initialise the access token correctly.
+		var deleteRequest = HttpRequest
+				.newBuilder(URI.create(TEST_SALESFORCE_URI
+						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).DELETE()
+				.build();
 
-    // No 401's so this does not get called.
-    verify(login,times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+		// No 401's so this does not get called.
+		verify(login, times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
+		// Submit job and delete job.
+		verify(client, times(2)).sendAsync(any(HttpRequest.class), any());
 
-    // Submit job and delete job.
-    verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
+		// specifically ensure delete job is called.
+		verify(client, times(1)).sendAsync(eq(deleteRequest), any());
 
-    //specifically ensure delete job is called.
-    verify(client,times(1)).sendAsync(eq(deleteRequest),any());
-
-  }
+	}
 
 	@Test
-  public void testAbortJob() throws JsonProcessingException {
-    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
-    when(login.getAccessToken(eq(TEST_CLIENT_ID),eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+	public void testAbortJob() throws JsonProcessingException {
+		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
-    QueryResponse response = new QueryResponse();
-    response.setId(TEST_JOB_ID);
-    response.setObject("Account");
-    response.setState(JobState.Failed);
-    HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
+		QueryResponse response = new QueryResponse();
+		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
+		response.setState(JobState.Failed);
+		HttpResponse<Object> mockQueryResponse = mockResponse(mapper.writeValueAsString(response), 200);
 
-    when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
+		when(client.sendAsync(any(HttpRequest.class), any()))
+				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
 
-    String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
 
-    apiClient.abortJob(jobId);
-    String abortPayload = new ObjectMapper().writeValueAsString(new AbortJob());
-    //   Needs to be updated to initialise the access token correctly.
-    var abortRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
+		apiClient.abortJob(jobId);
+		String abortPayload = new ObjectMapper().writeValueAsString(new AbortJob());
+		// Needs to be updated to initialise the access token correctly.
+		var abortRequest = HttpRequest
+				.newBuilder(URI.create(TEST_SALESFORCE_URI
+						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN)
+				.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
 
-    // No 401's so this does not get called.
-    verify(login,times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+		// No 401's so this does not get called.
+		verify(login, times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
-    // Submit job and delete job.
-    verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
+		// Submit job and delete job.
+		verify(client, times(2)).sendAsync(any(HttpRequest.class), any());
 
-    //specifically ensure delete job is called.
-    verify(client,times(1)).sendAsync(eq(abortRequest),any());
+		// specifically ensure delete job is called.
+		verify(client, times(1)).sendAsync(eq(abortRequest), any());
 
-  }
+	}
 
 	@ParameterizedTest
-  @EnumSource(JobState.class)
-  public void testQueryJobStatus(JobState state) throws JsonProcessingException {
-    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+	@EnumSource(JobState.class)
+	public void testQueryJobStatus(JobState state) throws JsonProcessingException {
+		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 
-    when(login.getAccessToken(eq(TEST_CLIENT_ID),eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
+		QueryResponse response = new QueryResponse();
+		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
+		QueryResponse checkResponse = new QueryResponse();
+		checkResponse.setId(TEST_JOB_ID);
+		checkResponse.setObject("Account");
+		checkResponse.setState(state);
+		HttpResponse<Object> mockCheckQueryResponse = mockResponse(mapper.writeValueAsString(checkResponse), 200);
+		HttpResponse<Object> mockQuerySubmitResponse = mockResponse(mapper.writeValueAsString(response), 200);
+		when(client.sendAsync(any(HttpRequest.class), any()))
+				.thenReturn(CompletableFuture.completedFuture(mockQuerySubmitResponse))
+				.thenReturn(CompletableFuture.completedFuture(mockCheckQueryResponse));
 
-    QueryResponse response = new QueryResponse();
-    response.setId(TEST_JOB_ID);
-    response.setObject("Account");
-    QueryResponse checkResponse = new QueryResponse();
-    checkResponse.setId(TEST_JOB_ID);
-    checkResponse.setObject("Account");
-    checkResponse.setState(state);
-    HttpResponse<Object> mockCheckQueryResponse = mockResponse(mapper.writeValueAsString(checkResponse), 200);
-    HttpResponse<Object> mockQuerySubmitResponse = mockResponse(mapper.writeValueAsString(response),200);
-    when(client.sendAsync(any(HttpRequest.class),any())).thenReturn(CompletableFuture.completedFuture(mockQuerySubmitResponse))
-                                                        .thenReturn(CompletableFuture.completedFuture(mockCheckQueryResponse));
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
+		var queryResp = apiClient.queryJobStatus(jobId);
+		JobState jobStatus = queryResp.getState();
+		assertEquals(state, jobStatus);
+		// No 401's so this does not get called.
 
-    String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
-    var queryResp = apiClient.queryJobStatus(jobId);
-    JobState jobStatus = queryResp.getState();
-    assertEquals(state, jobStatus);
-    // No 401's so this does not get called.
+		verify(login, times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
-    verify(login,times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+		// Submit job and delete job.
+		verify(client, times(2)).sendAsync(any(HttpRequest.class), any());
 
+		var jobStatusRequest = HttpRequest
+				.newBuilder(URI.create(TEST_SALESFORCE_URI
+						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).GET()
+				.build();
 
-    // Submit job and delete job.
-    verify(client,times(2)).sendAsync(any(HttpRequest.class),any());
+		// specifically ensure delete job is called.
+		verify(client, times(1)).sendAsync(eq(jobStatusRequest), any());
 
-
-    var jobStatusRequest = HttpRequest.newBuilder(URI.create(TEST_SALESFORCE_URI + String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId))).header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).GET().build();
-
-
-    //specifically ensure delete job is called.
-    verify(client,times(1)).sendAsync(eq(jobStatusRequest),any());
-
-  }
+	}
 
 	private HttpResponse<Object> mockResponse(String payload, int statusCode) {
 		HttpResponse<Object> mockHttpResponse = Mockito.mock(HttpResponse.class);

@@ -25,7 +25,6 @@ import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
-import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,28 +43,11 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	private OffsetManager offsetManager;
 
 	/**
-	 * SalesforceSourceConfig which has all the configuration for the source
-	 * connector
-	 */
-	private SalesforceSourceConfig salesforceSourceConfig;
-
-	/**
 	 * Should check about adding this
 	 */
 	public SalesforceSourceTask() {
 		super();
 	}
-
-//	/**
-//	 * This allows for testing to inject a context
-//	 *
-//	 * @param context
-//	 *            A SourceTaskContext
-//	 */
-	// USE SalesforceSourceTask.initialize(SourceTaskContext context);
-//	public SalesforceSourceTask(SourceTaskContext context) {
-//		this.context = context;
-//	}
 
 	/**
 	 * Called by {@link #start} to allows the concrete implementation to configure
