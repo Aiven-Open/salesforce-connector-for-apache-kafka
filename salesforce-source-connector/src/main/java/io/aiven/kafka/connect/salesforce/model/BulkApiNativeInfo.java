@@ -28,9 +28,19 @@ import java.nio.charset.StandardCharsets;
  * Bulk Api.
  */
 public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, String> {
-	private final String topic;
-	private final Integer partition;
-	private final Long offset;
+	private String topic;
+	private Integer partition;
+	private Long offset;
+
+	// /**
+	// * Constructor.
+	// *
+	// * @param nativeInfo
+	// * the native info to process.
+	// */
+	// public BulkApiNativeInfo(NativeInfo<BulkApiKey, String> nativeInfo) {
+	// super(nativeInfo);
+	// }
 
 	/**
 	 * Constructor.

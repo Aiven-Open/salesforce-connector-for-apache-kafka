@@ -20,7 +20,7 @@ import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -85,12 +85,7 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 		return commonFragment.getSalesforceMaxRetries();
 	}
 
-	/**
-	 * Gets the list of queries to pass to the bulk api.
-	 * 
-	 * @return a list of queries.
-	 */
-	public List<String> getBulkApiQueries() {
+	public LinkedList<String> getBulkApiQueries() {
 		return sourceFragment.getBulkApiQueries();
 	}
 }
