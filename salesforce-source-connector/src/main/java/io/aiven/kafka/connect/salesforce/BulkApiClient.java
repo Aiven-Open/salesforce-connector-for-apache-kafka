@@ -17,13 +17,13 @@ package io.aiven.kafka.connect.salesforce;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
-import io.aiven.kafka.connect.salesforce.model.BulkApiNativeItem;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
@@ -108,7 +108,7 @@ public class BulkApiClient {
 	private String accessToken;
 	private Predicate<BulkApiResultResponse> filterPredicate = response -> response.getResult().getContentSize() > 0;
 
-	private final SalesforceConfigFragment configFragment;
+	private final SalesforceCommonConfig config;
 
 	/**
 	 * The maximum jitter random number. Should be a power of 2 for speed.
@@ -126,39 +126,39 @@ public class BulkApiClient {
 	/**
 	 * Constructor
 	 * 
-	 * @param configFragment
-	 *            SalesforceConfigFragment for this client
+	 * @param config
+	 *            SalesforceCommonConfig for this client
 	 */
-	public BulkApiClient(SalesforceConfigFragment configFragment) {
-		this(configFragment, HttpClient.newBuilder().build());
+	public BulkApiClient(SalesforceCommonConfig config) {
+		this(config, HttpClient.newBuilder().build());
 	}
 
 	/**
 	 * Constructor
 	 * 
-	 * @param configFragment
-	 *            SalesforceConfigFragment for this client
+	 * @param config
+	 *            SalesforceCommonConfig for this client
 	 * @param client
 	 *            A HttpClient for initializing the BulkApiClient
 	 */
-	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client) {
-		this(configFragment, client, new Oauth2Login(configFragment.getSalesforceOauthUri(), client));
+	BulkApiClient(SalesforceCommonConfig config, HttpClient client) {
+		this(config, client, new Oauth2Login(config.getSalesforceOauthUri(), client));
 
 	}
 
 	/**
 	 * Constructor
-	 * 
-	 * @param configFragment
-	 *            SalesforceConfigFragment for this client
+	 *
+	 * @param config
+	 *            SalesforceCommonConfig for this client
 	 * @param client
 	 *            A HttpClient for initializing the BulkApiClient
 	 * @param login
 	 *            The Oauth2Login used to authenticate against the Salesforce api
 	 *            and return a usable token
 	 */
-	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client, Oauth2Login login) {
-		this.configFragment = configFragment;
+	BulkApiClient(SalesforceCommonConfig config, HttpClient client, Oauth2Login login) {
+		this.config = config;
 		this.client = client;
 		this.login = login;
 	}
@@ -174,9 +174,8 @@ public class BulkApiClient {
 	public String submitQueryJob(String query) {
 		try {
 			String queryObject = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
-			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri, EMPTY_QUERY_PARAM,
-							configFragment.getSalesforceApiVersion()))
+			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + submitJobUri,
+					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion()))
 					.POST(HttpRequest.BodyPublishers.ofString(queryObject));
 
 			HttpResponse<String> response = executeHttpRequest(request, 1);
@@ -202,21 +201,15 @@ public class BulkApiClient {
 	 */
 	public QueryResponse queryJobStatus(String jobId) {
 		try {
-
-			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
-							configFragment.getSalesforceApiVersion(), jobId))
-					.GET();
+			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri,
+					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion(), jobId)).GET();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
 			return getQueryResponseFromJson(response);
 			// TODO change to return if the Job State is JobComplete
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		} catch (JsonProcessingException e) {
+		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	private QueryResponse getQueryResponseFromJson(HttpResponse<String> response) throws JsonProcessingException {
@@ -242,8 +235,10 @@ public class BulkApiClient {
 		try {
 
 			// This needs to be able to handle multiple pages
-			HttpRequest.Builder request = HttpRequest.newBuilder(buildResultUri(configFragment.getSalesforceUri(),
-					jobId, locator, configFragment.getSalesforceMaxRecords())).header(ACCEPT, TEXT_CSV).GET();
+			HttpRequest.Builder request = HttpRequest
+					.newBuilder(
+							buildResultUri(config.getSalesforceUri(), jobId, locator, config.getSalesforceMaxRecords()))
+					.header(ACCEPT, TEXT_CSV).GET();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 			BulkApiResultResponse resp = new BulkApiResultResponse();
 			if (isSuccessStatusCode(response.statusCode())) {
@@ -290,11 +285,13 @@ public class BulkApiClient {
 						deleteJob(jobId);
 						return null;
 					}
-				}).filter(filterPredicate)
+				}).filter(
+						filterPredicate)
 				.map(res -> new BulkApiNativeInfo(
-						new BulkApiNativeItem(new BulkApiKey("bulkApi", query, res.getResult().getQueryExecutionTime()),
+						new NativeInfo<BulkApiKey, String>(
+								new BulkApiKey("bulkApi", query, res.getResult().getQueryExecutionTime()),
 								res.getResult().getContents()),
-						configFragment.getTopicPrefix() + ".bulkapi." + objectName, null, null));
+						config.getTopicPrefix() + ".bulkapi." + objectName, null, null));
 
 	}
 
@@ -321,7 +318,7 @@ public class BulkApiClient {
 			queryParams += ("maxRecords=" + maxRecords);
 		}
 
-		return getUriFrom(hostUri + getJobResultsUri, queryParams, configFragment.getSalesforceApiVersion(), jobId);
+		return getUriFrom(hostUri + getJobResultsUri, queryParams, config.getSalesforceApiVersion(), jobId);
 
 	}
 
@@ -333,10 +330,8 @@ public class BulkApiClient {
 	 */
 	public void deleteJob(String jobId) {
 		try {
-			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
-							configFragment.getSalesforceApiVersion(), jobId))
-					.DELETE();
+			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri,
+					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion(), jobId)).DELETE();
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
 			response.statusCode();
@@ -358,8 +353,8 @@ public class BulkApiClient {
 		try {
 			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
-					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
-							configFragment.getSalesforceApiVersion(), jobId))
+					.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
+							config.getSalesforceApiVersion(), jobId))
 					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 
@@ -384,7 +379,7 @@ public class BulkApiClient {
 	 */
 	private HttpResponse<String> executeHttpRequest(HttpRequest.Builder request, int attempt)
 			throws InterruptedException, ExecutionException {
-		if (attempt > configFragment.getSalesforceMaxRetries()) {
+		if (attempt > config.getSalesforceMaxRetries()) {
 			throw new RuntimeException("Too many retries");
 		}
 		CompletableFuture<HttpResponse<String>> future = client
@@ -486,7 +481,7 @@ public class BulkApiClient {
 	 * Authenticate with Salesforce will throw an error on failure to authenticate
 	 */
 	public void authenticate() {
-		accessToken = login.getAccessToken(configFragment.getOauthClientId(), configFragment.getOauthClientSecret());
+		accessToken = login.getAccessToken(config.getOauthClientId(), config.getOauthClientSecret());
 		if (accessToken == null) {
 			throw new RuntimeException(
 					"Unable to authenticate with Salesforce please review your configuration settings and try again.");

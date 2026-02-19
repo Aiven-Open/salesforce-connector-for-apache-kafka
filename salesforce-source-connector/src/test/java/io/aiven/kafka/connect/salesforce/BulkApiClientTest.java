@@ -19,10 +19,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
+import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfigFragment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +37,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,32 +67,31 @@ public class BulkApiClientTest {
 
 	private Oauth2Login login;
 
-	private SalesforceConfigFragment configFragment;
-
 	private HttpClient client;
 
 	@InjectMocks
 	private BulkApiClient apiClient;
 
+    private Map<String, String> props;
+
 	ObjectMapper mapper = new ObjectMapper();
 
 	@BeforeEach
 	public void setup() {
-		configFragment = mock(SalesforceConfigFragment.class);
 		login = mock(Oauth2Login.class);
 		client = mock(HttpClient.class);
-		apiClient = new BulkApiClient(configFragment, client, login);
+        props = new HashMap<>();
+        // set the testing property defaults.
+        SalesforceCommonConfigFragment.setter(props)
+                .oauthClientId(TEST_CLIENT_ID)
+                .oauthClientSecret(TEST_CLIENT_SECRET)
+                .oauthUri(TEST_OAUTH_URI)
+                .uri(TEST_SALESFORCE_URI);
 	}
 
 	@Test
   public void testAutomaticRetryOfCredentials() throws JsonProcessingException {
-
-    when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
-    when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
-    when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
-    when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
-    apiClient = new BulkApiClient(configFragment, client, login);
+    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
     HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
     //return 401 three times as its different checks for success and authentication failure and the success check prints the status code so it gets returned there as well.
     when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
@@ -114,13 +118,9 @@ public class BulkApiClientTest {
 	@Test
 	public void testRetryExpectedNumberOfTimes() throws JsonProcessingException {
 		int expectedNumberOfRetries = 3;
-		when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
-		when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-		when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
-		when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
-		when(configFragment.getSalesforceMaxRetries()).thenReturn(expectedNumberOfRetries);
+        SalesforceCommonConfigFragment.setter(props).maxRetries(expectedNumberOfRetries);
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
-		apiClient = new BulkApiClient(configFragment, client, login);
+		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 		HttpResponse<Object> mockQueryResponse = Mockito.mock(HttpResponse.class);
 
 		// return 401 twice as its different checks for success and authentication
@@ -150,14 +150,7 @@ public class BulkApiClientTest {
 
 	@Test
   public void testDeleteJob() throws JsonProcessingException {
-
-    when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
-    when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
-    when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
-    when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
-    when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
-    apiClient = new BulkApiClient(configFragment, client, login);
+    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 
     QueryResponse response = new QueryResponse();
     response.setId(TEST_JOB_ID);
@@ -186,14 +179,7 @@ public class BulkApiClientTest {
 
 	@Test
   public void testAbortJob() throws JsonProcessingException {
-
-    when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
-    when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
-    when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
-    when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
-    when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
-    apiClient = new BulkApiClient(configFragment, client, login);
+    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
     when(login.getAccessToken(eq(TEST_CLIENT_ID),eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
     QueryResponse response = new QueryResponse();
@@ -225,14 +211,7 @@ public class BulkApiClientTest {
 	@ParameterizedTest
   @EnumSource(JobState.class)
   public void testQueryJobStatus(JobState state) throws JsonProcessingException {
-
-    when(configFragment.getOauthClientId()).thenReturn(TEST_CLIENT_ID);
-    when(configFragment.getOauthClientSecret()).thenReturn(TEST_CLIENT_SECRET);
-    when(configFragment.getSalesforceOauthUri()).thenReturn(TEST_OAUTH_URI);
-    when(configFragment.getSalesforceUri()).thenReturn(TEST_SALESFORCE_URI);
-    when(configFragment.getSalesforceApiVersion()).thenReturn(SALESFORCE_API_VERSION);
-    when(configFragment.getSalesforceMaxRetries()).thenReturn(3);
-    apiClient = new BulkApiClient(configFragment, client, login);
+    apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
 
     when(login.getAccessToken(eq(TEST_CLIENT_ID),eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 

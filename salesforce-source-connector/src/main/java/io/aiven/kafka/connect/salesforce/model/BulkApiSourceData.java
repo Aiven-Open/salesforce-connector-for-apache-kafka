@@ -22,7 +22,6 @@ import io.aiven.commons.kafka.connector.source.task.Context;
 
 import io.aiven.kafka.connect.salesforce.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -44,11 +42,6 @@ import java.util.stream.Stream;
 public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
-	/**
-	 * This deliminator is used to identify the API the data came from so that it is
-	 * not mixed with data from other data streams from Salesforce
-	 */
-	private final SalesforceConfigFragment configFragment;
 	private final BulkApiQueryEngine engine;
 	private final LinkedList<String> queries;
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
@@ -59,24 +52,23 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 * Bulk Api Source Record
 	 *
 	 * @param config
-	 *            The SalesforceConfigFragment with all the relevant config for
-	 *            configuring the BulkApiSourceData
+	 *            The SalesforceCommonConfigFragment with all the relevant config
+	 *            for configuring the BulkApiSourceData
 	 * @param offsetManager
 	 *            the offsetManager used in this implementation of BulkApiSourceData
 	 */
 	public BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager) {
 		super(config, offsetManager);
-		this.configFragment = config.getSalesforceConfigFragment();
-		this.queries = new LinkedList<>(List.of(configFragment.getBulkApiQueries().split(";")));
+		this.queries = config.getBulkApiQueries();
 
 		/**
 		 * The bulk api client for querying the Bulk api
 		 */
-		BulkApiClient apiClient = new BulkApiClient(configFragment);
+		BulkApiClient apiClient = new BulkApiClient(config);
 		/**
 		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
 		 */
-		this.engine = new BulkApiQueryEngine(configFragment, apiClient);
+		this.engine = new BulkApiQueryEngine(config, apiClient);
 		this.lastExecutionTime = new HashMap<>();
 	}
 	/**

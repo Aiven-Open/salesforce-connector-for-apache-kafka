@@ -16,7 +16,8 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
+import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
 import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
@@ -40,19 +41,19 @@ public class BulkApiQueryEngine {
 	 */
 	private static final int DELTA_BETWEEN_QUERIES = 60000;
 	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
-	private SalesforceConfigFragment configFragment; // NOPMD i will need this
+	private SalesforceSourceConfig config; // NOPMD i will need this
 	private final BulkApiClient apiClient;
 
 	/**
 	 * The constructor for the BulkApiQueryEngine
 	 * 
-	 * @param configFragment
-	 *            the salesforceConfigFragment
+	 * @param config
+	 *            the salesforceConfig
 	 * @param apiClient
 	 *            the BulkApiClient used for communication
 	 */
-	public BulkApiQueryEngine(SalesforceConfigFragment configFragment, BulkApiClient apiClient) {
-		this.configFragment = configFragment;
+	public BulkApiQueryEngine(SalesforceSourceConfig config, BulkApiClient apiClient) {
+		this.config = config;
 		this.apiClient = apiClient;
 	}
 

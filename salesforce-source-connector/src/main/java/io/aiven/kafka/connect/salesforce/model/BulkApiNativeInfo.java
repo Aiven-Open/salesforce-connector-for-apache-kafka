@@ -32,20 +32,20 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	private Integer partition;
 	private Long offset;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param bulkApiNativeItem
-	 *            the native info to process.
-	 */
-	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem) {
-		super(new NativeInfo<BulkApiKey, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
-	}
+	// /**
+	// * Constructor.
+	// *
+	// * @param nativeInfo
+	// * the native info to process.
+	// */
+	// public BulkApiNativeInfo(NativeInfo<BulkApiKey, String> nativeInfo) {
+	// super(nativeInfo);
+	// }
 
 	/**
 	 * Constructor.
 	 *
-	 * @param bulkApiNativeItem
+	 * @param nativeInfo
 	 *            the native info to process.
 	 * @param topic
 	 *            The name of the topic to produce the event to
@@ -54,8 +54,8 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 * @param offset
 	 *            The offset id to produce the event to
 	 */
-	public BulkApiNativeInfo(BulkApiNativeItem bulkApiNativeItem, String topic, Integer partition, Long offset) {
-		super(new NativeInfo<BulkApiKey, String>(bulkApiNativeItem.key(), bulkApiNativeItem.data()));
+	public BulkApiNativeInfo(NativeInfo<BulkApiKey, String> nativeInfo, String topic, Integer partition, Long offset) {
+		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
 		this.offset = offset;
@@ -68,7 +68,6 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 */
 	@Override
 	public Context getContext() {
-
 		Context ctx = new Context(nativeKey());
 		ctx.setTopic(topic);
 		ctx.setPartition(partition);

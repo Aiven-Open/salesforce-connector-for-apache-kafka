@@ -15,9 +15,9 @@
  */
 package io.aiven.kafka.connect.salesforce.config;
 
-import io.aiven.commons.kafka.config.CommonConfigDef;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 import org.apache.kafka.common.config.ConfigValue;
 
 import java.util.Map;
@@ -25,15 +25,15 @@ import java.util.Map;
 /**
  * Common ConfigDef for Salesforce
  */
-public class SalesforceSourceConfigDef extends CommonConfigDef {
+public final class SalesforceSourceConfigDef extends SourceCommonConfig.SourceCommonConfigDef {
 
 	/**
 	 * Default constructor
 	 */
-	SalesforceSourceConfigDef() {
+	public SalesforceSourceConfigDef() {
 		super();
-		// ensure that we have the properties from the config fragment.
-		SalesforceConfigFragment.update(this);
+		SalesforceCommonConfigFragment.update(this);
+		SalesforceSourceConfigFragment.update(this);
 	}
 
 	/**
@@ -48,7 +48,8 @@ public class SalesforceSourceConfigDef extends CommonConfigDef {
 		Map<String, ConfigValue> values = super.multiValidate(valueMap);
 		// validate that the config fragment options are good.
 		FragmentDataAccess fragmentDataAccess = FragmentDataAccess.from(valueMap);
-		new SalesforceConfigFragment(fragmentDataAccess).validate(values);
+		new SalesforceCommonConfigFragment(fragmentDataAccess).validate(values);
+		new SalesforceSourceConfigFragment(fragmentDataAccess).validate(values);
 		return values;
 	}
 
