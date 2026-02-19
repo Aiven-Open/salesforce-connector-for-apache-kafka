@@ -30,7 +30,7 @@ public class SalesforceSourceConfigDef extends CommonConfigDef {
 	/**
 	 * Default constructor
 	 */
-	SalesforceSourceConfigDef() {
+	public SalesforceSourceConfigDef() {
 		super();
 		// ensure that we have the properties from the config fragment.
 		SalesforceConfigFragment.update(this);
