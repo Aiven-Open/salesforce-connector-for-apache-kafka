@@ -58,7 +58,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 * Bulk Api Source Record
 	 *
 	 * @param config
-	 *            The SalesforceCommonConfigFragment with all the relevant config
+	 *            The SalesforceSourceConfigFragment with all the relevant config
 	 *            for configuring the BulkApiSourceData
 	 * @param offsetManager
 	 *            the offsetManager used in this implementation of BulkApiSourceData
