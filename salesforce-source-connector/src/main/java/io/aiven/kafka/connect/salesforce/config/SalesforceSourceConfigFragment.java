@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Aiven Oy
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aiven.kafka.connect.salesforce.config;
 
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
@@ -7,10 +22,13 @@ import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import org.apache.kafka.common.config.ConfigDef;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A fragment defining the configuration options specific to Salesforce Source
+ * connector.
+ */
 public final class SalesforceSourceConfigFragment extends ConfigFragment {
 
 	/**
@@ -19,14 +37,34 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 	 */
 	private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param dataAccess
+	 *            the data access for this fragment.
+	 */
 	SalesforceSourceConfigFragment(FragmentDataAccess dataAccess) {
 		super(dataAccess);
 	}
 
+	/**
+	 * Gets the setter for this fragment.
+	 * 
+	 * @param props
+	 *            the properties to be updated.
+	 * @return the Setter.
+	 */
 	public static Setter setter(Map<String, String> props) {
 		return new Setter(props);
 	}
 
+	/**
+	 * Update the configuration with the options for the Salesforce source
+	 * connector.
+	 * 
+	 * @param configDef
+	 *            the configuration definition to update.
+	 */
 	public static void update(ConfigDef configDef) {
 		String group = "SalesForce Source";
 		int groupOrder = 0;
@@ -47,10 +85,13 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 	 * @return A LinkedList of queries that are to be made against the Bulk Api.
 	 *
 	 */
-	public LinkedList<String> getBulkApiQueries() {
-		return new LinkedList<>(List.of(dataAccess.getString(SALESFORCE_BULK_API_QUERIES).split(";")));
+	public List<String> getBulkApiQueries() {
+		return List.of(dataAccess.getString(SALESFORCE_BULK_API_QUERIES).split(";"));
 	}
 
+	/**
+	 * The setter for the Salesforce Source config.
+	 */
 	public static final class Setter extends AbstractFragmentSetter<Setter> {
 		private Setter(Map<String, String> data) {
 			super(data);

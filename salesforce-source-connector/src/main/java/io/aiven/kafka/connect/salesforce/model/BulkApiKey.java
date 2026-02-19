@@ -25,10 +25,10 @@ import java.util.Arrays;
  * be able to rebuild the same query again
  */
 public final class BulkApiKey implements Comparable<BulkApiKey> {
-	private static final String SEGMENT_SEPARATOR = "/"; // can not be ':' as that is in the execution time.
-	private String lastExecutionTime;
-	private String queryHash;
-	private String apiName;
+	private static final String SEGMENT_SEPARATOR = "/"; // can not be ':' as that is in the execution time string.
+	private final String lastExecutionTime;
+	private final String queryHash;
+	private final String apiName;
 
 	/**
 	 * Constructor
@@ -47,6 +47,13 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 		this.lastExecutionTime = lastExecutionTime;
 	}
 
+	/**
+	 * Parses the BuildApiKey string into a BuildApiKey implementation.
+	 * 
+	 * @param buildApiString
+	 *            the string to parse.
+	 * @return parsed BuildApiKey.
+	 */
 	public static BulkApiKey parse(String buildApiString) {
 		String[] parts = buildApiString.split("\\Q" + SEGMENT_SEPARATOR + "\\E");
 		return new BulkApiKey(parts[0], parts[1], parts[2]);
@@ -61,16 +68,6 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 		return lastExecutionTime;
 	}
 
-	// /**
-	// * Set the time this query was submitted to the api at
-	// *
-	// * @param lastExecutionTime
-	// * The time this query was submitted against the API
-	// */
-	// public void setLastExecutionTime(String lastExecutionTime) {
-	// this.lastExecutionTime = lastExecutionTime;
-	// }
-
 	/**
 	 * Get the murmur3 hash of the original query submitted against Salesforce's api
 	 * 
@@ -81,22 +78,6 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 		return queryHash;
 	}
 
-	// /**
-	// * Set the query which identifies what has been submitted against the
-	// salesforce
-	// * api, it will be stripped of spaces and a murmur3 hash will be generated
-	// from
-	// * it
-	// *
-	// * @param queryHash
-	// * A String of the original query submitted against Salesforce's api
-	// */
-	// public void setQueryHash(String queryHash) {
-	// this.queryHash = Arrays
-	// .toString(MurmurHash3.hash128(queryHash.replaceAll("\\s+",
-	// "").getBytes(StandardCharsets.UTF_8)));
-	// }
-
 	/**
 	 * Get the apiName for this key
 	 * 
@@ -105,16 +86,6 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 	public String getApiName() {
 		return apiName;
 	}
-
-	// /**
-	// * Set the api name for this key
-	// *
-	// * @param apiName
-	// * the apiName
-	// */
-	// public void setApiName(String apiName) {
-	// this.apiName = apiName;
-	// }
 
 	/**
 	 * Compare two BulkApiKey's to see if they are the same

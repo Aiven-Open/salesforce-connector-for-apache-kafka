@@ -64,7 +64,18 @@ public interface SalesforceCommonConfig {
 	 */
 	String getSalesforceOauthUri();
 
+	/**
+	 * Gets the topic prefix to be added to calculated topic name.
+	 * 
+	 * @return the topic prefix TODO Should be replaced with templated topic in
+	 *         framework when available.
+	 */
 	String getTopicPrefix();
 
+	/**
+	 * The the maximum number of retries for sales force connection.
+	 * 
+	 * @return the maximum number of retries.
+	 */
 	int getSalesforceMaxRetries();
 }

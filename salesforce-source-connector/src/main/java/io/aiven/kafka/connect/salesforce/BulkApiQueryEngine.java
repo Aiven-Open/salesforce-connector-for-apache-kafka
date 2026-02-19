@@ -16,7 +16,6 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
 import org.codehaus.plexus.util.StringUtils;
