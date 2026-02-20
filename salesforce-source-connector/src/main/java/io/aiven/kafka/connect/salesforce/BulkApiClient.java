@@ -21,10 +21,14 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
+import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
+import io.aiven.kafka.connect.salesforce.model.BulkApiNativeItem;
 import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
-import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,6 +39,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -44,6 +49,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiClient {
 
+	private static Logger LOGGER = LoggerFactory.getLogger(BulkApiClient.class);
 	/**
 	 * The type of operation that is to be made against the Bulk API At the moment
 	 * only Query operations are supported later this may become an enum to also
@@ -100,6 +106,7 @@ public class BulkApiClient {
 	private final Oauth2Login login;
 	private final ObjectMapper mapper = new ObjectMapper();
 	private String accessToken;
+	private Predicate<BulkApiResultResponse> filterPredicate = response -> response.getResult().getContentSize() > 0;
 
 	private final SalesforceConfigFragment configFragment;
 
@@ -116,15 +123,40 @@ public class BulkApiClient {
 	 */
 	private final Random random = new Random();
 
-	BulkApiClient(SalesforceConfigFragment configFragment) {
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 */
+	public BulkApiClient(SalesforceConfigFragment configFragment) {
 		this(configFragment, HttpClient.newBuilder().build());
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 * @param client
+	 *            A HttpClient for initializing the BulkApiClient
+	 */
 	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client) {
 		this(configFragment, client, new Oauth2Login(configFragment.getSalesforceOauthUri(), client));
 
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param configFragment
+	 *            SalesforceConfigFragment for this client
+	 * @param client
+	 *            A HttpClient for initializing the BulkApiClient
+	 * @param login
+	 *            The Oauth2Login used to authenticate against the Salesforce api
+	 *            and return a usable token
+	 */
 	BulkApiClient(SalesforceConfigFragment configFragment, HttpClient client, Oauth2Login login) {
 		this.configFragment = configFragment;
 		this.client = client;
@@ -141,11 +173,11 @@ public class BulkApiClient {
 	 */
 	public String submitQueryJob(String query) {
 		try {
-			String bytes = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
+			String queryObject = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(configFragment.getSalesforceUri() + submitJobUri, EMPTY_QUERY_PARAM,
 							configFragment.getSalesforceApiVersion()))
-					.POST(HttpRequest.BodyPublishers.ofString(bytes));
+					.POST(HttpRequest.BodyPublishers.ofString(queryObject));
 
 			HttpResponse<String> response = executeHttpRequest(request, 1);
 			if (isSuccessStatusCode(response.statusCode())) {
@@ -241,10 +273,12 @@ public class BulkApiClient {
 	 *            the name of the Salesforce object being queried
 	 * @param queryExecutionTime
 	 *            The original time the query was created at
+	 * @param query
+	 *            The query that is being processed
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<BulkApiSourceData> getResultStream(String jobId, String locator, String objectName,
-			String queryExecutionTime) {
+	public Stream<BulkApiNativeInfo> getResultStream(String jobId, String locator, String objectName,
+			String queryExecutionTime, String query) {
 
 		return Stream
 				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
@@ -252,10 +286,15 @@ public class BulkApiClient {
 					if (response.getLocator().isPresent()) {
 						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
 					} else {
+						LOGGER.info("Delete job {}, it has been processed completely", jobId);
+						deleteJob(jobId);
 						return null;
 					}
-				}).map(res -> new BulkApiSourceData(res.getResult().getContents(), objectName, queryExecutionTime,
-						configFragment));
+				}).filter(filterPredicate)
+				.map(res -> new BulkApiNativeInfo(
+						new BulkApiNativeItem(new BulkApiKey("bulkApi", query, res.getResult().getQueryExecutionTime()),
+								res.getResult().getContents()),
+						configFragment.getTopicPrefix() + ".bulkapi." + objectName, null, null));
 
 	}
 
@@ -326,10 +365,8 @@ public class BulkApiClient {
 
 			response.statusCode();
 
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
 			throw new RuntimeException(e);
-		} catch (JsonProcessingException ex) {
-			throw new RuntimeException(ex);
 		}
 
 	}
@@ -360,6 +397,10 @@ public class BulkApiClient {
 
 		if (isSuccessStatusCode(response.statusCode())) {
 			return response;
+		} else {
+			LOGGER.warn(
+					"Unsuccessful attempt to query bulk api, attempt number: {}, response code: {}, response message: {}",
+					attempt, response.statusCode(), response.body());
 		}
 
 		if (isAuthenticationError(response.statusCode())) {
@@ -372,9 +413,7 @@ public class BulkApiClient {
 			Thread.sleep(timeWithJitter(++attempt));
 		}
 
-		executeHttpRequest(request, attempt);
-
-		return response;
+		return executeHttpRequest(request, attempt);
 	}
 
 	/**

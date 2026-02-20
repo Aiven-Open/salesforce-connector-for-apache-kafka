@@ -15,7 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.common.config;
 
-import io.aiven.commons.kafka.config.CommonConfig.CommonConfigDef;
+import io.aiven.commons.kafka.config.CommonConfigDef;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import org.apache.kafka.common.config.ConfigValue;
 

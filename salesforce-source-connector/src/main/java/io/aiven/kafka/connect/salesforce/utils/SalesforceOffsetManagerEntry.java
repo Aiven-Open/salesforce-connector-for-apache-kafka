@@ -16,6 +16,7 @@
 package io.aiven.kafka.connect.salesforce.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
+import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import java.util.Map;
  * offsets which are stored in Kafka and allows us to read themback out again as
  * well so we can make sure we don't re-read the data as well.
  */
-public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry<SalesforceOffsetManagerEntry> {
+public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
 
 	/**
 	 * Specifies if the data is coming from the bulk api, streaming api or pub/sub
@@ -37,7 +38,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * ObjectName refer to the name of the table Objects in Salesforce e.g. Account,
 	 * Address, etc
 	 */
-	public static final String OBJECT_NAME = "objectName";
+	public static final String QUERY_HASH = "queryHash";
 	/**
 	 * The time this query was executed against salesforce allowing us to know when
 	 * the data was queried
@@ -46,32 +47,33 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	/**
 	 * The number of records read in this interaction
 	 */
-	public static final String RECORD_COUNT = "recordCount";
-
-	static final List<String> RESTRICTED_KEYS = List.of(RECORD_COUNT);
+	public static final String ID = "id";
+	/**
+	 * Defines whether a query has completed processing or not
+	 */
+	public static final String IS_COMPLETE = "isComplete";
+	static final List<String> RESTRICTED_KEYS = List.of(ID, IS_COMPLETE);
 	/** The data map that stores all the values */
-	private final Map<String, Object> data;
+	private final Map<String, Object> data = new HashMap<>();
 	private final String apiName;
-	private final String objectName;
-	private final String queryExecutionTime;
-	private long recordCount;
+	private final BulkApiKey bulkApiKey;
+	private String lastExecutionTime;
+	private String queryHash; // NOPMD
+	private String id;
+	private int recordCount;
 
 	/**
 	 * Construct the SalesforceOffsetManagerEntry.
 	 *
-	 * @param apiName
-	 *            the api we are using.
-	 * @param objectName
+	 * @param bulkApiKey
 	 *            the Object the entry comes from
-	 * @param queryExecutionTime
-	 *            the time the query was executed at and thus the entry comes from
 	 */
-	public SalesforceOffsetManagerEntry(final String apiName, final String objectName,
-			final String queryExecutionTime) {
-		this.apiName = apiName;
-		this.objectName = objectName;
-		this.queryExecutionTime = queryExecutionTime;
-		data = new HashMap<>();
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey) {
+		this.apiName = bulkApiKey.getApiName();
+		this.bulkApiKey = bulkApiKey;
+		this.queryHash = bulkApiKey.getQueryHash();
+		this.lastExecutionTime = bulkApiKey.getLastExecutionTime();
+
 	}
 
 	/**
@@ -79,37 +81,28 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * previously serialized SalesforceOffsetManagerEntry. used by
 	 * {@link #fromProperties(Map)}
 	 * 
-	 * @param apiName
-	 *            the api we are using.
-	 * @param objectName
+	 * @param bulkApiKey
 	 *            the Object the entry comes from
-	 * @param queryExecutionTime
-	 *            the time the query was executed at and thus the entry comes from
 	 * @param properties
 	 *            the property map.
 	 */
-	private SalesforceOffsetManagerEntry(final String apiName, final String objectName, final String queryExecutionTime,
-			final Map<String, Object> properties) {
-		this(apiName, objectName, queryExecutionTime);
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
+		this(bulkApiKey);
 		data.putAll(properties);
-		final Object recordCountProperty = data.computeIfAbsent(RECORD_COUNT, s -> 0L);
-		if (recordCountProperty instanceof Number) {
-			recordCount = ((Number) recordCountProperty).longValue();
-		}
+		data.putIfAbsent(IS_COMPLETE, false);
+
 	}
 
 	/**
 	 *
 	 * Get a key for the OffsetManagerKey
 	 *
-	 * @param apiName
-	 *            the api we are using.
-	 * @param objectName
+	 * @param bulkApiKey
 	 *            the Object the entry comes from
 	 * @return a new instance of OffsetManagerKey
 	 */
-	public static OffsetManager.OffsetManagerKey asKey(final String apiName, final String objectName) {
-		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName);
+	public static OffsetManager.OffsetManagerKey asKey(final BulkApiKey bulkApiKey) {
+		return () -> Map.of(API_NAME, bulkApiKey.getApiName(), QUERY_HASH, bulkApiKey.getQueryHash());
 	}
 	/**
 	 * Creates an SalesforceOffsetManagerEntry. Will return {@code null} if
@@ -126,7 +119,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		if (properties == null) {
 			return null;
 		}
-		return new SalesforceOffsetManagerEntry(apiName, objectName, queryExecutionTime, properties);
+		return new SalesforceOffsetManagerEntry(bulkApiKey, properties);
 	}
 
 	/**
@@ -137,15 +130,17 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	@Override
 	public Map<String, Object> getProperties() {
 		final Map<String, Object> result = new HashMap<>(data);
-		result.put(RECORD_COUNT, recordCount);
-		result.put(QUERY_EXECUTION_TIME, queryExecutionTime);
+		result.put(ID, id);
+		result.put(QUERY_EXECUTION_TIME, lastExecutionTime);
+		// TODO to be updated when csv file is processed to true.
+		result.put(IS_COMPLETE, false);
 		return result;
 	}
 
 	@Override
 	public Object getProperty(final String key) {
-		if (RECORD_COUNT.equals(key)) {
-			return recordCount;
+		if (ID.equals(key)) {
+			return id;
 		}
 		return data.get(key);
 	}
@@ -166,7 +161,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	@Override
 	public OffsetManager.OffsetManagerKey getManagerKey() {
-		return () -> Map.of(API_NAME, apiName, OBJECT_NAME, objectName);
+		return () -> Map.of(API_NAME, apiName, QUERY_HASH, bulkApiKey.getQueryHash());
 	}
 
 	@Override
@@ -198,8 +193,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *
 	 * @return the name for the current object.
 	 */
-	public String getObjectName() {
-		return objectName;
+	public BulkApiKey getBulkApiKey() {
+		return bulkApiKey;
 	}
 
 	/**
@@ -207,11 +202,18 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *
 	 * @return the time the for the current object that it was queried at.
 	 */
-	public String getQueryExecutionTime() {
-		return objectName;
+	public BulkApiKey getLastExecutionTime() {
+		return bulkApiKey;
 	}
 
-	@Override
+	/**
+	 * CompareTo method implementation for SalesforceOffsetManagerEntry
+	 * 
+	 * @param other
+	 *            SalesforceOffsetManagerEntry that this is being compared against
+	 *            this instance
+	 * @return 0 if match non 0 if it does not match
+	 */
 	public int compareTo(SalesforceOffsetManagerEntry other) {
 
 		if (this == other) { // NOPMD comparing instance
@@ -219,9 +221,9 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		}
 		int result = getApiName().compareTo(other.getApiName());
 		if (result == 0) {
-			result = getObjectName().compareTo(other.getObjectName());
+			result = getBulkApiKey().compareTo(other.getBulkApiKey());
 			if (result == 0) {
-				result = getQueryExecutionTime().compareTo(other.getQueryExecutionTime());
+				result = getLastExecutionTime().compareTo(other.getLastExecutionTime());
 				if (result == 0) {
 					result = Long.compare(getRecordCount(), other.getRecordCount());
 				}

@@ -15,62 +15,69 @@
  */
 package io.aiven.kafka.connect.salesforce.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Streams;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
+import io.aiven.kafka.connect.salesforce.BulkApiClient;
+import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.function.IOSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.ArrayList;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * This BulkApiSourceData facilitates sending BulkApi data into a SourceRecord
  * along with creating the OffsetManager entry for it.
  */
-public class BulkApiSourceData
-		implements
-			NativeSourceData<String, List<CSVRecord>, SalesforceOffsetManagerEntry, BulkApiSourceRecord> {
+public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 	/**
 	 * This deliminator is used to identify the API the data came from so that it is
 	 * not mixed with data from other data streams from Salesforce
 	 */
-	private static final String BULK_API_TOPIC_DELIMINATOR = ".bulkapi.";
-	private final List<CSVRecord> record;
-	private final String queryExecutionTime;
-	private final String objectName;
 	private final SalesforceConfigFragment configFragment;
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final BulkApiQueryEngine engine;
+	private final LinkedList<String> queries;
+	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
+	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
+	private final Map<String, String> lastExecutionTime;
 
 	/**
 	 * Bulk Api Source Record
-	 * 
-	 * @param csvRecords
-	 *            BulkApiResult that contains all the data
-	 * @param objectName
-	 *            The name of the object that was queried as part of this
-	 * @param queryExecutionTime
-	 *            The time the query was executed at
-	 * @param configFragment
+	 *
+	 * @param config
 	 *            The SalesforceConfigFragment with all the relevant config for
 	 *            configuring the BulkApiSourceData
+	 * @param offsetManager
+	 *            the offsetManager used in this implementation of BulkApiSourceData
 	 */
-	public BulkApiSourceData(final List<CSVRecord> csvRecords, final String objectName, String queryExecutionTime,
-			final SalesforceConfigFragment configFragment) {
-		this.record = csvRecords;
-		this.queryExecutionTime = queryExecutionTime;
-		this.objectName = objectName;
-		this.configFragment = configFragment;
+	public BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager) {
+		super(config, offsetManager);
+		this.configFragment = config.getSalesforceConfigFragment();
+		this.queries = new LinkedList<>(List.of(configFragment.getBulkApiQueries().split(";")));
+
+		/**
+		 * The bulk api client for querying the Bulk api
+		 */
+		BulkApiClient apiClient = new BulkApiClient(configFragment);
+		/**
+		 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
+		 */
+		this.engine = new BulkApiQueryEngine(configFragment, apiClient);
+		this.lastExecutionTime = new HashMap<>();
 	}
 	/**
 	 * get the source name from the data
@@ -91,113 +98,103 @@ public class BulkApiSourceData
 	 * @return A stream of native objects. May be empty but not {@code null}.
 	 */
 	@Override
-	public Stream<List<CSVRecord>> getNativeItemStream(String offset) {
-		return Stream.of(record);
+	public Stream<BulkApiNativeInfo> getNativeItemStream(BulkApiKey offset) {
+		return getSalesforceBulkApiStream();
 	}
 
 	/**
-	 * Get an inputStream for a SourceRecord
-	 * 
-	 * @param bulkApiSourceRecord
-	 * 
-	 *            This is the BulkApiSourceRecord that contains all the information
-	 *            required to construct the stream of records and offsets
-	 * @return An IOSupplier of csvRecords that have been transformed into maps
+	 * Creates an offset manager entry using the data in the map.
+	 *
+	 * @param data
+	 *            the data to create the offset manager from.
+	 * @return a valid offset manager entry.
 	 */
 	@Override
-	public IOSupplier<InputStream> getInputStream(BulkApiSourceRecord bulkApiSourceRecord) {
-		// return the list of entries as an IOSupplier<InputStream>
-		List<byte[]> allRecords = new ArrayList<>();// NOPMD Will be re-used shortly
-		bulkApiSourceRecord.getNativeItem().forEach(record -> {
-			try {
-				allRecords.add(mapper.writeValueAsBytes(record.toMap()));
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
+	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Map<String, Object> data) {
+		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast(), ""), data);
+	}
+
+	/**
+	 * Creates an offset manager entry from a context.
+	 *
+	 * @param context
+	 *            the context to create the offset manager from.
+	 * @return a valid offset manager.
+	 */
+	@Override
+	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Context context) {
+		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey());
+	}
+
+	/**
+	 * extracts the native Key from the string representation.
+	 *
+	 * @param keyString
+	 *            the keyString.
+	 * @return The native Key.
+	 */
+	@Override
+	protected BulkApiKey parseNativeKey(String keyString) {
+		return new BulkApiKey("bulkApi", queries.getLast(), lastExecutionTime.get(queries.getLast()));
+	}
+
+	/**
+	 * Creates an offset manager key for the native key.
+	 *
+	 * @param nativeKey
+	 *            THe native key to create an offset manager key for.
+	 * @return An offset manager key.
+	 */
+	@Override
+	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(BulkApiKey nativeKey) {
+		return new SalesforceOffsetManagerEntry(nativeKey).getManagerKey();
+	}
+
+	/**
+	 * getSalesforceBulkIterator takes the preconfigured queries and executes those
+	 * queries in order until no records are left to be consumed. If the iterator of
+	 * results is empty on hasNext it checks if there is another query to execute
+	 * and on next() it executes said query
+	 *
+	 * @return a stream of records
+	 */
+	public Stream<BulkApiNativeInfo> getSalesforceBulkApiStream() {
+
+		return Streams.stream(new Iterator<>() {
+
+			/**
+			 * Returns {@code true} if the iteration has more elements. (In other words,
+			 * returns {@code true} if {@link #next} would return an element rather than
+			 * throwing an exception.)
+			 *
+			 * @return {@code true} if the iteration has more elements
+			 */
+			@Override
+			public boolean hasNext() {
+				return !queries.isEmpty();
+			}
+
+			/**
+			 * Returns the next element in the iteration.
+			 *
+			 * @return the next element in the iteration
+			 *
+			 */
+			@Override
+			public BulkApiNativeInfo next() {
+
+				String element = queries.pop();
+				// Re queue to end of the list
+				LOGGER.debug("Get Records for Query {}", element);
+				queries.offerLast(element);
+				String newLastModifiedDate = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
+				try {
+					return engine.getRecords(element, lastExecutionTime.getOrDefault(element, null)).next();
+				} finally {
+					lastExecutionTime.put(element, newLastModifiedDate);
+				}
 			}
 		});
-		return () -> new ByteArrayInputStream(mapper.writeValueAsBytes(allRecords));
-	}
 
-	/**
-	 * Get the Native Key from a bulkApiResult
-	 * 
-	 * @param bulkApiResult
-	 *            a bulkApiResult which has its own key etc inside
-	 * @return The NativeKey
-	 */
-	@Override
-	public String getNativeKey(List<CSVRecord> bulkApiResult) {
-		// TODO is this right?
-		// It looks like it should be more unique perhaps like
-		// the offset managment key
-		return objectName;
-	}
-
-	/**
-	 * Get the native key
-	 *
-	 * @param key
-	 *            The Native key
-	 * @return a parsed native key
-	 */
-	@Override
-	public String parseNativeKey(String key) {
-		return key;
-	}
-
-	/**
-	 * Creates a BulkApiSourceRecord
-	 *
-	 * @param csvRecord
-	 *            a CSVRecord
-	 * @return Create a BulkApiSourceRecord
-	 */
-	@Override
-	public BulkApiSourceRecord createSourceRecord(List<CSVRecord> csvRecord) {
-		return new BulkApiSourceRecord(csvRecord, getNativeKey(csvRecord));
-	}
-
-	/**
-	 * Create a SalesforceOffsetManagerEntry
-	 *
-	 * @param csvRecord
-	 *            This needs to be updated
-	 * @return SalesforceOffsetManagerEntry
-	 */
-	@Override
-	public SalesforceOffsetManagerEntry createOffsetManagerEntry(List<CSVRecord> csvRecord) {
-		return new SalesforceOffsetManagerEntry(getSourceName(), objectName, queryExecutionTime);
-	}
-
-	/**
-	 * Get the OffsetManagerKey
-	 * 
-	 * @param s
-	 *            This needs to be updated
-	 * @return The offsetManager key
-	 */
-	@Override
-	public OffsetManager.OffsetManagerKey getOffsetManagerKey(String s) {
-		return SalesforceOffsetManagerEntry.asKey(getSourceName(), objectName);
-	}
-
-	/**
-	 * Returns the context if available in the record it determines the topic the
-	 * data is sent to and if particular options in the context are set can also
-	 * determine the partition the record is sent to
-	 *
-	 * @param record
-	 *            This is an individual BulkApiResult
-	 * @return context if available reutnrs an empty Optional if not
-	 */
-	@Override
-	public Optional<Context<String>> extractContext(List<CSVRecord> record) {
-		Context<String> context = new Context<>(getNativeKey(record));
-		context.setTopic(configFragment.getTopicPrefix() + BULK_API_TOPIC_DELIMINATOR + objectName);
-		context.setStorageKey(getNativeKey(record));
-		context.setPartition(null);
-		context.setStorageKey(objectName);
-
-		return Optional.of(context);
 	}
 }
