@@ -65,11 +65,17 @@ public interface SalesforceCommonConfig {
 	String getSalesforceOauthUri();
 
 	/**
-	 * The Salesforce Config Fragment which contains a lot of the unique Salesforce
-	 * configuration details
-	 *
-	 * @return SalesforceConfigFragment
+	 * Gets the topic prefix to be added to calculated topic name.
+	 * 
+	 * @return the topic prefix TODO Should be replaced with templated topic in
+	 *         framework when available.
 	 */
-	SalesforceConfigFragment getSalesforceConfigFragment();
+	String getTopicPrefix();
 
+	/**
+	 * The the maximum number of retries for sales force connection.
+	 * 
+	 * @return the maximum number of retries.
+	 */
+	int getSalesforceMaxRetries();
 }

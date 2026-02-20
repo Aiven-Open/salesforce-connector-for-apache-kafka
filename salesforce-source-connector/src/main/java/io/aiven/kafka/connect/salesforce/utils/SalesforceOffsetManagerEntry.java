@@ -55,10 +55,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	static final List<String> RESTRICTED_KEYS = List.of(ID, IS_COMPLETE);
 	/** The data map that stores all the values */
 	private final Map<String, Object> data = new HashMap<>();
-	private final String apiName;
 	private final BulkApiKey bulkApiKey;
-	private String lastExecutionTime;
-	private String queryHash; // NOPMD
 	private String id;
 	private int recordCount;
 
@@ -69,11 +66,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the Object the entry comes from
 	 */
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey) {
-		this.apiName = bulkApiKey.getApiName();
 		this.bulkApiKey = bulkApiKey;
-		this.queryHash = bulkApiKey.getQueryHash();
-		this.lastExecutionTime = bulkApiKey.getLastExecutionTime();
-
 	}
 
 	/**
@@ -131,7 +124,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public Map<String, Object> getProperties() {
 		final Map<String, Object> result = new HashMap<>(data);
 		result.put(ID, id);
-		result.put(QUERY_EXECUTION_TIME, lastExecutionTime);
+		result.put(QUERY_EXECUTION_TIME, bulkApiKey.getLastExecutionTime());
 		// TODO to be updated when csv file is processed to true.
 		result.put(IS_COMPLETE, false);
 		return result;
@@ -161,7 +154,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	@Override
 	public OffsetManager.OffsetManagerKey getManagerKey() {
-		return () -> Map.of(API_NAME, apiName, QUERY_HASH, bulkApiKey.getQueryHash());
+		return asKey(bulkApiKey);
 	}
 
 	@Override
@@ -185,7 +178,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * @return the Salesforce api used for the current object.
 	 */
 	public String getApiName() {
-		return apiName;
+		return bulkApiKey.getApiName();
 	}
 
 	/**

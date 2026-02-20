@@ -18,8 +18,9 @@ package io.aiven.kafka.connect.salesforce.config;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
-import io.aiven.kafka.connect.salesforce.common.config.SalesforceConfigFragment;
+import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,7 +29,8 @@ import java.util.Map;
  */
 public final class SalesforceSourceConfig extends SourceCommonConfig implements SalesforceCommonConfig {
 
-	private final SalesforceConfigFragment configFragment;
+	private final SalesforceCommonConfigFragment commonFragment;
+	private final SalesforceSourceConfigFragment sourceFragment;
 	/**
 	 * Instantiation of the SalesforceCommonConfig class
 	 * 
@@ -37,58 +39,58 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	 *            String
 	 */
 	public SalesforceSourceConfig(Map<String, String> originals) {
-		super(configDef(), originals);
-		configFragment = new SalesforceConfigFragment(FragmentDataAccess.from(this));
-	}
-
-	/**
-	 * Create a cCommonSourceConfig and include the SalesforceConfigFragment in the
-	 * configDef as well
-	 * 
-	 * @return A SourceCommonConfigDef
-	 */
-	public static SourceCommonConfigDef configDef() {
-		final var configDef = new SourceCommonConfig.SourceCommonConfigDef();
-
-		SalesforceConfigFragment.update(configDef);
-
-		return configDef;
+		super(new SalesforceSourceConfigDef(), originals);
+		FragmentDataAccess dataAccess = FragmentDataAccess.from(this);
+		commonFragment = new SalesforceCommonConfigFragment(dataAccess);
+		sourceFragment = new SalesforceSourceConfigFragment(dataAccess);
 	}
 
 	@Override
 	public String getOauthClientId() {
-		return configFragment.getOauthClientId();
+		return commonFragment.getOauthClientId();
 	}
 
 	@Override
 	public String getOauthClientSecret() {
-		return configFragment.getOauthClientSecret();
+		return commonFragment.getOauthClientSecret();
 	}
 
 	@Override
 	public String getSalesforceUri() {
-		return configFragment.getSalesforceUri();
+		return commonFragment.getSalesforceUri();
 	}
 
 	@Override
 	public String getSalesforceApiVersion() {
-		return configFragment.getSalesforceApiVersion();
+		return commonFragment.getSalesforceApiVersion();
 	}
 
 	@Override
 	public int getSalesforceMaxRecords() {
-		return configFragment.getSalesforceMaxRecords();
+		return commonFragment.getSalesforceMaxRecords();
 	}
 
 	@Override
 	public String getSalesforceOauthUri() {
-		return configFragment.getSalesforceOauthUri();
+		return commonFragment.getSalesforceOauthUri();
 	}
 
 	@Override
-	public SalesforceConfigFragment getSalesforceConfigFragment() {
-		return configFragment;
+	public String getTopicPrefix() {
+		return commonFragment.getTopicPrefix();
 	}
 
-	// public Transformer getTransformer() { return getTransformer();}
+	@Override
+	public int getSalesforceMaxRetries() {
+		return commonFragment.getSalesforceMaxRetries();
+	}
+
+	/**
+	 * Gets the list of queries to pass to the bulk api.
+	 * 
+	 * @return a list of queries.
+	 */
+	public List<String> getBulkApiQueries() {
+		return sourceFragment.getBulkApiQueries();
+	}
 }

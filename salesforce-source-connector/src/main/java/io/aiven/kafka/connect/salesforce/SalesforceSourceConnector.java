@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfigDef;
 import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
@@ -51,7 +51,7 @@ public class SalesforceSourceConnector extends SourceConnector {
 
 	@Override
 	public ConfigDef config() {
-		return SalesforceSourceConfig.configDef();
+		return new SalesforceSourceConfigDef();
 	}
 
 	@Override

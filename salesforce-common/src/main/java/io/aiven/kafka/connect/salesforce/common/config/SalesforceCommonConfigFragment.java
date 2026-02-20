@@ -26,11 +26,17 @@ import org.apache.kafka.common.config.ConfigValue;
 
 import java.util.Map;
 /**
- * The SalesforceConfigFragment has all the configuration needed to authenticate
- * and communicate with a configured Salesforce system. It makes for easy access
- * and passing of the configuration securely.
+ * The SalesforceCommonConfigFragment has all the configuration needed to
+ * authenticate and communicate with a configured Salesforce system. It makes
+ * for easy access and passing of the configuration securely.
  */
-public class SalesforceConfigFragment extends ConfigFragment {
+public final class SalesforceCommonConfigFragment extends ConfigFragment {
+
+	/**
+	 * The prefix used to determine the topic names to send the events. Events will
+	 * be sent to topics with topic_prefix.[api_name].[object_name]
+	 */
+	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD will be used v shortly to put records on topics
 
 	/**
 	 * Group name for the salesforce config
@@ -41,7 +47,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	private static final String SALESFORCE_MAX_RECORDS = "max.records";
+	private static final String SALESFORCE_MAX_RECORDS = "salesforce.max.records";
 
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
@@ -53,7 +59,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	 * The maximum number of records that can be retrieved from a salesforce bulk
 	 * query at a time.
 	 */
-	private static final String SALESFORCE_MAX_RETRIES = "max.retries";
+	private static final String SALESFORCE_MAX_RETRIES = "salesforce.max.retries";
 
 	/**
 	 * The default maximum number of records that can be retrieved from the bulk api
@@ -88,39 +94,14 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	private static final String SALESFORCE_OAUTH_URI = "salesforce.oauth.uri";
 
 	/**
-	 * The prefix used to determine the topic names to send the events. Events will
-	 * be sent to topics with topic_prefix.[api_name].[object_name]
-	 */
-	private static final String TOPIC_PREFIX = "topic.prefix"; // NOPMD will be used v shortly to put records on topics
-
-	/**
-	 * The String list of queries separated by a semicolon to distinguish between
-	 * individual queries, it can be null if not sing the bulk api
-	 */
-	private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
-	/**
 	 * Allows data to be added directly into the config fragment
 	 * 
 	 * @param dataAccess
 	 *            A FragmentDataAccess with corresponding config
 	 *
 	 */
-	public SalesforceConfigFragment(FragmentDataAccess dataAccess) {
+	public SalesforceCommonConfigFragment(FragmentDataAccess dataAccess) {
 		super(dataAccess);
-	}
-
-	/**
-	 * Adds the configuration options for compression to the configuration
-	 * definition.
-	 *
-	 * @param configDef
-	 *            the Configuration definition.
-	 * @return the update configuration definition
-	 */
-	public static ConfigDef update(final ConfigDef configDef) {
-		// later
-		addSalesforceConnectionDetails(configDef);
-		return configDef;
 	}
 
 	/**
@@ -148,13 +129,13 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * Add the salesforce connection configuration required to the configDef
-	 * 
+	 * Adds the configuration options that are common to all Salesforce
+	 * configurations.
+	 *
 	 * @param configDef
-	 *            Add the Salesforce connection configuration required to the
-	 *            configDef
+	 *            the Configuration definition.
 	 */
-	static void addSalesforceConnectionDetails(final ConfigDef configDef) {
+	public static void update(final ConfigDef configDef) {
 		var salesforceGroupCounter = 0;
 		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
 				.artifactId("salesforce-connector-for-kafka-connect");
@@ -212,14 +193,6 @@ public class SalesforceConfigFragment extends ConfigFragment {
 				.documentation(
 						"Salesforce oauth uri that is used to authenticate over oauth with the api, this is a uri specific to your organization and domain supplied by Salesforce.")
 				.width(ConfigDef.Width.NONE).build());
-
-		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(GROUP_SALESFORCE)
-				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
-				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.MEDIUM)
-				.documentation(
-						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
-								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
-				.width(ConfigDef.Width.LONG).build());
 
 		configDef.define(ExtendedConfigKey.builder(TOPIC_PREFIX).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
@@ -300,21 +273,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * All Salesforce SOQL Queries that are to be executed against the Bulk Api
-	 * 
-	 * @return A String of queries that are to be made against the Bulk Api, if
-	 *         there are multiple they are deliminated by a semicolon The semicolon
-	 *         should not be sent to the Bulk Api as this is just a deliminator
-	 *
-	 */
-	public String getBulkApiQueries() {
-		return dataAccess.getString(SALESFORCE_BULK_API_QUERIES);
-	}
-
-	/**
 	 * Get the topic prefix which is used to determine the topic names that data is
 	 * sent to.
-	 * 
+	 *
 	 * @return The topic prefix to send data to.
 	 */
 	public String getTopicPrefix() {
@@ -322,7 +283,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 	}
 
 	/**
-	 * A setter for the SalesforceConfigFragment.
+	 * A setter for the SalesforceCommonConfigFragment.
 	 */
 	public final static class Setter extends AbstractFragmentSetter<Setter> {
 
@@ -335,9 +296,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 *
 		 * @param clientId
 		 *            The clientId used for Oauth configuration
-		 * @return The Oauth Salesforce client Id
+		 * @return this
 		 */
-		public Setter getOauthClientId(String clientId) {
+		public Setter oauthClientId(String clientId) {
 			return setValue(SALESFORCE_CLIENT_ID, clientId);
 		}
 
@@ -346,9 +307,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 *
 		 * @param clientSecret
 		 *            the client secret used for authentication
-		 * @return The Oauth Salesforce client secret
+		 * @return this
 		 */
-		public Setter getOauthClientSecret(String clientSecret) {
+		public Setter oauthClientSecret(String clientSecret) {
 			return setValue(SALESFORCE_CLIENT_SECRET, clientSecret);
 		}
 
@@ -359,7 +320,7 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 *            A string representation of the uri to use with Salesforce
 		 * @return The target Salesforce Uri
 		 */
-		public Setter getSalesforceUri(String salesforceUri) {
+		public Setter uri(String salesforceUri) {
 			return setValue(SALESFORCE_URI, salesforceUri);
 		}
 
@@ -369,9 +330,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 * @param apiVersion
 		 *            A string that identifies the Salesforce apiVersion that the
 		 *            connector should execute against
-		 * @return The target Salesforce api version
+		 * @return this
 		 */
-		public Setter getSalesforceApiVersion(String apiVersion) {
+		public Setter apiVersion(String apiVersion) {
 			return setValue(SALESFORCE_API_VERSION, apiVersion);
 		}
 
@@ -382,10 +343,9 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 * @param maxRecords
 		 *            An int representing the maximum number of records to retrieve from
 		 *            Salesforce at a time
-		 * @return An int with the maximum number of records to retrieve on each page of
-		 *         the Bulk Api.
+		 * @return this
 		 */
-		public Setter getSalesforceMaxRecords(int maxRecords) {
+		public Setter maxRecords(int maxRecords) {
 			return setValue(SALESFORCE_MAX_RECORDS, maxRecords);
 		}
 
@@ -395,36 +355,33 @@ public class SalesforceConfigFragment extends ConfigFragment {
 		 *
 		 * @param salesforceOauthUri
 		 *            A string representation of the oauth uri to use with Salesforce
-		 * @return The target Salesforce OAUTH Uri
+		 * @return this
 		 */
-		public Setter getSalesforceOauthUri(String salesforceOauthUri) {
+		public Setter oauthUri(String salesforceOauthUri) {
 			return setValue(SALESFORCE_OAUTH_URI, salesforceOauthUri);
 		}
 
 		/**
-		 * Sets the queries which are to be used against the Bulk Api
+		 * Sets the topic prefix which determines the name of the topic data is sent to.
 		 *
-		 * @param salesforceBulkApiQueries
-		 *            The queries to be made against the Bulk Api delimitated by a
-		 *            semicolon
-		 * @return The queries to be made against the Bulk Api delimitate by a semicolon
-		 */
-		public Setter getSalesforceBulkApiQueries(String salesforceBulkApiQueries) {
-			return setValue(SALESFORCE_BULK_API_QUERIES, salesforceBulkApiQueries);
-		}
-
-		/**
-		 * Sets the topic prefix which determines the name of the topic daata is sent
-		 * to.
-		 * 
 		 * @param topicPrefix
 		 *            the topic prefix
-		 * @return the topic prefix
+		 * @return this
 		 *
 		 */
-		public Setter getTopicPrefix(String topicPrefix) {
+		public Setter topicPrefix(String topicPrefix) {
 			return setValue(TOPIC_PREFIX, topicPrefix);
 		}
 
+		/**
+		 * Sets the maximum retries for connections to Salesforce.
+		 * 
+		 * @param maxRetries
+		 *            the maximum retries for connections.
+		 * @return this
+		 */
+		public Setter maxRetries(int maxRetries) {
+			return setValue(SALESFORCE_MAX_RETRIES, maxRetries);
+		}
 	}
 }

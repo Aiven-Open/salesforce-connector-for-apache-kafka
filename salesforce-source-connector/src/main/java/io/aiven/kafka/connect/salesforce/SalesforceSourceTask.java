@@ -19,11 +19,12 @@ import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
+import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
+import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 
 import io.aiven.kafka.connect.salesforce.utils.Version;
-import org.apache.kafka.connect.source.SourceTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ import java.util.Map;
  * the Salesforce source connector. It configures the connector and starts the
  * task.
  */
-public class SalesforceSourceTask extends AbstractSourceTask {
+public final class SalesforceSourceTask extends AbstractSourceTask {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
@@ -42,26 +43,10 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	private OffsetManager offsetManager;
 
 	/**
-	 * SalesforceSourceConfig which has all the configuration for the source
-	 * connector
-	 */
-	private SalesforceSourceConfig salesforceSourceConfig;
-
-	/**
 	 * Should check about adding this
 	 */
 	public SalesforceSourceTask() {
-
-	}
-
-	/**
-	 * This allows for testing to inject a context
-	 * 
-	 * @param context
-	 *            A SourceTaskContext
-	 */
-	public SalesforceSourceTask(SourceTaskContext context) {
-		this.context = context;
+		super();
 	}
 
 	/**
@@ -77,13 +62,10 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	@Override
 	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
 		LOGGER.info("Salesforce Source task started.");
-		// set the csv transformer for bulk api
-		props.put("transformer.class", "io.aiven.commons.kafka.connector.source.transformer.CsvTransformer");
-		this.salesforceSourceConfig = new SalesforceSourceConfig(props);
-
 		this.offsetManager = new OffsetManager(context);
-
-		return salesforceSourceConfig;
+		// set the csv transformer for bulk api
+		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+		return new SalesforceSourceConfig(props);
 	}
 
 	/**
@@ -105,13 +87,13 @@ public class SalesforceSourceTask extends AbstractSourceTask {
 	@Override
 	protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
 		LOGGER.info("getIterator() query BulkApi");
-		return new EvolvingSourceRecordIterator(salesforceSourceConfig,
-				new BulkApiSourceData((SalesforceSourceConfig) config, offsetManager));
+		SalesforceSourceConfig myConfig = (SalesforceSourceConfig) config;
+		return new EvolvingSourceRecordIterator(myConfig, new BulkApiSourceData(myConfig, offsetManager));
 	}
 
 	@Override
 	protected void closeResources() {
-
+		// no resources to close
 	}
 
 	@Override
