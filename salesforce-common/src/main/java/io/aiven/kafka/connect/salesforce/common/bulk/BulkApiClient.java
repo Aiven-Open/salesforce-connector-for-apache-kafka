@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect.salesforce.common.bulk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
-import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
-import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
-import io.aiven.kafka.connect.salesforce.model.BulkApiQuery;
+
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -226,14 +225,12 @@ public class BulkApiClient {
 	 *            identifier returned in the first result set.
 	 * @param objectName
 	 *            The objectName the query results are coming from
-	 * @param queryExecutionTime
-	 *            The original time the query was created at
+	 * @param bulkApiKey
+	 *            The native key for this query
 	 * @return True if ready to return results, False if it is still being processed
 	 */
-	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName,
-			String queryExecutionTime) {
+	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName, BulkApiKey bulkApiKey) {
 		try {
-
 			// This needs to be able to handle multiple pages
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(
@@ -244,11 +241,8 @@ public class BulkApiClient {
 			if (isSuccessStatusCode(response.statusCode())) {
 				resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
 				resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
-				try {
-					resp.setResult(new BulkApiResult(response.body(), objectName, queryExecutionTime));
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+				resp.setResult(
+						new BulkApiResult(new NativeInfo<BulkApiKey, String>(bulkApiKey, response.body()), objectName));
 			}
 			return resp;
 		} catch (InterruptedException | ExecutionException e) {
@@ -272,27 +266,20 @@ public class BulkApiClient {
 	 *            The query that is being processed
 	 * @return a stream of BulkApiSourceRecords
 	 */
-	public Stream<BulkApiNativeInfo> getResultStream(String jobId, String locator, String objectName,
+	public Stream<BulkApiResultResponse> getResultStream(String jobId, String locator, String objectName,
 			String queryExecutionTime, String query) {
 
-		return Stream
-				.iterate(getJobResults(jobId, locator, objectName, queryExecutionTime), Objects::nonNull, response -> {
-					// This should be checking if another locator token exists
-					if (response.getLocator().isPresent()) {
-						return getJobResults(jobId, response.getLocator().get(), objectName, queryExecutionTime);
-					} else {
-						LOGGER.info("Delete job {}, it has been processed completely", jobId);
-						deleteJob(jobId);
-						return null;
-					}
-				}).filter(
-						filterPredicate)
-				.map(res -> new BulkApiNativeInfo(
-						new NativeInfo<BulkApiKey, String>(
-								new BulkApiKey("bulkApi", query, res.getResult().getQueryExecutionTime()),
-								res.getResult().getContents()),
-						config.getTopicPrefix() + ".bulkapi." + objectName, null, null));
-
+		BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query, queryExecutionTime);
+		return Stream.iterate(getJobResults(jobId, locator, objectName, bulkApiKey), Objects::nonNull, response -> {
+			// This should be checking if another locator token exists
+			if (response.getLocator().isPresent()) {
+				return getJobResults(jobId, response.getLocator().get(), objectName, bulkApiKey);
+			} else {
+				LOGGER.info("Delete job {}, it has been processed completely", jobId);
+				deleteJob(jobId);
+				return null;
+			}
+		}).filter(filterPredicate);
 	}
 
 	/**

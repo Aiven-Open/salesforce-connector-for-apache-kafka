@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
@@ -41,7 +42,7 @@ public class BulkApiQueryEngine {
 	private static final int DELTA_BETWEEN_QUERIES = 60000;
 	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
 	private SalesforceSourceConfig config; // NOPMD i will need this
-	private final BulkApiClient apiClient;
+	private final io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
 
 	/**
 	 * The constructor for the BulkApiQueryEngine
@@ -51,7 +52,8 @@ public class BulkApiQueryEngine {
 	 * @param apiClient
 	 *            the BulkApiClient used for communication
 	 */
-	public BulkApiQueryEngine(SalesforceSourceConfig config, BulkApiClient apiClient) {
+	public BulkApiQueryEngine(SalesforceSourceConfig config,
+			io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient) {
 		this.config = config;
 		this.apiClient = apiClient;
 	}
@@ -92,7 +94,13 @@ public class BulkApiQueryEngine {
 			case JobComplete :
 				return apiClient
 						.getResultStream(jobId, null, queryResult.getObject(), queryResult.getCreatedDate(), query)
-						.iterator();
+						.map(barr -> {
+							final NativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> nativeInfo = barr
+									.getResult().getNativeInfo();
+							String topic = String.format("%s%s.%s", config.getTopicPrefix(),
+									nativeInfo.nativeKey().getApiName(), barr.getResult().getObjectName());
+							return new BulkApiNativeInfo(nativeInfo, topic, null, null);
+						}).iterator();
 			case Aborted :
 			case Failed :
 			default :
@@ -100,7 +108,6 @@ public class BulkApiQueryEngine {
 				apiClient.deleteJob(jobId);
 				return Collections.emptyIterator();
 		}
-
 	}
 
 	private String updateQuery(String query, String lastModifiedDate) {

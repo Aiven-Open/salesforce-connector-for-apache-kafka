@@ -16,7 +16,7 @@
 package io.aiven.kafka.connect.salesforce.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
-import io.aiven.kafka.connect.salesforce.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 
 import java.util.HashMap;
 import java.util.List;

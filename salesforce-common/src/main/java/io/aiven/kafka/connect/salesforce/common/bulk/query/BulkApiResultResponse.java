@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@
 package io.aiven.kafka.connect.salesforce.common.bulk.query;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * BulkApiResultResponse includes the contents of the returned csv as well as
@@ -35,14 +34,9 @@ public class BulkApiResultResponse {
 	private Optional<String> locator;
 
 	/**
-	 * The maximum number of records returned in this response
-	 */
-	private OptionalInt numberOfRecords;
-	/**
 	 * Default constructor for the BulkApiResultResponse object
 	 */
 	public BulkApiResultResponse() {
-
 	}
 
 	/**
@@ -53,26 +47,6 @@ public class BulkApiResultResponse {
 	 */
 	public BulkApiResult getResult() {
 		return result;
-	}
-
-	/**
-	 * The number of records that is included in this response
-	 * 
-	 * @return An OptionalInt which may contain the number of records in this
-	 *         response
-	 */
-	public OptionalInt getNumberOfRecords() {
-		return numberOfRecords;
-	}
-
-	/**
-	 * Set the number of records that are in this response
-	 * 
-	 * @param numberOfRecords
-	 *            Set the OptionalInt number of Records in this response
-	 */
-	public void setNumberOfRecords(OptionalInt numberOfRecords) {
-		this.numberOfRecords = numberOfRecords;
 	}
 
 	/**

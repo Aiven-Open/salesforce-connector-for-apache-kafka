@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,9 @@ import java.nio.charset.StandardCharsets;
  * BulkApiNativeInfo is an implementation of AbstractSourceNativeInfo for the
  * Bulk Api.
  */
-public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, String> {
+public class BulkApiNativeInfo
+		extends
+			AbstractSourceNativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> {
 	private final String topic;
 	private final Integer partition;
 	private final Long offset;
@@ -44,7 +46,9 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 * @param offset
 	 *            The offset id to produce the event to
 	 */
-	public BulkApiNativeInfo(NativeInfo<BulkApiKey, String> nativeInfo, String topic, Integer partition, Long offset) {
+	public BulkApiNativeInfo(
+			NativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> nativeInfo, String topic,
+			Integer partition, Long offset) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
