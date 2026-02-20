@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 final class Oauth2LoginTest {
 
-	private io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login login;
+	private Oauth2Login login;
 	private String testUri = "https://localhost";
 
 	@ParameterizedTest
@@ -42,7 +42,7 @@ final class Oauth2LoginTest {
 	void testOauthParametersSetCorrectly(String username, String password, String clientId, String clientSecret) {
 		HttpClient mockClient = mock(HttpClient.class);
 		String credentials = "{\"access_token\":\"abcd\"}";
-		login = new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login(testUri, mockClient);
+		login = new Oauth2Login(testUri, mockClient);
 		HttpResponse<String> response = mock(HttpResponse.class);
 		when(response.statusCode()).thenReturn(200);
 		when(response.body()).thenReturn(credentials);
@@ -58,7 +58,7 @@ final class Oauth2LoginTest {
 	void testNonsuccessStatusCode(int statusCode) {
 		HttpClient mockClient = mock(HttpClient.class);
 		String credentials = "{\"access_token\":\"abcd\"}";
-		login = new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login(testUri, mockClient);
+		login = new Oauth2Login(testUri, mockClient);
 		HttpResponse<String> response = mock(HttpResponse.class);
 		when(response.statusCode()).thenReturn(statusCode);
 		when(response.body()).thenReturn(credentials);
@@ -77,7 +77,7 @@ final class Oauth2LoginTest {
 	void testHttpUriReturnsException() {
 		HttpClient mockClient = mock(HttpClient.class);
 		assertThrowsExactly(IllegalArgumentException.class, () -> {
-			new io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login("localhost:8080", mockClient);
+			new Oauth2Login("localhost:8080", mockClient);
 		});
 
 	}

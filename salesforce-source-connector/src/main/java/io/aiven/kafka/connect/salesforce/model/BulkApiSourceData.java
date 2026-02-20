@@ -21,6 +21,7 @@ import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
@@ -39,9 +40,7 @@ import java.util.stream.Stream;
  * This BulkApiSourceData facilitates sending BulkApi data into a SourceRecord
  * along with creating the OffsetManager entry for it.
  */
-public class BulkApiSourceData
-		extends
-			NativeSourceData<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey> {
+public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 	/**
@@ -91,8 +90,7 @@ public class BulkApiSourceData
 	 * @return A stream of native objects. May be empty but not {@code null}.
 	 */
 	@Override
-	public Stream<BulkApiNativeInfo> getNativeItemStream(
-			io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey offset) {
+	public Stream<BulkApiNativeInfo> getNativeItemStream(final BulkApiKey offset) {
 		return getSalesforceBulkApiStream();
 	}
 
@@ -104,10 +102,8 @@ public class BulkApiSourceData
 	 * @return a valid offset manager entry.
 	 */
 	@Override
-	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Map<String, Object> data) {
-		return new SalesforceOffsetManagerEntry(
-				new io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey("bulkapi", queries.getLast(), ""),
-				data);
+	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
+		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast(), ""), data);
 	}
 
 	/**
@@ -118,9 +114,8 @@ public class BulkApiSourceData
 	 * @return a valid offset manager.
 	 */
 	@Override
-	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(Context context) {
-		return new SalesforceOffsetManagerEntry(
-				(io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey) context.getNativeKey());
+	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Context context) {
+		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey());
 	}
 
 	/**
@@ -131,8 +126,8 @@ public class BulkApiSourceData
 	 * @return The native Key.
 	 */
 	@Override
-	protected io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey parseNativeKey(String keyString) {
-		return io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey.parse(keyString);
+	protected BulkApiKey parseNativeKey(final String keyString) {
+		return BulkApiKey.parse(keyString);
 	}
 
 	/**
@@ -143,8 +138,7 @@ public class BulkApiSourceData
 	 * @return An offset manager key.
 	 */
 	@Override
-	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(
-			io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey nativeKey) {
+	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final BulkApiKey nativeKey) {
 		return new SalesforceOffsetManagerEntry(nativeKey).getManagerKey();
 	}
 

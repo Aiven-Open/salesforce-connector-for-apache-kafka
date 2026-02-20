@@ -18,6 +18,7 @@ package io.aiven.kafka.connect.salesforce.model;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceNativeInfo;
 import io.aiven.commons.kafka.connector.source.task.Context;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -27,9 +28,7 @@ import java.nio.charset.StandardCharsets;
  * BulkApiNativeInfo is an implementation of AbstractSourceNativeInfo for the
  * Bulk Api.
  */
-public class BulkApiNativeInfo
-		extends
-			AbstractSourceNativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> {
+public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, String> {
 	private final String topic;
 	private final Integer partition;
 	private final Long offset;
@@ -46,9 +45,8 @@ public class BulkApiNativeInfo
 	 * @param offset
 	 *            The offset id to produce the event to
 	 */
-	public BulkApiNativeInfo(
-			NativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> nativeInfo, String topic,
-			Integer partition, Long offset) {
+	public BulkApiNativeInfo(final NativeInfo<BulkApiKey, String> nativeInfo, final String topic,
+			final Integer partition, final Long offset) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
