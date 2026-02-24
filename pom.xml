@@ -70,6 +70,11 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>io.aiven.commons</groupId>
+        <artifactId>strings</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -209,6 +214,17 @@
   </dependencies>
 
   <repositories>
+    <repository>
+        <id>central-snapshot</id>
+      <name>sonatype snapshot repository</name>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
     <repository>
       <id>central</id>
       <name>Central Repository</name>
