@@ -213,15 +213,15 @@
 
   <repositories>
     <repository>
+        <id>central-snapshot</id>
+      <name>sonatype snapshot repository</name>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-      <id>central-snapshot</id>
-      <name>sonatype snapshot repository</name>
-      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
     </repository>
     <repository>
       <id>central</id>
