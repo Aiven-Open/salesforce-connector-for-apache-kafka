@@ -16,16 +16,16 @@
 package io.aiven.kafka.connect.salesforce.common.exceptions;
 
 /**
- * Exception thrown when Sales force authentication fails.
+ * An exception that is thrown when the retries are exhausted.
  */
-public class SFAuthException extends Exception {
+public class SFRetryException extends Exception {
 	/**
 	 * Constructor.
 	 * 
 	 * @param message
 	 *            the message.
 	 */
-	public SFAuthException(String message) {
+	public SFRetryException(String message) {
 		super(message);
 	}
 }

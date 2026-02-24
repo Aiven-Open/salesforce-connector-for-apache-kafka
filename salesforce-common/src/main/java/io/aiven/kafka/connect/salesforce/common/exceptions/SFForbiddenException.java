@@ -16,16 +16,16 @@
 package io.aiven.kafka.connect.salesforce.common.exceptions;
 
 /**
- * Exception thrown when Sales force authentication fails.
+ * Exception thrown when authentication fails.
  */
-public class SFAuthException extends Exception {
+public class SFForbiddenException extends Exception {
 	/**
 	 * Constructor.
 	 * 
 	 * @param message
 	 *            the message.
 	 */
-	public SFAuthException(String message) {
+	public SFForbiddenException(String message) {
 		super(message);
 	}
 }

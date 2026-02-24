@@ -93,4 +93,13 @@ public enum JobState {
 		}
 		throw new IllegalArgumentException("Unsupported Job State");
 	}
+
+	/**
+	 * Returns {@code true} if this state is in progress.
+	 * 
+	 * @return {@code true} if this is still in progress, {@code false} otherwise.
+	 */
+	public boolean isExecuting() {
+		return this.equals(InProgress) || this.equals(Submitted);
+	}
 }

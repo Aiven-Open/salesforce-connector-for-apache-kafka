@@ -17,7 +17,14 @@ package io.aiven.kafka.connect.salesforce.common.bulk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.commons.strings.HttpStatus;
+import io.aiven.commons.strings.HttpStrings;
+import io.aiven.commons.timing.AbortTrigger;
+import io.aiven.commons.timing.Backoff;
+import io.aiven.commons.timing.BackoffConfig;
+import io.aiven.commons.timing.SupplierOfLong;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiQuery;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
@@ -27,6 +34,9 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
+import io.aiven.kafka.connect.salesforce.common.exceptions.SFAuthException;
+import io.aiven.kafka.connect.salesforce.common.exceptions.SFForbiddenException;
+import io.aiven.kafka.connect.salesforce.common.exceptions.SFRetryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +44,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Objects;
-import java.util.Random;
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.concurrent.CompletionException;
 
 /**
  * This is a client for communicating with the Salesforce Bulk Api 2.0 It allows
@@ -48,7 +57,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiClient {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(BulkApiClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiClient.class);
 	/**
 	 * The type of operation that is to be made against the Bulk API At the moment
 	 * only Query operations are supported later this may become an enum to also
@@ -94,7 +103,7 @@ public class BulkApiClient {
 	 */
 	protected final static String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
 
-	// When retrieving results you can add maxRecords to specify the maixmum number
+	// When retrieving results you can add maxRecords to specify the maximum number
 	// of records to be returned at a time.
 	// Larger queries of data can mean that a timeout may be returned before
 	// receiving all the data from Salesforce
@@ -105,22 +114,7 @@ public class BulkApiClient {
 	private final Oauth2Login login;
 	private final ObjectMapper mapper = new ObjectMapper();
 	private String accessToken;
-	private Predicate<BulkApiResultResponse> filterPredicate = response -> response.getResult().getContentSize() > 0;
-
 	private final SalesforceCommonConfig config;
-
-	/**
-	 * The maximum jitter random number. Should be a power of 2 for speed.
-	 */
-	public static final int MAX_JITTER = 1024;
-	/**
-	 * To add randomness to the jitter
-	 */
-	public static final int JITTER_SUBTRAHEND = MAX_JITTER / 2;
-	/**
-	 * A random number generator to construct jitter.
-	 */
-	private final Random random = new Random();
 
 	/**
 	 * Constructor
@@ -162,6 +156,20 @@ public class BulkApiClient {
 		this.login = login;
 	}
 
+	private Optional<QueryResponse> parseJsonResponse(ExecutionResult executionResult) {
+		if (executionResult.hasException()) {
+			LOGGER.error("Unable to complete request: {}", executionResult.exception.getMessage(),
+					executionResult.exception);
+		} else {
+			try {
+				return Optional.of(mapper.readValue(executionResult.response().body(), QueryResponse.class));
+			} catch (JsonProcessingException e) {
+				LOGGER.error("Unable to parse response: {}", e.getMessage(), e);
+			}
+		}
+		return Optional.empty();
+	}
+
 	/**
 	 * Submits a query to the Salesforce Bulk Api v2 throws an exception if unable
 	 * to submit the query to salesforce
@@ -170,51 +178,67 @@ public class BulkApiClient {
 	 *            Query written in SOQL to submit for bulk query
 	 * @return Query Job Id
 	 */
-	public String submitQueryJob(String query) {
+	public Optional<String> submitQueryJob(String query) {
 		try {
 			String queryObject = mapper.writeValueAsString(new BulkApiQuery(QUERY_OPERATION, query));
 			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + submitJobUri,
 					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion()))
 					.POST(HttpRequest.BodyPublishers.ofString(queryObject));
 
-			HttpResponse<String> response = executeHttpRequest(request, 1);
-			if (isSuccessStatusCode(response.statusCode())) {
-				QueryResponse queryResponse = getQueryResponseFromJson(response);
-				return queryResponse.getId();
-			}
-
-			return null;
-			// TODO change to return the Job Id
-		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
-			throw new RuntimeException(e);
+			return executeHttpRequest(request).thenApply(this::parseJsonResponse).join().map(QueryResponse::getId);
+		} catch (JsonProcessingException e) {
+			LOGGER.error("Unable to create query: {}", e.getMessage(), e);
+			return Optional.empty();
 		}
-
 	}
 
 	/**
-	 * Checks if a job is ready to have its results retrieved.
+	 * Polls the job status and returns a QueryResponse if the query was
+	 * successfull. If not successful, an empty Optional is returned.
 	 * 
 	 * @param jobId
 	 *            The unique id of the job that is being queried
-	 * @return true if ready to return results, false if it is still being processed
+	 * @return a QueryResponse if the query was successfull, an empty Optional if
+	 *         not.
 	 */
-	public QueryResponse queryJobStatus(String jobId) {
+	public Optional<QueryResponse> queryJobStatus(String jobId) {
 		try {
 			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri,
 					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion(), jobId)).GET();
-			HttpResponse<String> response = executeHttpRequest(request, 1);
-
-			return getQueryResponseFromJson(response);
-			// TODO change to return if the Job State is JobComplete
-		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
-			throw new RuntimeException(e);
+			return executeHttpRequest(request).thenApply(this::parseJsonResponse).join();
+		} catch (CancellationException | CompletionException e) {
+			LOGGER.error("Query submission failed: {}", e.getMessage(), e);
+			return Optional.empty();
 		}
 	}
 
-	private QueryResponse getQueryResponseFromJson(HttpResponse<String> response) throws JsonProcessingException {
-		return mapper.readValue(response.body(), QueryResponse.class);
+	/**
+	 * Create a BUlkApiResulResponse from an ExecutionResponse.
+	 * 
+	 * @param executionResult
+	 *            the ExecutionResponse to process.
+	 * @param objectName
+	 *            the ObjectName that we queried.
+	 * @param bulkApiKey
+	 *            the BulkApiKey that was used in the query.
+	 * @return an n Optional bulkApiResultResponse if there was no exception.
+	 */
+	BulkApiResultResponse createResponse(final ExecutionResult executionResult, final String objectName,
+			final BulkApiKey bulkApiKey) {
+		if (executionResult.hasException()) {
+			LOGGER.error("Unable to complete request: {}", executionResult.exception.getMessage(),
+					executionResult.exception);
+			return null;
+		} else {
+			HttpResponse<String> response = executionResult.response;
+			BulkApiResultResponse resp = new BulkApiResultResponse();
+			resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
+			resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
+			resp.setResult(
+					new BulkApiResult(new NativeInfo<BulkApiKey, String>(bulkApiKey, response.body()), objectName));
+			return resp;
+		}
 	}
-
 	/**
 	 * Checks if a job is ready to have its results retrieved.
 	 * 
@@ -227,59 +251,16 @@ public class BulkApiClient {
 	 *            The objectName the query results are coming from
 	 * @param bulkApiKey
 	 *            The native key for this query
-	 * @return True if ready to return results, False if it is still being processed
+	 * @return BulkApiResponseResult if available, {@code null} if not.
 	 */
-	public BulkApiResultResponse getJobResults(String jobId, String locator, String objectName, BulkApiKey bulkApiKey) {
-		try {
-			// This needs to be able to handle multiple pages
-			HttpRequest.Builder request = HttpRequest
-					.newBuilder(
-							buildResultUri(config.getSalesforceUri(), jobId, locator, config.getSalesforceMaxRecords()))
-					.header(ACCEPT, TEXT_CSV).GET();
-			HttpResponse<String> response = executeHttpRequest(request, 1);
-			BulkApiResultResponse resp = new BulkApiResultResponse();
-			if (isSuccessStatusCode(response.statusCode())) {
-				resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
-				resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
-				resp.setResult(
-						new BulkApiResult(new NativeInfo<BulkApiKey, String>(bulkApiKey, response.body()), objectName));
-			}
-			return resp;
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
-	/**
-	 * Creates a stream from which we will create an iterator.
-	 * 
-	 * @param jobId
-	 *            the jobId to begin returning results from
-	 * @param locator
-	 *            the locator for the next set of results required
-	 * @param objectName
-	 *            the name of the Salesforce object being queried
-	 * @param queryExecutionTime
-	 *            The original time the query was created at
-	 * @param query
-	 *            The query that is being processed
-	 * @return a stream of BulkApiSourceRecords
-	 */
-	public Stream<BulkApiResultResponse> getResultStream(String jobId, String locator, String objectName,
-			String queryExecutionTime, String query) {
-
-		BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query, queryExecutionTime);
-		return Stream.iterate(getJobResults(jobId, locator, objectName, bulkApiKey), Objects::nonNull, response -> {
-			// This should be checking if another locator token exists
-			if (response.getLocator().isPresent()) {
-				return getJobResults(jobId, response.getLocator().get(), objectName, bulkApiKey);
-			} else {
-				LOGGER.info("Delete job {}, it has been processed completely", jobId);
-				deleteJob(jobId);
-				return null;
-			}
-		}).filter(filterPredicate);
+	public CompletableFuture<BulkApiResultResponse> getJobResults(final String jobId, final String locator,
+			final String objectName, final BulkApiKey bulkApiKey) {
+		// This needs to be able to handle multiple pages
+		HttpRequest.Builder request = HttpRequest
+				.newBuilder(buildResultUri(config.getSalesforceUri(), jobId, locator, config.getSalesforceMaxRecords()))
+				.header(ACCEPT, TEXT_CSV).GET();
+		return executeHttpRequest(request)
+				.thenApply(executionResult -> this.createResponse(executionResult, objectName, bulkApiKey));
 	}
 
 	/**
@@ -310,23 +291,23 @@ public class BulkApiClient {
 	}
 
 	/**
-	 * Delete an existing job
+	 * Attempts to delete the job. Reports success as DEBUG log entry and failure as
+	 * WARN log entry.
 	 *
 	 * @param jobId
-	 *            The unique id of the job that is being queried
+	 *            The unique id of the job that is being deleted
+	 * @return a future to test when deletion is complete
 	 */
-	public void deleteJob(String jobId) {
-		try {
-			HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri,
-					EMPTY_QUERY_PARAM, config.getSalesforceApiVersion(), jobId)).DELETE();
-			HttpResponse<String> response = executeHttpRequest(request, 1);
-
-			response.statusCode();
-
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
-		}
-
+	public CompletableFuture<Void> deleteJob(String jobId) {
+		HttpRequest.Builder request = HttpRequest.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri,
+				EMPTY_QUERY_PARAM, config.getSalesforceApiVersion(), jobId)).DELETE();
+		return executeHttpRequest(request).thenAccept(executionResult -> {
+			if (executionResult.isSuccess()) {
+				LOGGER.debug("JobId {} deleted", jobId);
+			} else {
+				LOGGER.warn("Deletion of JobId {} failed: {}", jobId, executionResult.getMessage());
+			}
+		});
 	}
 
 	/**
@@ -334,22 +315,178 @@ public class BulkApiClient {
 	 * InProgress to abort
 	 *
 	 * @param jobId
-	 *            The unique id of the job that is being queried
+	 *            The unique id of the job that is being queried.
+	 * @return A future to detect when job is aborted..
 	 */
-	public void abortJob(String jobId) {
+	public CompletableFuture<Void> abortJob(String jobId) {
 		try {
 			String abortPayload = mapper.writeValueAsString(new AbortJob());
 			HttpRequest.Builder request = HttpRequest
 					.newBuilder(getUriFrom(config.getSalesforceUri() + queryJobByIdUri, EMPTY_QUERY_PARAM,
 							config.getSalesforceApiVersion(), jobId))
 					.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload));
-			HttpResponse<String> response = executeHttpRequest(request, 1);
-
-			response.statusCode();
-
-		} catch (InterruptedException | ExecutionException | JsonProcessingException e) {
-			throw new RuntimeException(e);
+			return executeHttpRequest(request).thenAccept(executionResult -> {
+				if (executionResult.isSuccess()) {
+					LOGGER.debug("JobId {} aborted", jobId);
+				} else {
+					LOGGER.warn("Abort of JobId {} failed: {}", jobId, executionResult.getMessage());
+				}
+			});
+		} catch (JsonProcessingException e) {
+			LOGGER.error("Could not create abort payload {}", e.getMessage(), e);
+			return CompletableFuture.failedFuture(e);
 		}
+	}
+
+	/**
+	 * The result of an execution request to Salesforce.
+	 * 
+	 * @param response
+	 *            the response if there was no exception.
+	 * @param exception
+	 *            the throwable if there was an error.
+	 */
+	public record ExecutionResult(HttpResponse<String> response, Throwable exception) {
+		/**
+		 * Returns {@code trye} if this result has an exception,{@code false} otherwise.
+		 * 
+		 * @return {@code trye} if this result has an exception,{@code false} otherwise.
+		 */
+		boolean hasException() {
+			return exception != null;
+		}
+
+		/**
+		 * Check if a supplied status code is in the [200 - 299] range.
+		 *
+		 * @return {@code true} if success, {@code false} if a failure
+		 */
+		boolean isSuccess() {
+			return response != null && response.statusCode() >= 200 && response.statusCode() <= 299;
+		}
+
+		/**
+		 * Check if a supplied status code is an authentication error
+		 *
+		 * @return {@code true} if success, {@code false} if a failure
+		 */
+		boolean isUnauthorized() {
+			return response != null && response.statusCode() == HttpStatus.SC_UNAUTHORIZED;
+		}
+
+		/**
+		 * Check if a supplied status code is an authorization (forbidden) error
+		 *
+		 *
+		 * @return {@code true} if success, {@code false} if a failure
+		 */
+		boolean isForbidden() {
+			return response != null && response.statusCode() == HttpStatus.SC_FORBIDDEN;
+		}
+
+		/**
+		 * Checks if the supplied status code is a cuser data error.
+		 * 
+		 * @return true if the error code is in the [400 - 499] range.
+		 */
+		boolean isClientError() {
+			return response != null && response.statusCode() >= 400 && response.statusCode() <= 499;
+		}
+
+		/**
+		 * Checks if the supplied status code is a cuser data error.
+		 * 
+		 * @return true if the error code is in the [500 - 599] range.
+		 */
+		boolean isServerError() {
+			return response != null && response.statusCode() >= 500 && response.statusCode() <= 599;
+		}
+
+		/**
+		 * Gets the message associated with the result state. If an exception was thrown
+		 * this method will return the execution message. Otherwise, this method returns
+		 * the text associated with the response status code.
+		 * 
+		 * @return a message string.
+		 */
+		public String getMessage() {
+			if (hasException()) {
+				return exception.getMessage();
+			}
+			return HttpStrings.getReason(response.statusCode());
+		}
+	}
+
+	/**
+	 * Handles the respons from the Salesforce query. If there was an exception the
+	 * ExecutionResult is immediately returned. If the query was a success the
+	 * ExecutionResult is immediately returned. In all other cases the Execution
+	 * result is retried until either of the above cases is met or the maximum
+	 * number of attempts is reached.
+	 *
+	 * @param response
+	 *            the response if the query was successfull, otherwise {@code null}.
+	 * @param exception
+	 *            the exception if the query was not successfull, otherwise
+	 *            {@code null}.
+	 * @return an ExecutionResult.
+	 */
+	private ExecutionResult responseHandler(HttpResponse<String> response, Throwable exception) {
+		ExecutionResult result = new ExecutionResult(response, exception);
+		Duration maxBackoffTime = Duration.ofMinutes(3);
+
+		int attempt = 0;
+
+		final Backoff backoff = new Backoff(new BackoffConfig() {
+			@Override
+			public SupplierOfLong getSupplierOfTimeRemaining() {
+				return maxBackoffTime::toMillis;
+			}
+
+			@Override
+			public AbortTrigger getAbortTrigger() {
+				return null;
+			}
+
+			@Override
+			public boolean applyTimerRule() {
+				return false;
+			}
+		});
+
+		// TODO should have a list of retryable errors and only retry them.
+		// see
+		while (attempt <= config.getSalesforceMaxRetries()) {
+			if (result.exception() != null) {
+				return result;
+			}
+
+			if (result.isSuccess()) {
+				return result;
+			}
+
+			LOGGER.debug(
+					"Unsuccessful attempt to query bulk api, attempt number: {}, response code: {}, response message: {}",
+					++attempt, result.response().statusCode(), result.response().body());
+
+			if (result.isUnauthorized()) {
+				try {
+					authenticate();
+				} catch (SFAuthException e) {
+					return new ExecutionResult(null, e);
+				}
+			} else if (result.isForbidden()) {
+				return new ExecutionResult(null, new SFForbiddenException(
+						String.format("Forbidden from accessing this URI : %s", result.response().request().uri())));
+			}
+
+			backoff.cleanDelay();
+			result = client.sendAsync(response.request(), HttpResponse.BodyHandlers.ofString())
+					.handle(ExecutionResult::new).join();
+		}
+
+		return new ExecutionResult(null, new SFRetryException(
+				String.format("Could not complete request after %s retries", config.getSalesforceMaxRetries())));
 
 	}
 
@@ -359,49 +496,26 @@ public class BulkApiClient {
 	 * 
 	 * @param request
 	 *            The request to be executed against the Bulk Api 2.X
-	 * @param attempt
-	 *            The number of retries that this particular request has made
-	 *            previously to execute the http request
 	 * @return The response from the request made to the API
 	 */
-	private HttpResponse<String> executeHttpRequest(HttpRequest.Builder request, int attempt)
-			throws InterruptedException, ExecutionException {
-		if (attempt > config.getSalesforceMaxRetries()) {
-			throw new RuntimeException("Too many retries");
+	@VisibleForTesting
+	CompletableFuture<ExecutionResult> executeHttpRequest(HttpRequest.Builder request) {
+		try {
+			return client
+					.sendAsync(
+							request.header("Authorization", BEARER + getAccessToken())
+									.header("Content-Type", "application/json").build(),
+							HttpResponse.BodyHandlers.ofString())
+					.handle(this::responseHandler);
+		} catch (SFAuthException e) {
+			return CompletableFuture.completedFuture(new ExecutionResult(null, e));
 		}
-		CompletableFuture<HttpResponse<String>> future = client
-				.sendAsync(
-						request.header("Authorization", BEARER + getAccessToken())
-								.header("Content-Type", "application/json").build(),
-						HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = future.get();
-
-		if (isSuccessStatusCode(response.statusCode())) {
-			return response;
-		} else {
-			LOGGER.warn(
-					"Unsuccessful attempt to query bulk api, attempt number: {}, response code: {}, response message: {}",
-					attempt, response.statusCode(), response.body());
-		}
-
-		if (isAuthenticationError(response.statusCode())) {
-			// attempt to update status code;
-			authenticate();
-		} else if (isForbiddenError(response.statusCode())) {
-			throw new RuntimeException(
-					String.format("Forbidden from accessing this URI : %s", response.request().uri()));
-		} else {
-			Thread.sleep(timeWithJitter(++attempt));
-		}
-
-		return executeHttpRequest(request, attempt);
 	}
 
 	/**
 	 *
 	 * @param uri
-	 *            The base which is used to build the URI e.g
+	 *            The base which is used to build the URI e.g.
 	 *            https://my.domain.salesforce.com
 	 * @param queryParams
 	 *            Any additional Query params that should be added at the end of a
@@ -409,73 +523,35 @@ public class BulkApiClient {
 	 *            format of "name=value&name2=value2"
 	 * @param pathNameParts
 	 *            All the parts that are required to fill the path in the url
-	 * @return
+	 * @return THe uri that makes the specified request.
 	 */
 	private URI getUriFrom(String uri, String queryParams, String... pathNameParts) {
 		queryParams = "?" + queryParams;
-		return URI.create(
-				String.format(uri, pathNameParts) + (queryParams.length() > 1 ? queryParams : EMPTY_QUERY_PARAM));
-	}
-
-	/**
-	 * Check if a supplied status code is a 2xx success
-	 * 
-	 * @param statusCode
-	 *            HttpStatusCode that is recieved from a http operation
-	 * @return Boolean True if success, False if a failure
-	 */
-	private boolean isSuccessStatusCode(int statusCode) {
-		return statusCode >= 200 && statusCode <= 299;
-	}
-
-	/**
-	 * Check if a supplied status code is an authentication error
-	 * 
-	 * @param statusCode
-	 *            HttpStatusCode that is received from an http operation
-	 * @return Boolean True if success, False if a failure
-	 */
-	private boolean isAuthenticationError(int statusCode) {
-		return statusCode == 401;
-	}
-
-	/**
-	 * Check if a supplied status code is an authorization (forbidden) error
-	 * 
-	 * @param statusCode
-	 *            HttpStatusCode that is received from an http operation
-	 * @return Boolean True if success, False if a failure
-	 */
-	private boolean isForbiddenError(int statusCode) {
-		return statusCode == 403;
-	}
-
-	/**
-	 * Calculate the wait time with Jitter before retrying an operation This should
-	 * be replaced with BackOff class from aiven-commons
-	 *
-	 * @param waitCount
-	 *            the count of how many times the operation has been tried already
-	 * @return Boolean True if success, False if a failure
-	 */
-	private long timeWithJitter(int waitCount) {
-		// generate approx +/- 0.512 seconds of jitter
-		final int jitter = random.nextInt(MAX_JITTER) - JITTER_SUBTRAHEND;
-		return (long) Math.abs(Math.pow(2, waitCount) + jitter);
+		return URI.create(String.format(uri, (Object[]) pathNameParts)
+				+ (queryParams.length() > 1 ? queryParams : EMPTY_QUERY_PARAM));
 	}
 
 	/**
 	 * Authenticate with Salesforce will throw an error on failure to authenticate
+	 * 
+	 * @throws SFAuthException
+	 *             on authentication error.
 	 */
-	public void authenticate() {
+	public void authenticate() throws SFAuthException {
 		accessToken = login.getAccessToken(config.getOauthClientId(), config.getOauthClientSecret());
 		if (accessToken == null) {
-			throw new RuntimeException(
+			throw new SFAuthException(
 					"Unable to authenticate with Salesforce please review your configuration settings and try again.");
 		}
 	}
 
-	private String getAccessToken() {
+	/**
+	 * Get the access token.
+	 * 
+	 * @throws SFAuthException
+	 *             on authentication error.
+	 */
+	private String getAccessToken() throws SFAuthException {
 		if (accessToken == null) {
 			authenticate();
 		}
