@@ -26,11 +26,11 @@
   </parent>
 
   <groupId>io.aiven.kafka.connect</groupId>
-  <artifactId>salesforce-connector-for-apache-kafka</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>aiven-apache-kafka-connectors-for-salesforce</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>salesforce-connector-for-apache-kafka</name>
+  <name>Aiven Apache Kafka Connectors for Salesforce</name>
   <url>https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</url>
 
   <modules>

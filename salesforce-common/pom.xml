@@ -21,14 +21,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.aiven.kafka.connect</groupId>
-    <artifactId>salesforce-connector-for-apache-kafka</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>aiven-apache-kafka-connectors-for-salesforce</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>salesforce-connector-common</artifactId>
+  <artifactId>aiven-apache-kafka-connector-common-for-salesforce</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>Common properties shared by sink and source connectors</name>
-  <description>Kafka connector common config and utilities for Salesforce</description>
+  <name>Aiven Apache Kafka Connector Common Library for Salesforce</name>
+  <description>A library of common code to support the Aiven Apache Kafka connectors for Salesforce</description>
   <distributionManagement>
     <snapshotRepository>
       <id>central-snapshot</id>
