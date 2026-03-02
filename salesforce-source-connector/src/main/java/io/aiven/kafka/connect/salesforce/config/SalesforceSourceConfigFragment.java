@@ -69,7 +69,7 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 		String group = "SalesForce Source";
 		int groupOrder = 0;
 		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
-				.artifactId("salesforce-source-connector");
+				.artifactId("aiven-apache-kafka-source-connector-for-salesforce");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(group).orderInGroup(++groupOrder)
 				.since(siBuilder.version("1.0.0").build().setVersionOnly()).type(ConfigDef.Type.STRING)
 				.importance(ConfigDef.Importance.MEDIUM)

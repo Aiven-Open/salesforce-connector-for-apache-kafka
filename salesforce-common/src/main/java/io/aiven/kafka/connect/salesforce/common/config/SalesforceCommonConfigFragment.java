@@ -138,7 +138,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 	public static void update(final ConfigDef configDef) {
 		var salesforceGroupCounter = 0;
 		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
-				.artifactId("salesforce-connector-for-kafka-connect");
+				.artifactId("aiven-apache-kafka-connector-common-for-salesforce");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_MAX_RECORDS).group(GROUP_SALESFORCE)
 				.orderInGroup(++salesforceGroupCounter).since(siBuilder.version("1.0.0").build())
 				.defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT).type(ConfigDef.Type.INT)
