@@ -16,7 +16,7 @@
 
     SPDX-License-Identifier: Apache-2
 -->
-# Aiven Kafka Source Connector for Salesforce configuration options
+# Aiven Apache Kafka&reg; Source Connector for Salesforce&trade; configuration options
 
 All the configuration options are listed below in alphabetical order.
 
@@ -33,7 +33,8 @@ ${esc.hash}${esc.hash} ${configKey.displayName}
 
 - Default value: ${configKey.getDefaultValue()|"none"}
 - Type:  $configKey.type
-#if (${configKey.validator})- Valid values:  ${configKey.validator|"no restrictions"}#end
+#if (${configKey.validator})- Valid values:  ${configKey.validator|"no restrictions"}
+#end
 - Importance: $configKey.importance
 
     ${extendedConfigDef.markdownEscape(${configKey.documentation})}

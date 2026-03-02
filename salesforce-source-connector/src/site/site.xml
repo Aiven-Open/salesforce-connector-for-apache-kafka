@@ -20,12 +20,15 @@
 <site xmlns="http://maven.apache.org/SITE/2.0.0"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://maven.apache.org/SITE/2.0.0 https://maven.apache.org/xsd/site-2.0.0.xsd"
-      name="Aiven Kafka Source Connector for Salesforce">
+      name="Aiven Apache Kafka Source Connector for Salesforce">
 
 
     <poweredBy>
         <logo name="Aiven" href="https://aiven.io/">
             <image src="https://aiven.io/remix-assets/logo-aiven-DLhBz3IO.svg"/>
+        </logo>
+        <logo name="Apache Kafka&reg;" href="https://kafka.apache.org/">
+            <image src="https://kafka.apache.org/logos/kafka_logo--simple.png"/>
         </logo>
     </poweredBy>
     <body>
