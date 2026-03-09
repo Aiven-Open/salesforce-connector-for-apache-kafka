@@ -25,7 +25,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 public final class BulkApiResult {
 
 	/**
-	 * An object in Salesforce is the table name, thie ObjectName is the object name
+	 * An object in Salesforce is the table name, the ObjectName is the object name
 	 * from the query submitted to the Salesforce bulk api.
 	 */
 	private final String objectName;
