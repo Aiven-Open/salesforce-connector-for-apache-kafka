@@ -187,10 +187,10 @@ public class BulkApiQueryEngine {
 		@Override
 		public BulkApiNativeInfo next() {
 			if (hasNext()) {
-				// mo exception thown here because hasNext() resolves the future.
+				// mo exception thrown here because hasNext() resolves the future.
 				BulkApiResultResponse bulkApiResultResponse = bulkApiResultResponseFuture.join();
 				final NativeInfo<BulkApiKey, String> nativeInfo = bulkApiResultResponse.getResult().getNativeInfo();
-				String topic = String.format("%s%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
+				String topic = String.format("%s.%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
 						bulkApiResultResponse.getResult().getObjectName());
 				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null);
 				if (bulkApiResultResponse.getLocator().isPresent()) {
