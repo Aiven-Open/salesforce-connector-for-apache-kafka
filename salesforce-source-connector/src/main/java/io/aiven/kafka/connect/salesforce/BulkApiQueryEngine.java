@@ -97,7 +97,7 @@ public class BulkApiQueryEngine {
 						.map(barr -> {
 							final NativeInfo<io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey, String> nativeInfo = barr
 									.getResult().getNativeInfo();
-							String topic = String.format("%s%s.%s", config.getTopicPrefix(),
+							String topic = String.format("%s.%s.%s", config.getTopicPrefix(),
 									nativeInfo.nativeKey().getApiName(), barr.getResult().getObjectName());
 							return new BulkApiNativeInfo(nativeInfo, topic, null, null);
 						}).iterator();
