@@ -93,7 +93,6 @@ public class BulkApiClientTest {
 
 	@Test
 	public void testAutomaticRetryOfCredentials() throws JsonProcessingException {
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 		apiClient = createClient();
 		HttpResponse<Object> resp401 = new FakeHttpResponse(HttpStatus.SC_UNAUTHORIZED) {
 			// unauthorized processing requires the request.
@@ -103,16 +102,6 @@ public class BulkApiClientTest {
 			}
 		};
 		CompletableFuture<HttpResponse<Object>> future401 = CompletableFuture.completedFuture(resp401);
-========
-		apiClient = new io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient(new SalesforceSourceConfig(props), client, login);
-		HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
-		// return 401 three times as its different checks for success and authentication
-		// failure and the success check prints the status code so it gets returned
-		// there as well.
-		when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
-		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(TEST_ACCESS_TOKEN);
-
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 		QueryResponse response = new QueryResponse();
 		response.setId(TEST_JOB_ID);
 		response.setObject("Account");
@@ -143,7 +132,6 @@ public class BulkApiClientTest {
 	public void testRetryExpectedNumberOfTimes() throws JsonProcessingException, URISyntaxException {
 		SalesforceCommonConfigFragment.setter(props).maxRetries(3);
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 		apiClient = createClient();
 		HttpResponse<Object> resp500 = new FakeHttpResponse(HttpStatus.SC_INTERNAL_SERVER_ERROR) {
 			// error processing requires the request.
@@ -153,10 +141,6 @@ public class BulkApiClientTest {
 			}
 		};
 		CompletableFuture<HttpResponse<Object>> future500 = CompletableFuture.completedFuture(resp500);
-========
-		apiClient = new io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient(new SalesforceSourceConfig(props), client, login);
-		HttpResponse<Object> mockQueryResponse = Mockito.mock(HttpResponse.class);
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 
 		when(client.sendAsync(any(HttpRequest.class), any())).thenReturn(future500).thenReturn(future500)
 				.thenReturn(future500).thenReturn(future500);
@@ -177,11 +161,7 @@ public class BulkApiClientTest {
 
 	@Test
 	public void testDeleteJob() throws JsonProcessingException {
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 		apiClient = createClient();
-========
-		apiClient = new io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient(new SalesforceSourceConfig(props), client, login);
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 
 		QueryResponse response = new QueryResponse();
 		response.setId(TEST_JOB_ID);
@@ -197,12 +177,8 @@ public class BulkApiClientTest {
 		// Needs to be updated to initialise the access token correctly.
 		var deleteRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
 								SALESFORCE_API_VERSION, jobId)))
-========
-						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).DELETE()
 				.build();
 
@@ -219,11 +195,7 @@ public class BulkApiClientTest {
 
 	@Test
 	public void testAbortJob() throws JsonProcessingException {
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 		apiClient = createClient();
-========
-		apiClient = new io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient(new SalesforceSourceConfig(props), client, login);
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
 		QueryResponse response = new QueryResponse();
@@ -242,12 +214,8 @@ public class BulkApiClientTest {
 		// Needs to be updated to initialise the access token correctly.
 		var abortRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
 								SALESFORCE_API_VERSION, jobId)))
-========
-						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN)
 				.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
 
@@ -265,11 +233,7 @@ public class BulkApiClientTest {
 	@ParameterizedTest
 	@EnumSource(JobState.class)
 	public void testQueryJobStatus(JobState state) throws JsonProcessingException {
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 		apiClient = createClient();
-========
-		apiClient = new io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient(new SalesforceSourceConfig(props), client, login);
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
@@ -299,12 +263,8 @@ public class BulkApiClientTest {
 
 		var jobStatusRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-<<<<<<<< HEAD:common/src/test/java/io/aiven/kafka/connect/salesforce/common/bulk/BulkApiClientTest.java
 						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
 								SALESFORCE_API_VERSION, jobId)))
-========
-						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
->>>>>>>> 971bd6b (replicated pr 14):common/src/test/java/io/aiven/kafka/connect/salesforce/BulkApiClientTest.java
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).GET()
 				.build();
 

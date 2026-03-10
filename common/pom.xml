@@ -50,10 +50,6 @@
       <version>1.0.0-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>io.aiven.commons</groupId>
-      <artifactId>strings</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
