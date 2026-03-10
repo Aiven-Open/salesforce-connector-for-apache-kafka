@@ -6,7 +6,7 @@
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
@@ -26,16 +26,17 @@
   </parent>
 
   <groupId>io.aiven.kafka.connect</groupId>
-  <artifactId>salesforce-connector-for-apache-kafka</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>connectors-for-salesforce</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>salesforce-connector-for-apache-kafka</name>
+  <name>Aiven connectors for Salesforce on Apache Kafka</name>
   <url>https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</url>
 
   <modules>
-    <module>salesforce-source-connector</module>
-    <module>salesforce-common</module>
+    <module>common</module>
+    <module>sink</module>
+    <module>source</module>
   </modules>
 
   <distributionManagement>
@@ -72,8 +73,10 @@
       </dependency>
       <dependency>
         <groupId>io.aiven.commons</groupId>
-        <artifactId>strings</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <artifactId>aiven-kafka-connector-framework</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -84,44 +87,34 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Source: https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <version>5.21.0</version>
       <scope>test</scope>
     </dependency>
-    <!-- Optionally: parameterized tests support -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Source: https://mvnrepository.com/artifact/org.assertj/assertj-core -->
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>3.27.6</version>
       <scope>test</scope>
     </dependency>
-
-    <!--- Jackson-->
-    <!-- Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind -->
     <dependency>
       <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>3.0.3</version>
     </dependency>
-
-    <!-- Mockito -->
-    <!-- Source: https://mvnrepository.com/artifact/org.mockito/mockito-core -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <version>5.21.0</version>
       <scope>test</scope>
     </dependency>
-
     <!--LOGGING-->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -168,15 +161,12 @@
       <artifactId>kafka-common-connector-framework</artifactId>
       <version>1.0.0-SNAPSHOT</version>
     </dependency>
-    <!-- kafka clients -->
-    <!-- Source: https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-clients</artifactId>
       <version>4.1.1</version>
       <scope>compile</scope>
     </dependency>
-    <!-- Source: https://mvnrepository.com/artifact/org.apache.kafka/connect-api -->
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>connect-api</artifactId>
@@ -190,20 +180,17 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Source: https://mvnrepository.com/artifact/commons-io/commons-io -->
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.21.0</version>
       <scope>compile</scope>
     </dependency>
-    <!-- csv commons -->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-csv</artifactId>
       <version>1.14.1</version>
     </dependency>
-
     <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
@@ -212,22 +199,6 @@
   </dependencies>
 
   <repositories>
-    <repository>
-        <id>central-snapshot</id>
-      <name>sonatype snapshot repository</name>
-        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>central</id>
-      <name>Central Repository</name>
-      <url>https://repo.maven.apache.org/maven2</url>
-    </repository>
     <!-- This repo is for avro converter -->
     <repository>
       <releases>
@@ -273,28 +244,8 @@
             <configuration>
               <inputExcludes>
                 <expression>**/*.md</expression>
-                <!-- Test csv files -->
                 <expression>**/test/**/*.csv</expression>
               </inputExcludes>
-              <inputIncludes>
-                <include>salesforce-common/**.java</include>
-                <include>salesforce-source-connector/**.java</include>
-              </inputIncludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>write-project-properties</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <outputFile>${project.build.outputDirectory}/app.properties</outputFile>
             </configuration>
           </execution>
         </executions>
