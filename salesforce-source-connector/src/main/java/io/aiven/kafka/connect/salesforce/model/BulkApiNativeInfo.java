@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package io.aiven.kafka.connect.salesforce.model;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceNativeInfo;
 import io.aiven.commons.kafka.connector.source.task.Context;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -44,7 +45,8 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 * @param offset
 	 *            The offset id to produce the event to
 	 */
-	public BulkApiNativeInfo(NativeInfo<BulkApiKey, String> nativeInfo, String topic, Integer partition, Long offset) {
+	public BulkApiNativeInfo(final NativeInfo<BulkApiKey, String> nativeInfo, final String topic,
+			final Integer partition, final Long offset) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;

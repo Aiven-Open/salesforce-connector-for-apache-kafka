@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect.salesforce.common.bulk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +23,9 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFra
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.common.utils.TestingSalesforceCommonConfig;
+
+import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +34,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -39,8 +42,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -68,7 +71,7 @@ public class BulkApiClientTest {
 	private HttpClient client;
 
 	@InjectMocks
-	private BulkApiClient apiClient;
+	private io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
 
 	private Map<String, String> props;
 
@@ -84,26 +87,39 @@ public class BulkApiClientTest {
 				.oauthUri(TEST_OAUTH_URI).uri(TEST_SALESFORCE_URI);
 	}
 
+	private BulkApiClient createClient() {
+		return new BulkApiClient(new TestingSalesforceCommonConfig(props), client, login);
+	}
+
 	@Test
 	public void testAutomaticRetryOfCredentials() throws JsonProcessingException {
-		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
-		HttpResponse mockQueryResponse = Mockito.mock(HttpResponse.class);
-		// return 401 three times as its different checks for success and authentication
-		// failure and the success check prints the status code so it gets returned
-		// there as well.
-		when(mockQueryResponse.statusCode()).thenReturn(401).thenReturn(401).thenReturn(401).thenReturn(200);
-		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(TEST_ACCESS_TOKEN);
-
+		apiClient = createClient();
+		HttpResponse<Object> resp401 = new FakeHttpResponse(HttpStatus.SC_UNAUTHORIZED) {
+			// unauthorized processing requires the request.
+			@Override
+			public HttpRequest request() {
+				return mock(HttpRequest.class);
+			}
+		};
+		CompletableFuture<HttpResponse<Object>> future401 = CompletableFuture.completedFuture(resp401);
 		QueryResponse response = new QueryResponse();
 		response.setId(TEST_JOB_ID);
 		response.setObject("Account");
-		when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
+		String body = mapper.writeValueAsString(response);
+		HttpResponse<Object> resp200 = new FakeHttpResponse(HttpStatus.SC_OK) {
+			// OK processing requires the body.
+			@Override
+			public String body() {
+				return body;
+			}
+		};
+		CompletableFuture<HttpResponse<Object>> future200 = CompletableFuture.completedFuture(resp200);
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(TEST_ACCESS_TOKEN);
 
-		when(client.sendAsync(any(HttpRequest.class), any()))
-				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
+		when(client.sendAsync(any(HttpRequest.class), any())).thenReturn(future401).thenReturn(future200);
 
-		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
-		assertEquals(TEST_JOB_ID, jobId);
+		assertThat(apiClient.submitQueryJob("SELECT * FROM ACCOUNT")).hasValue(TEST_JOB_ID);
+
 		// Initial accessToken plus retry
 		verify(login, times(2)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
@@ -113,41 +129,39 @@ public class BulkApiClientTest {
 	}
 
 	@Test
-	public void testRetryExpectedNumberOfTimes() throws JsonProcessingException {
-		int expectedNumberOfRetries = 3;
-		SalesforceCommonConfigFragment.setter(props).maxRetries(expectedNumberOfRetries);
+	public void testRetryExpectedNumberOfTimes() throws JsonProcessingException, URISyntaxException {
+		SalesforceCommonConfigFragment.setter(props).maxRetries(3);
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
-		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
-		HttpResponse<Object> mockQueryResponse = Mockito.mock(HttpResponse.class);
+		apiClient = createClient();
+		HttpResponse<Object> resp500 = new FakeHttpResponse(HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+			// error processing requires the request.
+			@Override
+			public HttpRequest request() {
+				return mock(HttpRequest.class);
+			}
+		};
+		CompletableFuture<HttpResponse<Object>> future500 = CompletableFuture.completedFuture(resp500);
 
-		// return 401 twice as its different checks for success and authentication
-		// failure.
-		when(mockQueryResponse.statusCode()).thenReturn(500).thenReturn(500).thenReturn(500);
+		when(client.sendAsync(any(HttpRequest.class), any())).thenReturn(future500).thenReturn(future500)
+				.thenReturn(future500).thenReturn(future500);
 
-		QueryResponse response = new QueryResponse();
-		response.setId(TEST_JOB_ID);
-		response.setObject("Account");
-		response.setState(JobState.JobComplete);
-		when(mockQueryResponse.body()).thenReturn(mapper.writeValueAsString(response));
+		BulkApiClient.ExecutionResult result = apiClient
+				.executeHttpRequest(HttpRequest.newBuilder(new URI("http://example.com"))).join();
+		assertThat(result.hasException()).isTrue();
+		assertThat(result.getMessage()).isEqualTo("Could not complete request after 3 retries");
 
-		when(client.sendAsync(any(HttpRequest.class), any()))
-				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
-
-		assertThrowsExactly(RuntimeException.class, () -> {
-			apiClient.submitQueryJob("SELECT * FROM ACCOUNT");;
-		}, "Too many retries");
-
-		// No 401's so this does not get called.
+		// No 401's so this does not get called other than in the setup.
 		verify(login, times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
 
 		// Retries and returns successfully the second time
-		verify(client, times(expectedNumberOfRetries)).sendAsync(any(HttpRequest.class), any());
+		// expected verification is 1 initial try + 3 retries + 1 setup = 5
+		verify(client, times(5)).sendAsync(any(HttpRequest.class), any());
 
 	}
 
 	@Test
 	public void testDeleteJob() throws JsonProcessingException {
-		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+		apiClient = createClient();
 
 		QueryResponse response = new QueryResponse();
 		response.setId(TEST_JOB_ID);
@@ -157,13 +171,14 @@ public class BulkApiClientTest {
 		when(client.sendAsync(any(HttpRequest.class), any()))
 				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
-		String jobId = apiClient.submitQueryJob("SELECT Id, Name FROM ACCOUNT");
+		String jobId = apiClient.submitQueryJob("SELECT Id, Name FROM ACCOUNT").get();
 
-		apiClient.deleteJob(jobId);
+		apiClient.deleteJob(jobId).join(); // verify it finished
 		// Needs to be updated to initialise the access token correctly.
 		var deleteRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
+								SALESFORCE_API_VERSION, jobId)))
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).DELETE()
 				.build();
 
@@ -180,7 +195,7 @@ public class BulkApiClientTest {
 
 	@Test
 	public void testAbortJob() throws JsonProcessingException {
-		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+		apiClient = createClient();
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
 		QueryResponse response = new QueryResponse();
@@ -192,14 +207,15 @@ public class BulkApiClientTest {
 		when(client.sendAsync(any(HttpRequest.class), any()))
 				.thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
 
-		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT").get();
 
-		apiClient.abortJob(jobId);
+		apiClient.abortJob(jobId).join();
 		String abortPayload = new ObjectMapper().writeValueAsString(new AbortJob());
 		// Needs to be updated to initialise the access token correctly.
 		var abortRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
+								SALESFORCE_API_VERSION, jobId)))
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN)
 				.method("PATCH", HttpRequest.BodyPublishers.ofString(abortPayload)).build();
 
@@ -217,7 +233,7 @@ public class BulkApiClientTest {
 	@ParameterizedTest
 	@EnumSource(JobState.class)
 	public void testQueryJobStatus(JobState state) throws JsonProcessingException {
-		apiClient = new BulkApiClient(new SalesforceSourceConfig(props), client, login);
+		apiClient = createClient();
 
 		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
 
@@ -234,8 +250,8 @@ public class BulkApiClientTest {
 				.thenReturn(CompletableFuture.completedFuture(mockQuerySubmitResponse))
 				.thenReturn(CompletableFuture.completedFuture(mockCheckQueryResponse));
 
-		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT");
-		var queryResp = apiClient.queryJobStatus(jobId);
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT").get();
+		QueryResponse queryResp = apiClient.queryJobStatus(jobId).get();
 		JobState jobStatus = queryResp.getState();
 		assertEquals(state, jobStatus);
 		// No 401's so this does not get called.
@@ -247,7 +263,8 @@ public class BulkApiClientTest {
 
 		var jobStatusRequest = HttpRequest
 				.newBuilder(URI.create(TEST_SALESFORCE_URI
-						+ String.format(BulkApiClient.queryJobByIdUri, SALESFORCE_API_VERSION, jobId)))
+						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
+								SALESFORCE_API_VERSION, jobId)))
 				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).GET()
 				.build();
 

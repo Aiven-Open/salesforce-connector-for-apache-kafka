@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,74 +15,64 @@
  */
 package io.aiven.kafka.connect.salesforce.common.bulk.query;
 
-import java.io.IOException;
+import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 
 /**
  * This is a holder for the response from the Bulk Api It allows the storage and
  * processing of the CSV file response.
  */
-public class BulkApiResult {
+public final class BulkApiResult {
 
 	/**
-	 * An object in Salesforce is the table name, thie ObjectName is the object name
+	 * An object in Salesforce is the table name, the ObjectName is the object name
 	 * from the query submitted to the Salesforce bulk api.
 	 */
-	private String objectName;
+	private final String objectName;
 
 	/**
-	 * The time that the query was executed against the Salesforce Api
+	 * The native info for this result.
 	 */
-	private String queryExecutionTime;
-	/**
-	 * The first line of the CSV should contain the headers for the CSV This is a
-	 * string representation of a CSV file
-	 */
-	private String contents;
-
-	/**
-	 * The length of the content
-	 */
-	private long contentSize;
+	private final NativeInfo<BulkApiKey, String> nativeInfo;
 
 	/**
 	 * This constructor allows you to create the object directly from the response
 	 * received from the API
 	 * 
-	 * @param csvString
-	 *            this is a String representation of a csv file downloaded from the
-	 *            API
+	 * @param nativeInfo
+	 *            The native info for this result.
 	 * @param objectName
 	 *            the name of the object that the results came from
-	 * @param queryExecutionTime
-	 *            * the time that the results came from
-	 * @throws IOException
-	 *             An IOException can be thrown on creating a csv file from the
-	 *             returned query
 	 */
-	public BulkApiResult(String csvString, String objectName, String queryExecutionTime) throws IOException {
-		this.contents = csvString;
-		this.contentSize = csvString != null ? csvString.length() : 0;
+	public BulkApiResult(final NativeInfo<BulkApiKey, String> nativeInfo, final String objectName) {
+		this.nativeInfo = nativeInfo;
 		this.objectName = objectName;
-		this.queryExecutionTime = queryExecutionTime;
 	}
 
+	/**
+	 * Get the NativeInfo for this result.
+	 * 
+	 * @return the NativeInfo for this result.
+	 */
+	public NativeInfo<BulkApiKey, String> getNativeInfo() {
+		return nativeInfo;
+	}
+
+	/**
+	 * Gets the BulkApiKey for this result.
+	 * 
+	 * @return the BulkApiKey for this result.
+	 */
+	public BulkApiKey getKey() {
+		return nativeInfo.nativeKey();
+	}
 	/**
 	 * This is to retrieve the csv file contents
 	 * 
 	 * @return The contents of the CSV file
 	 */
 	public String getContents() {
-		return contents;
-	}
-
-	/**
-	 * The contents are the contents of the response supplied by the Bulk Api
-	 * 
-	 * @param contents
-	 *            Set the contents for the bulk api result set
-	 */
-	public void setContents(String contents) {
-		this.contents = contents;
+		return nativeInfo.nativeItem();
 	}
 
 	/**
@@ -95,32 +85,12 @@ public class BulkApiResult {
 	}
 
 	/**
-	 * Set the ObjectName these queries are from
-	 * 
-	 * @param objectName
-	 *            the object name
-	 */
-	public void setObjectName(String objectName) {
-		this.objectName = objectName;
-	}
-
-	/**
 	 * Get the time the query was executed at
 	 * 
 	 * @return time that the query was executed at
 	 */
 	public String getQueryExecutionTime() {
-		return queryExecutionTime;
-	}
-
-	/**
-	 * Set the time the query was executed at
-	 * 
-	 * @param queryExecutionTime
-	 *            the time the query was executed at
-	 */
-	public void setQueryExecutionTime(String queryExecutionTime) {
-		this.queryExecutionTime = queryExecutionTime;
+		return nativeInfo.nativeKey().getLastExecutionTime();
 	}
 
 	/**
@@ -129,16 +99,6 @@ public class BulkApiResult {
 	 * @return the size of the content stored in this result
 	 */
 	public long getContentSize() {
-		return contentSize;
-	}
-
-	/**
-	 * Set the size of the content stored in this result
-	 * 
-	 * @param contentSize
-	 *            the size of the content stored in this result
-	 */
-	public void setContentSize(long contentSize) {
-		this.contentSize = contentSize;
+		return nativeInfo.nativeItem() == null ? 0 : nativeInfo.nativeItem().length();
 	}
 }

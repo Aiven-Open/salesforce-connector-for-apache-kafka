@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.model;
+package io.aiven.kafka.connect.salesforce.common.bulk.model;
 
 /**
  * A model for submitting a bulk api v2.0 Query job.
  */
-public class BulkApiQuery {
+public final class BulkApiQuery {
 
 	/**
 	 * Create a new Bulk Api Query to submit to the API
@@ -36,11 +36,11 @@ public class BulkApiQuery {
 	/*
 	 * default is "query"
 	 */
-	private String operation;
+	private final String operation;
 	/*
 	 * Query that uses the Salesforce Object Query Language
 	 */
-	private String query;
+	private final String query;
 
 	/**
 	 * Get the operation type for this query
@@ -52,16 +52,6 @@ public class BulkApiQuery {
 	}
 
 	/**
-	 * Set the operation type for the query
-	 * 
-	 * @param operation
-	 *            The operation type currently on query is supported
-	 */
-	public void setOperation(String operation) {
-		this.operation = operation;
-	}
-
-	/**
 	 * Get the SOQL query for the operation
 	 * 
 	 * @return The SOQL query for the operation
@@ -70,13 +60,4 @@ public class BulkApiQuery {
 		return query;
 	}
 
-	/**
-	 * Set the SOQL query for the operation
-	 * 
-	 * @param query
-	 *            The SOWL Query to execute against the API
-	 */
-	public void setQuery(String query) {
-		this.query = query;
-	}
 }
