@@ -77,4 +77,27 @@ public class TestingSalesforceCommonConfig extends ConnectorCommonConfig impleme
 	public int getSalesforceMaxRetries() {
 		return fragment.getSalesforceMaxRetries();
 	}
+
+	/**
+	 * The time to wait in between querying the status of a job
+	 *
+	 * @return The time in seconds to wait between checking for the status of a bulk
+	 *         api job.
+	 */
+	@Override
+	public int getStatusCheckWaitTime() {
+		return fragment.getSalesforceStatusCheckWait();
+	}
+
+	/**
+	 *
+	 * @return The minimum time in seconds to wait between resubmitting the same
+	 *         SOQL query
+	 *
+	 */
+	@Override
+	public int getMinimumQueryExecutionDelay() {
+		return fragment.getSalesforceWaitBetweenQueries();
+	}
+
 }

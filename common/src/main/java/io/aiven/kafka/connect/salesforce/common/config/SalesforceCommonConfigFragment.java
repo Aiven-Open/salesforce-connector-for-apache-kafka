@@ -84,6 +84,26 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 	private static final String SALESFORCE_CLIENT_ID = "salesforce.client.id";
 
 	/**
+	 * The wait time in between api calls to check a bulk api job status in seconds
+	 */
+	private static final String SALESFORCE_STATUS_CHECK_WAIT = "salesforce.status.check.wait";
+
+	/**
+	 * The wait time in between api calls to check a bulk api job status in seconds
+	 */
+	private static final int SALESFORCE_STATUS_CHECK_WAIT_DEFAULT = 5;
+
+	/**
+	 * The wait between executing the same SOQL query again in seconds
+	 */
+	private static final String SALESFORCE_WAIT_BETWEEN_QUERIES = "salesforce.soql.query.wait";
+
+	/**
+	 * The default wait between executing the same SOQL query again in seconds
+	 */
+	private static final int SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT = 60;
+
+	/**
 	 * The salesforce organization uri for Bulk Api and pub sub queries
 	 */
 	private static final String SALESFORCE_URI = "salesforce.uri";
@@ -202,6 +222,24 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 						+ "the bulk api will be produced to history.bulkApi.Account.")
 				.width(ConfigDef.Width.LONG).build());
 
+		configDef.define(ExtendedConfigKey.builder(SALESFORCE_WAIT_BETWEEN_QUERIES).group(GROUP_SALESFORCE)
+				.defaultValue(SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT).orderInGroup(++salesforceGroupCounter)
+				.since(siBuilder.version("1.0.0").build()).type(ConfigDef.Type.INT)
+				.importance(ConfigDef.Importance.MEDIUM)
+				.documentation(SALESFORCE_WAIT_BETWEEN_QUERIES
+						+ " allows a user to configure the minimum time in seconds between re-executing the same SOQL query against the API the default value is "
+						+ SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT + " seconds.")
+				.width(ConfigDef.Width.LONG).build());
+
+		configDef.define(ExtendedConfigKey.builder(SALESFORCE_STATUS_CHECK_WAIT).group(GROUP_SALESFORCE)
+				.defaultValue(SALESFORCE_STATUS_CHECK_WAIT_DEFAULT).orderInGroup(++salesforceGroupCounter)
+				.since(siBuilder.version("1.0.0").build()).type(ConfigDef.Type.INT)
+				.importance(ConfigDef.Importance.MEDIUM)
+				.documentation(SALESFORCE_STATUS_CHECK_WAIT
+						+ " allows a user to configure the time in seconds between individual api calls to check the status of a bulk job. Each SOQL query requires 1 or many calls to see if the job is ready to be processed, this configuration allows the user to reduce or increase the number of calls made to the api to check the status. "
+						+ SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT + " seconds.")
+				.width(ConfigDef.Width.LONG).build());
+
 	}
 
 	/**
@@ -280,6 +318,25 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 	 */
 	public String getTopicPrefix() {
 		return dataAccess.getString(TOPIC_PREFIX);
+	}
+
+	/**
+	 * The minimum time to wait between the submitting of the same SOQL query
+	 * 
+	 * @return The time in seconds to wait between submitting the same SOQL query
+	 */
+	public int getSalesforceWaitBetweenQueries() {
+		return dataAccess.getInt(SALESFORCE_WAIT_BETWEEN_QUERIES);
+	}
+
+	/**
+	 * The time to wait between checking the status of a job that has been submitted
+	 * to the bulk api in seconds
+	 *
+	 * @return the time in seconds to wait between checking the status of a job
+	 */
+	public int getSalesforceStatusCheckWait() {
+		return dataAccess.getInt(SALESFORCE_STATUS_CHECK_WAIT);
 	}
 
 	/**

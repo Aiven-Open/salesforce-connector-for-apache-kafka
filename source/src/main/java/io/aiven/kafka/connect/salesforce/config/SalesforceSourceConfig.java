@@ -86,6 +86,39 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	}
 
 	/**
+	 * The time to wait in between querying the status of a job
+	 *
+	 * @return The time in seconds to wait between checking for the status of a bulk
+	 *         api job.
+	 */
+	@Override
+	public int getStatusCheckWaitTime() {
+		return commonFragment.getSalesforceStatusCheckWait();
+	}
+
+	/**
+	 *
+	 * @return The minimum time in seconds to wait between resubmitting the same
+	 *         SOQL query
+	 *
+	 */
+	@Override
+	public int getMinimumQueryExecutionDelay() {
+		return commonFragment.getSalesforceWaitBetweenQueries();
+	}
+
+	/**
+	 * The last ModifiedStartDateTime is used to determine what records in an object
+	 * to return can be null.
+	 *
+	 * @return The lastModifiedStartDateTime
+	 *
+	 */
+	public String getLastModifiedStartDateTime() {
+		return sourceFragment.getSalesforceLastModifiedStartDate();
+	}
+
+	/**
 	 * Gets the list of queries to pass to the bulk api.
 	 * 
 	 * @return a list of queries.

@@ -233,7 +233,6 @@ public class BulkApiClient {
 			HttpResponse<String> response = executionResult.response;
 			BulkApiResultResponse resp = new BulkApiResultResponse();
 			resp.setLocator(response.request().headers().firstValue("Sforce-Locator"));
-			resp.setLocator(response.request().headers().firstValue("Sforce-NumberOfRecords"));
 			resp.setResult(
 					new BulkApiResult(new NativeInfo<BulkApiKey, String>(bulkApiKey, response.body()), objectName));
 			return resp;

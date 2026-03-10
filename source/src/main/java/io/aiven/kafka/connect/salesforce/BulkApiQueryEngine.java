@@ -45,12 +45,12 @@ import java.util.concurrent.CompletionException;
  */
 public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
-	private static final Duration MINIMUM_WAIT_BETWEEN_QUERIES = Duration.ofSeconds(5);
+	private final Duration minimumWaitBetweenQueries;
 	/**
 	 * To be configured through config, the amount of time to wait in between
 	 * executing the same query again.
 	 */
-	private static final Duration DELTA_BETWEEN_QUERIES = Duration.ofMinutes(5);
+	private final Duration statusCheckDelay;
 	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
 	private final SalesforceSourceConfig config; // NOPMD i will need this
 	private final io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
@@ -67,6 +67,8 @@ public class BulkApiQueryEngine {
 			io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient) {
 		this.config = config;
 		this.apiClient = apiClient;
+		this.minimumWaitBetweenQueries = Duration.ofSeconds(config.getMinimumQueryExecutionDelay());
+		this.statusCheckDelay = Duration.ofSeconds(config.getStatusCheckWaitTime());
 	}
 
 	/**
@@ -85,12 +87,12 @@ public class BulkApiQueryEngine {
 
 		LOGGER.debug("lastModifiedDate {}", lastModifiedDate);
 
-		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(DELTA_BETWEEN_QUERIES.getSeconds())
+		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
 				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
 			try {
 				// Look at using backoff class
 				LOGGER.info("Waiting to re-execute query");
-				Thread.sleep(MINIMUM_WAIT_BETWEEN_QUERIES.toMillis());
+				Thread.sleep(minimumWaitBetweenQueries.toMillis());
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
@@ -141,9 +143,9 @@ public class BulkApiQueryEngine {
 
 	private JobState waitUntilProcessingComplete(JobState state, String jobId) {
 		if (state.isExecuting()) {
-			Timer timer = new Timer(DELTA_BETWEEN_QUERIES);
+			Timer timer = new Timer(statusCheckDelay);
 			Backoff backoff = new Backoff(timer.getBackoffConfig());
-			backoff.setMinimumDelay(MINIMUM_WAIT_BETWEEN_QUERIES);
+			backoff.setMinimumDelay(statusCheckDelay);
 
 			while (state.isExecuting() && !timer.isExpired()) {
 				backoff.cleanDelay();
