@@ -21,11 +21,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.aiven.kafka.connect</groupId>
-    <artifactId>salesforce-connector-for-apache-kafka</artifactId>
+    <artifactId>sconnectors-for-salesforce</artifactId>
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>salesforce-source-connector</artifactId>
+  <artifactId>source</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>Salesforce Source Kafka Connector</name>
   <description>Kafka connector to extract data from Salesforce and add it to a topic</description>
@@ -52,7 +52,7 @@
 
     <dependency>
       <groupId>io.aiven.kafka.connect</groupId>
-      <artifactId>salesforce-connector-common</artifactId>
+      <artifactId>common</artifactId>
       <version>0.0.1-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
@@ -94,7 +94,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>salesforce-connector-for-apache-kafka-${project.version}</finalName>
+          <finalName>${project.artifactId}-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <descriptors>
             <descriptor>src/main/assembly/release-tar.xml</descriptor>
