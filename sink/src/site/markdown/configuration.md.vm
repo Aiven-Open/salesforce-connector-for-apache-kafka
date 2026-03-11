@@ -16,7 +16,7 @@
 
     SPDX-License-Identifier: Apache-2
 -->
-# Aiven Kafka sink connector for Salesforce configuration
+${esc.hash} ${project.name}
 
 All the configuration options are listed below in alphabetical order.
 
