@@ -1,4 +1,4 @@
-<!--
+git<!--
     Copyright 2025 Aiven Oy and project contributors
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,10 @@
 
     SPDX-License-Identifier: Apache-2
 -->
-# Aiven Kafka&#8482; Source Connector for Salesforce&#8482;
 
-This is an Apache Kafka connector that extracts data from Salesforce.
+${esc.hash} ${project.name}
+
+This is an Apache Kafka#8482; connector that extracts data from Salesforce#8482;.
 
 
 ## Build
