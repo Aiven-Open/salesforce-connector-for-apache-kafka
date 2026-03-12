@@ -20,6 +20,7 @@ import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
+import io.aiven.kafka.connect.salesforce.validator.SOQLQueryValidator;
 import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.List;
@@ -77,11 +78,11 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
 				.artifactId("salesforce-source-connector");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(group).orderInGroup(++groupOrder)
-				.since(siBuilder.version("1.0.0").build().setVersionOnly()).type(ConfigDef.Type.STRING)
-				.importance(ConfigDef.Importance.MEDIUM)
+				.validator(new SOQLQueryValidator()).since(siBuilder.version("1.0.0").build().setVersionOnly())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
-								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+								+ "`SELECT {{Id}},Name, {{LastModifiedDate}} FROM Account ; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
 				.width(ConfigDef.Width.LONG).build());
 
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_LAST_MODIFIED_START_DATE).group(group)
