@@ -23,6 +23,7 @@ import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
+import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.slf4j.Logger;
@@ -34,6 +35,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -50,7 +53,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	/**
 	 * A queue of queries to execute. This is being used as a circular buffer.
 	 */
-	private final LinkedList<String> queries;
+	private final LinkedList<SOQLQuery> queries;
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
 	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
 	private final Map<String, String> lastExecutionTime;
@@ -66,7 +69,8 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	public BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager) {
 		super(config, offsetManager);
-		this.queries = new LinkedList<>(config.getBulkApiQueries());
+		this.queries = config.getBulkApiQueries().stream().map(SOQLQuery::fromQueryString)
+				.collect(Collectors.toCollection(LinkedList::new));
 
 		this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
 		this.lastExecutionTime = new HashMap<>();
@@ -103,7 +107,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast(), ""), data);
+		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast().getSOQLQuery(), ""), data);
 	}
 
 	/**
@@ -119,18 +123,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	}
 
 	/**
-	 * extracts the native Key from the string representation.
-	 *
-	 * @param keyString
-	 *            the keyString.
-	 * @return The native Key.
-	 */
-	@Override
-	protected BulkApiKey parseNativeKey(final String keyString) {
-		return BulkApiKey.parse(keyString);
-	}
-
-	/**
 	 * Creates an offset manager key for the native key.
 	 *
 	 * @param nativeKey
@@ -141,6 +133,26 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final BulkApiKey nativeKey) {
 		return new SalesforceOffsetManagerEntry(nativeKey).getManagerKey();
 	}
+
+	/**
+	 * Get the KeySerde for the String
+	 *
+	 * @return The native Key.
+	 */
+	@Override
+	protected Optional<KeySerde<BulkApiKey>> getNativeKeySerde() {
+		return Optional.of(BULKAPIKEY_SERDE);
+	}
+
+	KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
+		public String toString(BulkApiKey nativeKey) {
+			return nativeKey.toString();
+		}
+
+		public BulkApiKey fromString(String nativeKeyString) {
+			return BulkApiKey.parse(nativeKeyString);
+		}
+	};
 
 	/**
 	 * getSalesforceBulkIterator takes the preconfigured queries and executes those
@@ -179,15 +191,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				// we can store the execution as a long and use in the in getRecords()
 				// calculation without parsing and allow the BulkApiNativeInfo to format it for
 				// other purposes.
-				String element = queries.pop();
+				SOQLQuery element = queries.pop();
 				// Re queue to end of the list
 				LOGGER.debug("Get Records for Query {}", element);
 				queries.offerLast(element);
 				String newLastModifiedDate = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
 				try {
-					return engine.getRecords(element, lastExecutionTime.getOrDefault(element, null)).next();
+					return engine.getRecords(element, lastExecutionTime.getOrDefault(element.getSOQLQuery(), null))
+							.next();
 				} finally {
-					lastExecutionTime.put(element, newLastModifiedDate);
+					lastExecutionTime.put(element.getSOQLQuery(), newLastModifiedDate);
 				}
 			}
 		});

@@ -20,6 +20,7 @@ import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
+import io.aiven.kafka.connect.salesforce.validator.SOQLQueryValidator;
 import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.List;
@@ -36,7 +37,13 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 	 * individual queries, it can be null if not sing the bulk api
 	 */
 	private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
+	/**
+	 * The last modified start time to start returning records from the salesforce
+	 * object
+	 */
+	private static final String SALESFORCE_LAST_MODIFIED_START_DATE = "salesforce.lastModifiedStartDate";
 
+	private static final String group = "Salesforce Source";
 	/**
 	 * Constructor.
 	 * 
@@ -66,16 +73,23 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 	 *            the configuration definition to update.
 	 */
 	public static void update(ConfigDef configDef) {
-		String group = "SalesForce Source";
+
 		int groupOrder = 0;
 		SinceInfo.Builder siBuilder = SinceInfo.builder().groupId("io.aiven.kafka.connect")
 				.artifactId("salesforce-source-connector");
 		configDef.define(ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES).group(group).orderInGroup(++groupOrder)
-				.since(siBuilder.version("1.0.0").build().setVersionOnly()).type(ConfigDef.Type.STRING)
-				.importance(ConfigDef.Importance.MEDIUM)
+				.validator(new SOQLQueryValidator()).since(siBuilder.version("1.0.0").build().setVersionOnly())
+				.type(ConfigDef.Type.STRING).importance(ConfigDef.Importance.MEDIUM)
 				.documentation(
 						"Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
-								+ "`SELECT Id,Name FROM Account; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+								+ "`SELECT {{Id}},Name, {{LastModifiedDate}} FROM Account ; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+				.width(ConfigDef.Width.LONG).build());
+
+		configDef.define(ExtendedConfigKey.builder(SALESFORCE_LAST_MODIFIED_START_DATE).group(group)
+				.orderInGroup(++groupOrder).since(siBuilder.version("1.0.0").build()).type(ConfigDef.Type.STRING)
+				.importance(ConfigDef.Importance.MEDIUM)
+				.documentation(SALESFORCE_LAST_MODIFIED_START_DATE
+						+ " allows a user to query data starting from a specific time, reducing the amount of data that is returned by the api. The default behaviour returns all matching entries from the query regardless of its age. Expected format is 2026-11-08T00:00:00Z (YYYY-MM-DDTHH:MM:SSZ)")
 				.width(ConfigDef.Width.LONG).build());
 	}
 
@@ -87,6 +101,15 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 	 */
 	public List<String> getBulkApiQueries() {
 		return List.of(dataAccess.getString(SALESFORCE_BULK_API_QUERIES).split(";"));
+	}
+
+	/**
+	 * Return the lastModifiedDate to be used with queries
+	 * 
+	 * @return lastModifiedDate as a String
+	 */
+	public String getSalesforceLastModifiedStartDate() {
+		return dataAccess.getString(SALESFORCE_LAST_MODIFIED_START_DATE);
 	}
 
 	/**

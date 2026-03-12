@@ -22,9 +22,9 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
+import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
-import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +45,12 @@ import java.util.concurrent.CompletionException;
  */
 public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
-	private static final Duration MINIMUM_WAIT_BETWEEN_QUERIES = Duration.ofSeconds(5);
+	private final Duration minimumWaitBetweenQueries;
 	/**
 	 * To be configured through config, the amount of time to wait in between
 	 * executing the same query again.
 	 */
-	private static final Duration DELTA_BETWEEN_QUERIES = Duration.ofMinutes(5);
-	private static final String WHERE_LAST_MODIFIED_DATE = "WHERE LastModifiedDate > ";
+	private final Duration statusCheckDelay;
 	private final SalesforceSourceConfig config; // NOPMD i will need this
 	private final io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
 
@@ -67,6 +66,8 @@ public class BulkApiQueryEngine {
 			io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient) {
 		this.config = config;
 		this.apiClient = apiClient;
+		this.minimumWaitBetweenQueries = config.getMinimumQueryExecutionDelay();
+		this.statusCheckDelay = config.getStatusCheckWaitTime();
 	}
 
 	/**
@@ -81,16 +82,16 @@ public class BulkApiQueryEngine {
 	 *            particular time
 	 * @return a Stream of records
 	 */
-	public Iterator<BulkApiNativeInfo> getRecords(String query, String lastModifiedDate) {
+	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
 		LOGGER.debug("lastModifiedDate {}", lastModifiedDate);
 
-		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(DELTA_BETWEEN_QUERIES.getSeconds())
+		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
 				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
 			try {
 				// Look at using backoff class
 				LOGGER.info("Waiting to re-execute query");
-				Thread.sleep(MINIMUM_WAIT_BETWEEN_QUERIES.toMillis());
+				Thread.sleep(minimumWaitBetweenQueries.toMillis());
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
@@ -98,7 +99,7 @@ public class BulkApiQueryEngine {
 		}
 
 		// Submit the job
-		Optional<String> optJobId = apiClient.submitQueryJob(updateQuery(query, lastModifiedDate));
+		Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
 		if (optJobId.isPresent()) {
 			String jobId = optJobId.get();
 			Optional<QueryResponse> optQueryResponse = apiClient.queryJobStatus(jobId);
@@ -108,7 +109,8 @@ public class BulkApiQueryEngine {
 				JobState completedState = waitUntilProcessingComplete(queryResponse.getState(), jobId);
 				switch (completedState) {
 					case JobComplete :
-						BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query, queryResponse.getCreatedDate());
+						BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query.getSOQLQuery(),
+								queryResponse.getCreatedDate());
 						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey);
 					case Aborted :
 					case Failed :
@@ -122,28 +124,11 @@ public class BulkApiQueryEngine {
 		return Collections.emptyIterator();
 	}
 
-	private String updateQuery(String query, String lastModifiedDate) {
-		if (StringUtils.isBlank(lastModifiedDate)) {
-			return query;
-		}
-		// TODO Need to look at doing this smarter, if they already have a WHERE clause
-		// it needs to be added etc.
-
-		if (query.contains("WHERE")) {
-			// If the where already exists then we replace it add our part of the query and
-			// then add an AND to append the existing query.
-			return query.replace("WHERE", WHERE_LAST_MODIFIED_DATE + lastModifiedDate + "AND ");
-		} else {
-			LOGGER.info("Actual query {}", query + " " + WHERE_LAST_MODIFIED_DATE + lastModifiedDate);
-			return query + " " + WHERE_LAST_MODIFIED_DATE + lastModifiedDate;
-		}
-	}
-
 	private JobState waitUntilProcessingComplete(JobState state, String jobId) {
 		if (state.isExecuting()) {
-			Timer timer = new Timer(DELTA_BETWEEN_QUERIES);
+			Timer timer = new Timer(statusCheckDelay);
 			Backoff backoff = new Backoff(timer.getBackoffConfig());
-			backoff.setMinimumDelay(MINIMUM_WAIT_BETWEEN_QUERIES);
+			backoff.setMinimumDelay(statusCheckDelay);
 
 			while (state.isExecuting() && !timer.isExpired()) {
 				backoff.cleanDelay();

@@ -20,6 +20,7 @@ import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -83,6 +84,39 @@ public final class SalesforceSourceConfig extends SourceCommonConfig implements 
 	@Override
 	public int getSalesforceMaxRetries() {
 		return commonFragment.getSalesforceMaxRetries();
+	}
+
+	/**
+	 * The time to wait in between querying the status of a job
+	 *
+	 * @return The time in seconds to wait between checking for the status of a bulk
+	 *         api job.
+	 */
+	@Override
+	public Duration getStatusCheckWaitTime() {
+		return commonFragment.getSalesforceStatusCheckWait();
+	}
+
+	/**
+	 *
+	 * @return The minimum time in seconds to wait between resubmitting the same
+	 *         SOQL query
+	 *
+	 */
+	@Override
+	public Duration getMinimumQueryExecutionDelay() {
+		return commonFragment.getSalesforceWaitBetweenQueries();
+	}
+
+	/**
+	 * The last ModifiedStartDateTime is used to determine what records in an object
+	 * to return can be null.
+	 *
+	 * @return The lastModifiedStartDateTime
+	 *
+	 */
+	public String getLastModifiedStartDateTime() {
+		return sourceFragment.getSalesforceLastModifiedStartDate();
 	}
 
 	/**

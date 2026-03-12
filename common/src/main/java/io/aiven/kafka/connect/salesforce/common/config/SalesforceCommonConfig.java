@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.common.config;
 
+import java.time.Duration;
+
 /**
  * Common methods for Authentication and communication with Salesforce
  */
@@ -73,9 +75,26 @@ public interface SalesforceCommonConfig {
 	String getTopicPrefix();
 
 	/**
-	 * The the maximum number of retries for sales force connection.
+	 * The maximum number of retries for sales force connection.
 	 * 
 	 * @return the maximum number of retries.
 	 */
 	int getSalesforceMaxRetries();
+
+	/**
+	 * The time to wait in between querying the status of a job
+	 *
+	 * @return The time in seconds to wait between checking for the status of a bulk
+	 *         api job.
+	 */
+	Duration getStatusCheckWaitTime();
+
+	/**
+	 * The minimum time between resubmitting the same SOQL query to the bulk api
+	 * 
+	 * @return The minimum time in seconds to wait between resubmitting the same
+	 *         SOQL query
+	 */
+	Duration getMinimumQueryExecutionDelay();
+
 }

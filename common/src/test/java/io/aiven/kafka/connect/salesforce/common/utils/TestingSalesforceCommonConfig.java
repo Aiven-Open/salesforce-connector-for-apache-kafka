@@ -21,6 +21,7 @@ import io.aiven.commons.kafka.connector.common.config.ConnectorCommonConfigDef;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 
+import java.time.Duration;
 import java.util.Map;
 
 public class TestingSalesforceCommonConfig extends ConnectorCommonConfig implements SalesforceCommonConfig {
@@ -77,4 +78,27 @@ public class TestingSalesforceCommonConfig extends ConnectorCommonConfig impleme
 	public int getSalesforceMaxRetries() {
 		return fragment.getSalesforceMaxRetries();
 	}
+
+	/**
+	 * The time to wait in between querying the status of a job
+	 *
+	 * @return The time in seconds to wait between checking for the status of a bulk
+	 *         api job.
+	 */
+	@Override
+	public Duration getStatusCheckWaitTime() {
+		return fragment.getSalesforceStatusCheckWait();
+	}
+
+	/**
+	 *
+	 * @return The minimum time in seconds to wait between resubmitting the same
+	 *         SOQL query
+	 *
+	 */
+	@Override
+	public Duration getMinimumQueryExecutionDelay() {
+		return fragment.getSalesforceWaitBetweenQueries();
+	}
+
 }

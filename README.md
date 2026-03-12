@@ -1,5 +1,6 @@
-Salesforce Connector for Apache Kafka
+Aiven connectors for Salesforce on Apache Kafka
 ======================
+This is an open source connector developed by Aiven for the community that integrates with Apache Kafka and Salesforce providing both Sink and Source Connectors.
 
 
 Overview
@@ -8,17 +9,17 @@ Overview
 
 Features
 ============
-A source connector for salesforce to consume data from Salesforce and to publish that data to Kafka topics
+A source connector for Salesforce to consume data from Salesforce and to publish that data to Kafka topics
 Setup
 ============
 
 ### Prerequisites 
-* Java 11 or 17
+* Java 17
 * Maven
 
 License
 ============
-Salesforce Connector for Apache Kafka is licensed under the Apache license, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
+Salesforce Connector for Apache Kafka is licensed under the Apache License, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
 
 Please note that the project explicitly does not require a CLA (Contributor License Agreement) from its contributors.
 
