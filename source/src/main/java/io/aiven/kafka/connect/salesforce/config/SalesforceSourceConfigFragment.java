@@ -89,7 +89,7 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
 				.orderInGroup(++groupOrder).since(siBuilder.version("1.0.0").build()).type(ConfigDef.Type.STRING)
 				.importance(ConfigDef.Importance.MEDIUM)
 				.documentation(SALESFORCE_LAST_MODIFIED_START_DATE
-						+ " allows a user to query data starting from a specific time, reducing the amount of data that is returned by the api. The default behaviour returns all matching entries from the query regardless of its age. Expected format is 00:00:00T")
+						+ " allows a user to query data starting from a specific time, reducing the amount of data that is returned by the api. The default behaviour returns all matching entries from the query regardless of its age. Expected format is 2026-11-08T00:00:00Z (YYYY-MM-DDTHH:MM:SSZ)")
 				.width(ConfigDef.Width.LONG).build());
 	}
 

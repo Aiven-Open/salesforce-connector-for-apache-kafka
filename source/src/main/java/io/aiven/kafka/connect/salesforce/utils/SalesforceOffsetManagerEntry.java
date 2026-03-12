@@ -43,7 +43,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * The time this query was executed against salesforce allowing us to know when
 	 * the data was queried
 	 */
-	public static final String LAST_EXECUTION_TIME = "lastExecutionTime";
+	public static final String QUERY_EXECUTION_TIME = "queryExecutionTime";
 
 	/**
 	 * The last modified date of a particular row of data from a Salesforce Object
@@ -131,7 +131,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		final Map<String, Object> result = new HashMap<>(data);
 		result.put(ID, id);
 		result.put(LAST_MODIFIED_DATE, lastModifiedDate);
-		result.put(LAST_EXECUTION_TIME, bulkApiKey.getLastExecutionTime());
+		result.put(QUERY_EXECUTION_TIME, bulkApiKey.getLastExecutionTime());
 		// TODO to be updated when csv file is processed to true.
 		result.put(IS_COMPLETE, false);
 		return result;
