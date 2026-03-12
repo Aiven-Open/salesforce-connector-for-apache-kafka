@@ -66,8 +66,8 @@ public class BulkApiQueryEngine {
 			io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient) {
 		this.config = config;
 		this.apiClient = apiClient;
-		this.minimumWaitBetweenQueries = Duration.ofSeconds(config.getMinimumQueryExecutionDelay());
-		this.statusCheckDelay = Duration.ofSeconds(config.getStatusCheckWaitTime());
+		this.minimumWaitBetweenQueries = config.getMinimumQueryExecutionDelay();
+		this.statusCheckDelay = config.getStatusCheckWaitTime();
 	}
 
 	/**

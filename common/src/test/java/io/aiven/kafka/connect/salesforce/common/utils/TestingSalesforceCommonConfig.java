@@ -21,6 +21,7 @@ import io.aiven.commons.kafka.connector.common.config.ConnectorCommonConfigDef;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 
+import java.time.Duration;
 import java.util.Map;
 
 public class TestingSalesforceCommonConfig extends ConnectorCommonConfig implements SalesforceCommonConfig {
@@ -85,7 +86,7 @@ public class TestingSalesforceCommonConfig extends ConnectorCommonConfig impleme
 	 *         api job.
 	 */
 	@Override
-	public int getStatusCheckWaitTime() {
+	public Duration getStatusCheckWaitTime() {
 		return fragment.getSalesforceStatusCheckWait();
 	}
 
@@ -96,7 +97,7 @@ public class TestingSalesforceCommonConfig extends ConnectorCommonConfig impleme
 	 *
 	 */
 	@Override
-	public int getMinimumQueryExecutionDelay() {
+	public Duration getMinimumQueryExecutionDelay() {
 		return fragment.getSalesforceWaitBetweenQueries();
 	}
 

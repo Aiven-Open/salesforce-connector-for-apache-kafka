@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.common.config;
 
+import java.time.Duration;
+
 /**
  * Common methods for Authentication and communication with Salesforce
  */
@@ -85,7 +87,7 @@ public interface SalesforceCommonConfig {
 	 * @return The time in seconds to wait between checking for the status of a bulk
 	 *         api job.
 	 */
-	int getStatusCheckWaitTime();
+	Duration getStatusCheckWaitTime();
 
 	/**
 	 * The minimum time between resubmitting the same SOQL query to the bulk api
@@ -93,6 +95,6 @@ public interface SalesforceCommonConfig {
 	 * @return The minimum time in seconds to wait between resubmitting the same
 	 *         SOQL query
 	 */
-	int getMinimumQueryExecutionDelay();
+	Duration getMinimumQueryExecutionDelay();
 
 }

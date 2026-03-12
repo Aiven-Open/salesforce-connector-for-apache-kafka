@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -122,18 +123,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	}
 
 	/**
-	 * extracts the native Key from the string representation.
-	 *
-	 * @param keyString
-	 *            the keyString.
-	 * @return The native Key.
-	 */
-	@Override
-	protected BulkApiKey parseNativeKey(final String keyString) {
-		return BulkApiKey.parse(keyString);
-	}
-
-	/**
 	 * Creates an offset manager key for the native key.
 	 *
 	 * @param nativeKey
@@ -144,6 +133,26 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	protected OffsetManager.OffsetManagerKey getOffsetManagerKey(final BulkApiKey nativeKey) {
 		return new SalesforceOffsetManagerEntry(nativeKey).getManagerKey();
 	}
+
+	/**
+	 * Get the KeySerde for the String
+	 *
+	 * @return The native Key.
+	 */
+	@Override
+	protected Optional<KeySerde<BulkApiKey>> getNativeKeySerde() {
+		return Optional.of(BULKAPIKEY_SERDE);
+	}
+
+	KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
+		public String toString(BulkApiKey nativeKey) {
+			return nativeKey.toString();
+		}
+
+		public BulkApiKey fromString(String nativeKeyString) {
+			return BulkApiKey.parse(nativeKeyString);
+		}
+	};
 
 	/**
 	 * getSalesforceBulkIterator takes the preconfigured queries and executes those
