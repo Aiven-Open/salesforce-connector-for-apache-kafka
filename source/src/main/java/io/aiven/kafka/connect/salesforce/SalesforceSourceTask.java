@@ -36,9 +36,7 @@ import java.util.Map;
  * task.
  */
 public final class SalesforceSourceTask extends AbstractSourceTask {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
-
 	/** The offset manager this task uses */
 	private OffsetManager offsetManager;
 
@@ -63,6 +61,10 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
 		LOGGER.info("Salesforce Source task started.");
 		this.offsetManager = new OffsetManager(context);
+		// TODO add recovery here get offsetManager keys and set the details for each
+		// query
+		// TODO
+		// TODO
 		// set the csv transformer for bulk api
 		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
 		return new SalesforceSourceConfig(props);

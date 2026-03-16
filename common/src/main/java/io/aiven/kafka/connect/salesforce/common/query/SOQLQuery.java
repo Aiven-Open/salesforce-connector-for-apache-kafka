@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.common.query;
 
+import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ import java.util.List;
  * queries by adding specifically supported SOQL keywords.
  */
 public class SOQLQuery {
-	private static final String SELECT_ALL_FIELDS = "FIELDS(ALL)";
+	private static final String FIELDS_STANDARD = "FIELDS(STANDARD)";
 	private static final String ID = "Id";
 	private static final String LAST_MODIFIED_DATE = "LastModifiedDate";
 	private static final Logger LOGGER = LoggerFactory.getLogger(SOQLQuery.class);
@@ -266,13 +267,23 @@ public class SOQLQuery {
 	}
 
 	private String getWhere(String partInstruction, String lastModifiedDate) {
-		return lastModifiedDate != null && !partInstruction.isEmpty()
-				? WHERE + partInstruction + " LastModifiedDate > " + lastModifiedDate
-				: partInstruction != null && !partInstruction.isEmpty() ? WHERE + partInstruction : "";
+
+		String where = getPart(WHERE, partInstruction);
+
+		if (StringUtils.isBlank(where)) {
+			return getPart(WHERE, lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : null);
+		} else {
+			where += lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : "";
+			return where;
+		}
+	}
+
+	private static boolean isEmpty(String partInstruction) {
+		return partInstruction == null || partInstruction.isEmpty();
 	}
 
 	private String getPart(String partName, String partInstruction) {
-		return partInstruction != null && !partInstruction.isEmpty() ? partName + partInstruction : "";
+		return !isEmpty(partInstruction) ? " " + partName + partInstruction : "";
 	}
 
 	/**
@@ -285,7 +296,7 @@ public class SOQLQuery {
 	public boolean validate() {
 		// Must contain the Id and LastModifiedDate in the Select or all fields so we
 		// can set the offsets correctly
-		if (!select.contains(SELECT_ALL_FIELDS) && (!select.contains(ID) || !select.contains(LAST_MODIFIED_DATE))) {
+		if (!select.contains(FIELDS_STANDARD) && (!select.contains(ID) || !select.contains(LAST_MODIFIED_DATE))) {
 			return false;
 		}
 		// Should not include the LastModifiedDate in the where clause so we can
@@ -359,7 +370,7 @@ public class SOQLQuery {
 	}
 
 	/**
-	 * Builds a regex that will extract the consituent parts of a SOQL query so it
+	 * Builds a regex that will extract the constituent parts of a SOQL query so it
 	 * can be properly validated
 	 * 
 	 * @return A regex String to split a SOQL query string

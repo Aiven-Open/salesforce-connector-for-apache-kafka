@@ -15,8 +15,6 @@
  */
 package io.aiven.kafka.connect.salesforce.common.bulk.query;
 
-import java.util.Optional;
-
 /**
  * BulkApiResultResponse includes the contents of the returned csv as well as
  * the http headers that contain the number of records in the file and also the
@@ -31,8 +29,17 @@ public class BulkApiResultResponse {
 	/**
 	 * The locator returned in the response needed for the next query
 	 */
-	private Optional<String> locator;
+	private String locator;
 
+	/**
+	 * The maximum number of records returned in this response
+	 */
+	private int numberOfRecords;
+
+	/**
+	 * The API Usage and tracks how much of the api limit has been consumed
+	 */
+	private String apiUsage;
 	/**
 	 * Default constructor for the BulkApiResultResponse object
 	 */
@@ -55,7 +62,7 @@ public class BulkApiResultResponse {
 	 * 
 	 * @return A String which can be used to get the next set of results
 	 */
-	public Optional<String> getLocator() {
+	public String getLocator() {
 		return locator;
 	}
 
@@ -64,10 +71,10 @@ public class BulkApiResultResponse {
 	 * results from the bulk api.
 	 * 
 	 * @param locator
-	 *            An Optional String which is used by the Bulk Api to retrieve the
-	 *            next CSV file
+	 *            A String which is used by the Bulk Api to retrieve the next CSV
+	 *            file
 	 */
-	public void setLocator(Optional<String> locator) {
+	public void setLocator(String locator) {
 		this.locator = locator;
 	}
 
@@ -80,5 +87,43 @@ public class BulkApiResultResponse {
 	 */
 	public void setResult(BulkApiResult result) {
 		this.result = result;
+	}
+
+	/**
+	 * Get the number of records expected in this result set
+	 * 
+	 * @return the number of records expected in this result set
+	 */
+	public int getNumberOfRecords() {
+		return numberOfRecords;
+	}
+
+	/**
+	 * Get the API Usage
+	 * 
+	 * @return Get the Api Usage
+	 */
+	public String getApiUsage() {
+		return apiUsage;
+	}
+
+	/**
+	 * Set the Api Usage
+	 * 
+	 * @param apiUsage
+	 *            the api usage
+	 */
+	public void setApiUsage(String apiUsage) {
+		this.apiUsage = apiUsage;
+	}
+
+	/**
+	 * Set the number of records expected in this result set
+	 * 
+	 * @param numberOfRecords
+	 *            the number of records expected in this result set
+	 */
+	public void setNumberOfRecords(int numberOfRecords) {
+		this.numberOfRecords = numberOfRecords;
 	}
 }

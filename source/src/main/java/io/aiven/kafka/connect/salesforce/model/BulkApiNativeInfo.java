@@ -19,6 +19,7 @@ import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceNativeInfo;
 import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -32,6 +33,8 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	private final String topic;
 	private final Integer partition;
 	private final Long offset;
+	private final String jobId;
+	private final int totalRecords;
 
 	/**
 	 * Constructor.
@@ -44,13 +47,19 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 *            The partition id to produce the event to
 	 * @param offset
 	 *            The offset id to produce the event to
+	 * @param jobId
+	 *            The job Id that the records are retrieved from
+	 * @param totalRecords
+	 *            The total number of records in the job
 	 */
 	public BulkApiNativeInfo(final NativeInfo<BulkApiKey, String> nativeInfo, final String topic,
-			final Integer partition, final Long offset) {
+			final Integer partition, final Long offset, final String jobId, final int totalRecords) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
 		this.offset = offset;
+		this.jobId = jobId;
+		this.totalRecords = totalRecords;
 	}
 
 	/**
@@ -60,10 +69,12 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 */
 	@Override
 	public Context getContext() {
-		Context ctx = new Context(nativeKey());
+		SalesforceContext ctx = new SalesforceContext(nativeKey());
 		ctx.setTopic(topic);
 		ctx.setPartition(partition);
 		ctx.setOffset(offset);
+		ctx.setJobId(jobId);
+		ctx.setTotalRecords(totalRecords);
 		return ctx;
 	}
 

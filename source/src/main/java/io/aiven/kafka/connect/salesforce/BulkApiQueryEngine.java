@@ -25,6 +25,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
+import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +85,7 @@ public class BulkApiQueryEngine {
 	 */
 	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
-		LOGGER.debug("lastModifiedDate {}", lastModifiedDate);
+		LOGGER.debug("Query String to execute {}", query.getQueryString(lastModifiedDate));
 
 		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
 				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
@@ -177,10 +178,11 @@ public class BulkApiQueryEngine {
 				final NativeInfo<BulkApiKey, String> nativeInfo = bulkApiResultResponse.getResult().getNativeInfo();
 				String topic = String.format("%s.%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
 						bulkApiResultResponse.getResult().getObjectName());
-				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null);
-				if (bulkApiResultResponse.getLocator().isPresent()) {
-					bulkApiResultResponseFuture = apiClient.getJobResults(jobId,
-							bulkApiResultResponse.getLocator().get(), object, bulkApiKey);
+				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
+						bulkApiResultResponse.getNumberOfRecords());
+				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())) {
+					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
+							object, bulkApiKey);
 				} else {
 					bulkApiResultResponseFuture = null;
 				}

@@ -23,6 +23,7 @@ import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
@@ -45,6 +46,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
+	private static final String BULKAPI = "bulkapi";
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 	/**
 	 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
@@ -57,7 +59,15 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
 	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
 	private final Map<String, String> lastExecutionTime;
+	private final static KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
+		public String toString(BulkApiKey nativeKey) {
+			return nativeKey.toString();
+		}
 
+		public BulkApiKey fromString(String nativeKeyString) {
+			return BulkApiKey.parse(nativeKeyString);
+		}
+	};
 	/**
 	 * Bulk Api Source Record
 	 *
@@ -107,7 +117,11 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast().getSOQLQuery(), ""), data);
+		LOGGER.info(
+				"Create Salesforce OffsetManagerEntry Through createOffsetManagerEntry data: {}, current stack trace {}",
+				data, Thread.currentThread().getStackTrace());
+		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULKAPI, queries.getLast().getSOQLQuery(),
+				lastExecutionTime.getOrDefault(queries.getLast().getSOQLQuery(), null)), data);
 	}
 
 	/**
@@ -119,7 +133,12 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Context context) {
-		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey());
+
+		SalesforceContext ctx = (SalesforceContext) context;
+		LOGGER.info("Create Salesforce OffsetManagerEntry Through Context: {}, {} , {}", ctx.getJobId(),
+				ctx.getTotalRecords(), Thread.currentThread().getStackTrace());
+		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey(), ctx.getJobId(),
+				ctx.getTotalRecords());
 	}
 
 	/**
@@ -143,16 +162,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	protected Optional<KeySerde<BulkApiKey>> getNativeKeySerde() {
 		return Optional.of(BULKAPIKEY_SERDE);
 	}
-
-	KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
-		public String toString(BulkApiKey nativeKey) {
-			return nativeKey.toString();
-		}
-
-		public BulkApiKey fromString(String nativeKeyString) {
-			return BulkApiKey.parse(nativeKeyString);
-		}
-	};
 
 	/**
 	 * getSalesforceBulkIterator takes the preconfigured queries and executes those

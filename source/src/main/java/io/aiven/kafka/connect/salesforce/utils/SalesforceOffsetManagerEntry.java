@@ -39,31 +39,24 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * Address, etc
 	 */
 	public static final String QUERY_HASH = "queryHash";
-	/**
-	 * The time this query was executed against salesforce allowing us to know when
-	 * the data was queried
-	 */
-	public static final String QUERY_EXECUTION_TIME = "queryExecutionTime";
 
 	/**
-	 * The last modified date of a particular row of data from a Salesforce Object
+	 * The jobId that is being processed
 	 */
-	public static final String LAST_MODIFIED_DATE = "lastModifiedDate";
-	/**
-	 * The number of records read in this interaction
-	 */
-	public static final String ID = "id";
+	public static final String JOB_ID = "jobId";
 	/**
 	 * Defines whether a query has completed processing or not
 	 */
 	public static final String IS_COMPLETE = "isComplete";
-	static final List<String> RESTRICTED_KEYS = List.of(ID, LAST_MODIFIED_DATE, IS_COMPLETE);
+	/**
+	 * Restricted keys
+	 */
+	static final List<String> RESTRICTED_KEYS = List.of(API_NAME, QUERY_HASH, JOB_ID);
 	/** The data map that stores all the values */
 	private final Map<String, Object> data = new HashMap<>();
 	private final BulkApiKey bulkApiKey;
-	private String id;
-	private String lastModifiedDate;
 	private int recordCount;
+	private int totalRecords;
 
 	/**
 	 * Construct the SalesforceOffsetManagerEntry.
@@ -73,6 +66,23 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey) {
 		this.bulkApiKey = bulkApiKey;
+	}
+
+	/**
+	 * Construct the SalesforceOffsetManagerEntry.
+	 *
+	 * @param bulkApiKey
+	 *            the Object the entry comes from
+	 * @param jobId
+	 *            the id of the job created against the bulk api
+	 * @param totalRecords
+	 *            the number of records the job says it has for processing
+	 */
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, int totalRecords) {
+		this.bulkApiKey = bulkApiKey;
+		this.totalRecords = totalRecords;
+		data.put(JOB_ID, jobId);
+		data.put(IS_COMPLETE, totalRecords == recordCount);
 	}
 
 	/**
@@ -88,8 +98,6 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
 		this(bulkApiKey);
 		data.putAll(properties);
-		data.putIfAbsent(IS_COMPLETE, false);
-
 	}
 
 	/**
@@ -128,19 +136,19 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	@Override
 	public Map<String, Object> getProperties() {
-		final Map<String, Object> result = new HashMap<>(data);
-		result.put(ID, id);
-		result.put(LAST_MODIFIED_DATE, lastModifiedDate);
-		result.put(QUERY_EXECUTION_TIME, bulkApiKey.getLastExecutionTime());
-		// TODO to be updated when csv file is processed to true.
-		result.put(IS_COMPLETE, false);
-		return result;
+		HashMap<String, Object> props = new HashMap<>(data);
+		props.putIfAbsent(QUERY_HASH, bulkApiKey.getQueryHash());
+		props.putIfAbsent(API_NAME, bulkApiKey.getApiName());
+		return props;
 	}
 
 	@Override
 	public Object getProperty(final String key) {
-		if (ID.equals(key)) {
-			return id;
+		if (QUERY_HASH.equals(key)) {
+			return bulkApiKey.getQueryHash();
+		}
+		if (API_NAME.equals(key)) {
+			return bulkApiKey.getApiName();
 		}
 		return data.get(key);
 	}
@@ -164,9 +172,13 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		return asKey(bulkApiKey);
 	}
 
+	/**
+	 * Increments the record count by 1
+	 */
 	@Override
 	public void incrementRecordCount() {
 		recordCount++;
+		data.put(IS_COMPLETE, recordCount == totalRecords);
 	}
 
 	/**
