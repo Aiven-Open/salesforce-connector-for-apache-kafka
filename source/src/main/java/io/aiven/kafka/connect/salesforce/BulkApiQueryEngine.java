@@ -16,7 +16,10 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
+import io.aiven.commons.timing.AbortTrigger;
 import io.aiven.commons.timing.Backoff;
+import io.aiven.commons.timing.BackoffConfig;
+import io.aiven.commons.timing.SupplierOfLong;
 import io.aiven.commons.timing.Timer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
@@ -30,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Iterator;
@@ -48,6 +52,22 @@ public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
 	private static final String BULK_API = "bulkApi";
 	private final Duration minimumWaitBetweenQueries;
+	final Backoff backoff = new Backoff(new BackoffConfig() {
+		@Override
+		public SupplierOfLong getSupplierOfTimeRemaining() {
+			return minimumWaitBetweenQueries::toMillis;
+		}
+
+		@Override
+		public AbortTrigger getAbortTrigger() {
+			return null;
+		}
+
+		@Override
+		public boolean applyTimerRule() {
+			return false;
+		}
+	});
 	/**
 	 * To be configured through config, the amount of time to wait in between
 	 * executing the same query again.
@@ -88,18 +108,13 @@ public class BulkApiQueryEngine {
 
 		LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
 
-		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
-				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
-			try {
-				// Look at using backoff class
-				LOGGER.info("Waiting to re-execute query");
-				Thread.sleep(minimumWaitBetweenQueries.toMillis());
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
+		if (lastModifiedDate != null && ZonedDateTime.now(ZoneId.of("UTC")).plusSeconds(statusCheckDelay.getSeconds())
+				.isAfter(ZonedDateTime.parse(lastModifiedDate))) {
+			// Look at using backoff class
+			LOGGER.info("Waiting to re-execute query");
+			backoff.cleanDelay();
 			return Collections.emptyIterator();
 		}
-
 		// Submit the job
 		Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
 		if (optJobId.isPresent()) {
@@ -181,7 +196,7 @@ public class BulkApiQueryEngine {
 				final NativeInfo<BulkApiKey, String> nativeInfo = bulkApiResultResponse.getResult().getNativeInfo();
 				String topic = String.format("%s.%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
 						bulkApiResultResponse.getResult().getObjectName());
-				LOGGER.info("LastModifiedDate {}", lastModifiedDate);
+
 				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
 						bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
 

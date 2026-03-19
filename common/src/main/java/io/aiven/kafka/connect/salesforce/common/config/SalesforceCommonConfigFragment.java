@@ -102,7 +102,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
 	/**
 	 * The default wait between executing the same SOQL query again in seconds
 	 */
-	private static final int SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT = 60;
+	private static final int SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT = 300;
 
 	/**
 	 * The salesforce organization uri for Bulk Api and pub sub queries

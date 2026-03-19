@@ -35,28 +35,31 @@ public class SOQLQueryTest {
 	}
 
 	private static Stream<Arguments> queryStrings() {
-		return Stream.of(Arguments.of("SELECT Id FROM Account", false),
-				Arguments.of("SELECT Id FROM User LIMIT 200", false),
+		return Stream.of(Arguments.of("SELECT Id FROM Account", true),
+				Arguments.of("SELECT Id FROM User LIMIT 200", true),
 				Arguments.of("SELECT FIELDS(ALL) FROM Contact LIMIT 200", true),
 				Arguments.of(
 						"SELECT FIELDS(ALL) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV'",
 						true),
-				Arguments.of("SELECT Name FROM Account WHERE BillingState IN ('California', 'New York')", false),
-				Arguments.of("SELECT Id, Name FROM Account WHERE Parent.Name = 'myaccount'", false),
+				Arguments.of("SELECT Name FROM Account WHERE BillingState IN ('California', 'New York')", true),
+				Arguments.of("SELECT Id, Name FROM Account WHERE Parent.Name = 'myaccount'", true),
 				Arguments.of(
 						"SELECT Title FROM KnowledgeArticleVersion WHERE PublishStatus='online' WITH DATA CATEGORY Geography__c ABOVE usa__c",
-						false),
-				Arguments.of("SELECT LeadSource FROM Lead GROUP BY LeadSource", false),
-				Arguments.of("SELECT LeadSource, COUNT(Name) cnt FROM Lead GROUP BY ROLLUP(LeadSource)", false),
+						true),
+				Arguments.of("SELECT LeadSource FROM Lead GROUP BY LeadSource", true),
+				Arguments.of("SELECT LeadSource, COUNT(Name) cnt FROM Lead GROUP BY ROLLUP(LeadSource)", true),
 				Arguments.of(
 						"SELECT LeadSource, Rating, GROUPING(LeadSource) grpLS, GROUPING(Rating) grpRating, COUNT(Name) cnt FROM Lead GROUP BY ROLLUP(LeadSource, Rating)",
-						false),
+						true),
 				Arguments.of("SELECT LeadSource, COUNT(Name) FROM Lead GROUP BY LeadSource HAVING COUNT(Name) > 100",
-						false),
-				Arguments.of("SELECT Name, Industry FROM Account ORDER BY Industry, Id", false),
-				Arguments.of("SELECT Name FROM Account WHERE Industry = 'Media' LIMIT 125", false),
-				Arguments.of("SELECT Name FROM Account WHERE Industry = 'Media' LIMIT 125", false),
-				Arguments.of("SELECT Id,LastModifiedDate, Name, Industry FROM Account ORDER BY Industry, Id", true));
+						true),
+				Arguments.of("SELECT Name, Industry FROM Account ORDER BY Industry, Id", true),
+				Arguments.of("SELECT Name FROM Account WHERE Industry = 'Media' LIMIT 125", true),
+				Arguments.of("SELECT Name FROM Account WHERE Industry = 'Media' LIMIT 125", true),
+				Arguments.of("SELECT Id,LastModifiedDate, Name, Industry FROM Account ORDER BY Industry, Id", true),
+				Arguments.of(
+						"SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026 ORDER BY Industry, Id",
+						false));
 	}
 
 }

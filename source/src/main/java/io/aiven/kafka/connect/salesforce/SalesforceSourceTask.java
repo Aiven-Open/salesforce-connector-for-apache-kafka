@@ -15,10 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
-import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
@@ -32,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * The salesforce source task is called by the kafka connect framework to start
@@ -65,18 +61,6 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
 		LOGGER.info("Salesforce Source task started.");
 		this.offsetManager = new OffsetManager(context);
-		// TODO add recovery here get offsetManager keys and set the details for each
-		// query
-		// TODO
-		// TODO
-		Optional<Map<String, Object>> entry = offsetManager.getEntryData(new OffsetManager.OffsetManagerKey() {
-			@Override
-			public Map<String, Object> getPartitionMap() {
-				return Map.of("0", "salesforce-source", "",
-						Map.of("apiName", "bulkApi", "queryHash", "[-7223839449343202547, 1135834011000507776]"));
-			}
-		});
-		LOGGER.info("Entry from Offset {}", entry);
 		// set the csv transformer for bulk api
 		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
 		return new SalesforceSourceConfig(props);
@@ -118,18 +102,6 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	@Override
 	public void commit() {
 		LOGGER.info("Committed all records through last poll()");
-	}
-
-	@Override
-	protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
-		try {
-			LOGGER.info("LAST EVOLUTION offsetManager Key {}, get record count {}",
-					new ObjectMapper().writeValueAsString(evolvingSourceRecord.getOffsetManagerEntry().getProperties()),
-					evolvingSourceRecord.getOffsetManagerEntry().getRecordCount());
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-		return evolvingSourceRecord;
 	}
 
 }

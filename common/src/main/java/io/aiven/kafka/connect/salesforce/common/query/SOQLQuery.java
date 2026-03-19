@@ -27,8 +27,6 @@ import java.util.List;
  * queries by adding specifically supported SOQL keywords.
  */
 public class SOQLQuery {
-	private static final String FIELDS_STANDARD = "FIELDS(STANDARD)";
-	private static final String ID = "Id";
 	private static final String LAST_MODIFIED_DATE = "LastModifiedDate";
 	private static final Logger LOGGER = LoggerFactory.getLogger(SOQLQuery.class);
 	private static final String SELECT = "SELECT";
@@ -283,7 +281,7 @@ public class SOQLQuery {
 	}
 
 	private String getPart(String partName, String partInstruction) {
-		return !isEmpty(partInstruction) ? " " + partName + partInstruction : "";
+		return !isEmpty(partInstruction) ? partName + partInstruction : "";
 	}
 
 	/**
@@ -294,18 +292,9 @@ public class SOQLQuery {
 	 *         this connector
 	 */
 	public boolean validate() {
-		// Must contain the Id and LastModifiedDate in the Select or all fields so we
-		// can set the offsets correctly
-		if (!select.contains(FIELDS_STANDARD) && (!select.contains(ID) || !select.contains(LAST_MODIFIED_DATE))) {
-			return false;
-		}
 		// Should not include the LastModifiedDate in the where clause so we can
 		// manipulate it.
-		if (where != null && where.contains(LAST_MODIFIED_DATE)) {
-			return false;
-		}
-
-		return true;
+		return where == null || !where.contains(LAST_MODIFIED_DATE);
 	}
 
 	/**

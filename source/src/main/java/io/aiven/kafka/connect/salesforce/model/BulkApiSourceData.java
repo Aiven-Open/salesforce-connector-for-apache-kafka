@@ -20,6 +20,10 @@ import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
+import io.aiven.commons.timing.AbortTrigger;
+import io.aiven.commons.timing.Backoff;
+import io.aiven.commons.timing.BackoffConfig;
+import io.aiven.commons.timing.SupplierOfLong;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
@@ -30,6 +34,8 @@ import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.HashMap;
@@ -48,6 +54,23 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 	private static final String BULK_API = "bulkApi";
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
+	final Backoff backoff = new Backoff(new BackoffConfig() {
+		@Override
+		public SupplierOfLong getSupplierOfTimeRemaining() {
+			return delay::toMillis;
+		}
+
+		@Override
+		public AbortTrigger getAbortTrigger() {
+			return null;
+		}
+
+		@Override
+		public boolean applyTimerRule() {
+			return false;
+		}
+	});
+	private final Duration delay;
 	/**
 	 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
 	 */
@@ -84,6 +107,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 		this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
 		this.lastExecutionTime = new HashMap<>();
+		this.delay = config.getMinimumQueryExecutionDelay();
 	}
 	/**
 	 * get the source name from the data
@@ -198,8 +222,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				SOQLQuery element = queries.pop();
 				// Re queue to end of the list;
 				queries.offerLast(element);
-				String newLastModifiedDate = ZonedDateTime.now()
-						.format(new DateTimeFormatterBuilder().appendInstant(0).toFormatter());
+				String lastModifiedDate = lastExecutionTime.getOrDefault(element.getSOQLQuery(), null);
+
+				if (lastModifiedDate != null && ZonedDateTime.now(ZoneId.of("UTC")).plusSeconds(delay.getSeconds())
+						.isAfter(ZonedDateTime.parse(lastModifiedDate))) {
+					// Is this holding too long? Nothing is processing so it shouldn't be a problem?
+					backoff.cleanDelay();
+				}
+
+				String newLastModifiedDate = ZonedDateTime.now(ZoneId.of("UTC"))
+						.format(new DateTimeFormatterBuilder().appendInstant(3).toFormatter());
 				try {
 					return engine.getRecords(element, lastExecutionTime.getOrDefault(element.getSOQLQuery(), null))
 							.next();
