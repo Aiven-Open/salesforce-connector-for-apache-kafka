@@ -46,6 +46,7 @@ import java.util.concurrent.CompletionException;
  */
 public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
+	private static final String BULK_API = "bulkApi";
 	private final Duration minimumWaitBetweenQueries;
 	/**
 	 * To be configured through config, the amount of time to wait in between
@@ -85,7 +86,7 @@ public class BulkApiQueryEngine {
 	 */
 	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
-		LOGGER.debug("Query String to execute {}", query.getQueryString(lastModifiedDate));
+		LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
 
 		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
 				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
@@ -110,9 +111,9 @@ public class BulkApiQueryEngine {
 				JobState completedState = waitUntilProcessingComplete(queryResponse.getState(), jobId);
 				switch (completedState) {
 					case JobComplete :
-						BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query.getSOQLQuery(),
+						BulkApiKey bulkApiKey = new BulkApiKey(BULK_API, query.getSOQLQuery(),
 								queryResponse.getCreatedDate());
-						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey);
+						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey, lastModifiedDate);
 					case Aborted :
 					case Failed :
 					default :
@@ -148,11 +149,13 @@ public class BulkApiQueryEngine {
 		private final String jobId;
 		private final String object;
 		private final BulkApiKey bulkApiKey;
+		private final String lastModifiedDate;
 
-		FutureIterator(final String jobId, final String object, final BulkApiKey bulkApiKey) {
+		FutureIterator(final String jobId, final String object, final BulkApiKey bulkApiKey, String lastModifiedDate) {
 			this.jobId = jobId;
 			this.object = object;
 			this.bulkApiKey = bulkApiKey;
+			this.lastModifiedDate = lastModifiedDate;
 			this.bulkApiResultResponseFuture = apiClient.getJobResults(jobId, null, object, bulkApiKey);
 		}
 
@@ -178,8 +181,10 @@ public class BulkApiQueryEngine {
 				final NativeInfo<BulkApiKey, String> nativeInfo = bulkApiResultResponse.getResult().getNativeInfo();
 				String topic = String.format("%s.%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
 						bulkApiResultResponse.getResult().getObjectName());
+				LOGGER.info("LastModifiedDate {}", lastModifiedDate);
 				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
-						bulkApiResultResponse.getNumberOfRecords());
+						bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
+
 				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())) {
 					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
 							object, bulkApiKey);

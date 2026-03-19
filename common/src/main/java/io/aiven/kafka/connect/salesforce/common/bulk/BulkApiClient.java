@@ -253,8 +253,7 @@ public class BulkApiClient {
 			resp.setNumberOfRecords(
 					Integer.parseInt(response.headers().firstValue(SFORCE_NUMBER_OF_RECORDS).orElse("-1")));
 			resp.setApiUsage(response.headers().firstValue(SFORCE_LIMIT_INFO).orElse("Unknown"));
-			resp.setResult(
-					new BulkApiResult(new NativeInfo<BulkApiKey, String>(bulkApiKey, response.body()), objectName));
+			resp.setResult(new BulkApiResult(new NativeInfo<>(bulkApiKey, response.body()), objectName));
 			return resp;
 		}
 	}

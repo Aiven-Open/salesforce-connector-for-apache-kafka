@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -46,8 +46,8 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
-	private static final String BULKAPI = "bulkapi";
-	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
+	private static final String BULK_API = "bulkApi";
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
 	/**
 	 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
 	 */
@@ -117,10 +117,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		LOGGER.info(
-				"Create Salesforce OffsetManagerEntry Through createOffsetManagerEntry data: {}, current stack trace {}",
-				data, Thread.currentThread().getStackTrace());
-		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULKAPI, queries.getLast().getSOQLQuery(),
+		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(),
 				lastExecutionTime.getOrDefault(queries.getLast().getSOQLQuery(), null)), data);
 	}
 
@@ -133,12 +130,10 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Context context) {
-
 		SalesforceContext ctx = (SalesforceContext) context;
-		LOGGER.info("Create Salesforce OffsetManagerEntry Through Context: {}, {} , {}", ctx.getJobId(),
-				ctx.getTotalRecords(), Thread.currentThread().getStackTrace());
+
 		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey(), ctx.getJobId(),
-				ctx.getTotalRecords());
+				ctx.getTotalRecords(), ctx.getLastModifiedTimestamp());
 	}
 
 	/**
@@ -201,10 +196,10 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				// calculation without parsing and allow the BulkApiNativeInfo to format it for
 				// other purposes.
 				SOQLQuery element = queries.pop();
-				// Re queue to end of the list
-				LOGGER.debug("Get Records for Query {}", element);
+				// Re queue to end of the list;
 				queries.offerLast(element);
-				String newLastModifiedDate = ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT);
+				String newLastModifiedDate = ZonedDateTime.now()
+						.format(new DateTimeFormatterBuilder().appendInstant(0).toFormatter());
 				try {
 					return engine.getRecords(element, lastExecutionTime.getOrDefault(element.getSOQLQuery(), null))
 							.next();

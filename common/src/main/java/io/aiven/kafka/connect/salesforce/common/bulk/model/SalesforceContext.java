@@ -24,6 +24,7 @@ public class SalesforceContext extends Context {
 
 	private String jobId;
 	private int totalRecords;
+	private String lastModifiedTimestamp;
 
 	/**
 	 * SalesforceContext
@@ -45,6 +46,7 @@ public class SalesforceContext extends Context {
 		super(anotherContext);
 		this.jobId = anotherContext.jobId;
 		this.totalRecords = anotherContext.totalRecords;
+		this.lastModifiedTimestamp = anotherContext.getLastModifiedTimestamp();
 	}
 
 	/**
@@ -83,5 +85,24 @@ public class SalesforceContext extends Context {
 	 */
 	public void setTotalRecords(int totalRecords) {
 		this.totalRecords = totalRecords;
+	}
+
+	/**
+	 * Get lastModifiedTimestamp used in the job to retrieve data
+	 * 
+	 * @return lastModifiedTimestamp
+	 */
+	public String getLastModifiedTimestamp() {
+		return lastModifiedTimestamp;
+	}
+
+	/**
+	 * Set the lastModifiedTimestamp used in the job
+	 * 
+	 * @param lastModifiedTimestamp
+	 *            lastModifiedTimestamp used in the job to retrieve data
+	 */
+	public void setLastModifiedTimestamp(String lastModifiedTimestamp) {
+		this.lastModifiedTimestamp = lastModifiedTimestamp;
 	}
 }

@@ -17,6 +17,8 @@ package io.aiven.kafka.connect.salesforce.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Map;
  * well so we can make sure we don't re-read the data as well.
  */
 public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceOffsetManagerEntry.class); // NOPMD
 	/**
 	 * Specifies if the data is coming from the bulk api, streaming api or pub/sub
 	 * api
@@ -39,15 +41,17 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * Address, etc
 	 */
 	public static final String QUERY_HASH = "queryHash";
-
+	private static final String RECORD_COUNT = "recordCount";
+	private static final String TOTAL_RECORD_COUNT = "totalRecordCount";
+	private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedTimestamp";
 	/**
 	 * The jobId that is being processed
 	 */
-	public static final String JOB_ID = "jobId";
+	private static final String JOB_ID = "jobId";
 	/**
 	 * Defines whether a query has completed processing or not
 	 */
-	public static final String IS_COMPLETE = "isComplete";
+	private static final String IS_COMPLETE = "isComplete";
 	/**
 	 * Restricted keys
 	 */
@@ -77,12 +81,19 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the id of the job created against the bulk api
 	 * @param totalRecords
 	 *            the number of records the job says it has for processing
+	 * @param lastModifiedDate
+	 *            the lastModifiedDate used in the query
 	 */
-	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, int totalRecords) {
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, int totalRecords,
+			String lastModifiedDate) {
 		this.bulkApiKey = bulkApiKey;
 		this.totalRecords = totalRecords;
+		this.recordCount = 0;
+		data.put(TOTAL_RECORD_COUNT, totalRecords);
 		data.put(JOB_ID, jobId);
 		data.put(IS_COMPLETE, totalRecords == recordCount);
+		data.put(LAST_MODIFIED_TIMESTAMP, lastModifiedDate);
+
 	}
 
 	/**
@@ -98,6 +109,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
 		this(bulkApiKey);
 		data.putAll(properties);
+		recordCount = getInt(data.getOrDefault(RECORD_COUNT, 0));
+		totalRecords = getInt(data.getOrDefault(TOTAL_RECORD_COUNT, 0));
 	}
 
 	/**
@@ -139,6 +152,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		HashMap<String, Object> props = new HashMap<>(data);
 		props.putIfAbsent(QUERY_HASH, bulkApiKey.getQueryHash());
 		props.putIfAbsent(API_NAME, bulkApiKey.getApiName());
+		props.putIfAbsent(RECORD_COUNT, Integer.valueOf(recordCount));
+		props.putIfAbsent(TOTAL_RECORD_COUNT, Integer.valueOf(totalRecords));
 		return props;
 	}
 
@@ -150,7 +165,23 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		if (API_NAME.equals(key)) {
 			return bulkApiKey.getApiName();
 		}
+		if (RECORD_COUNT.equals(key)) {
+			return recordCount;
+		}
+		if (TOTAL_RECORD_COUNT.equals(key)) {
+			return totalRecords;
+		}
 		return data.get(key);
+	}
+
+	private int getInt(Object obj) {
+		if (obj instanceof Long) {
+			return ((Long) obj).intValue();
+		}
+		if (obj instanceof Integer) {
+			return (Integer) obj;
+		}
+		return (int) obj;
 	}
 
 	@Override
@@ -236,11 +267,12 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 			result = getBulkApiKey().compareTo(other.getBulkApiKey());
 			if (result == 0) {
 				result = getLastExecutionTime().compareTo(other.getLastExecutionTime());
-				if (result == 0) {
-					result = Long.compare(getRecordCount(), other.getRecordCount());
+				if (result == 0 && getProperty(JOB_ID).equals(other.getProperty(JOB_ID))) {
+					return Long.compare(getRecordCount(), other.getRecordCount());
 				}
 			}
 		}
+
 		return result;
 	}
 
