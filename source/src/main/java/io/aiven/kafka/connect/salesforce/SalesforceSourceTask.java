@@ -16,6 +16,7 @@
 package io.aiven.kafka.connect.salesforce;
 
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
+import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
@@ -104,4 +105,9 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 		LOGGER.info("Committed all records through last poll()");
 	}
 
+	@Override
+	protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
+
+		return evolvingSourceRecord;
+	}
 }

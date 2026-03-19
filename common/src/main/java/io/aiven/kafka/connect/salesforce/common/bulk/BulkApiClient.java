@@ -254,6 +254,7 @@ public class BulkApiClient {
 					Integer.parseInt(response.headers().firstValue(SFORCE_NUMBER_OF_RECORDS).orElse("-1")));
 			resp.setApiUsage(response.headers().firstValue(SFORCE_LIMIT_INFO).orElse("Unknown"));
 			resp.setResult(new BulkApiResult(new NativeInfo<>(bulkApiKey, response.body()), objectName));
+			LOGGER.warn("Current Salesforce API allocation usage: {}", resp.getApiUsage());
 			return resp;
 		}
 	}

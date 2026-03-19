@@ -54,22 +54,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 	private static final String BULK_API = "bulkApi";
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
-	final Backoff backoff = new Backoff(new BackoffConfig() {
-		@Override
-		public SupplierOfLong getSupplierOfTimeRemaining() {
-			return delay::toMillis;
-		}
-
-		@Override
-		public AbortTrigger getAbortTrigger() {
-			return null;
-		}
-
-		@Override
-		public boolean applyTimerRule() {
-			return false;
-		}
-	});
+	final Backoff backoff;
 	private final Duration delay;
 	/**
 	 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
@@ -108,6 +93,66 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 		this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
 		this.lastExecutionTime = new HashMap<>();
 		this.delay = config.getMinimumQueryExecutionDelay();
+		this.backoff = setupBackOffTimer();
+	}
+
+	/**
+	 * Protected constructor for testing
+	 * 
+	 * @param config
+	 *            The SalesforceSourceConfig
+	 * @param offsetManager
+	 *            The OffsetManager
+	 * @param engine
+	 *            A BulkApiQueryEngine
+	 * @param lastExecutionMap
+	 *            A Map of SOQL Queries to execution times
+	 */
+	protected BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager,
+			BulkApiQueryEngine engine, Map<String, String> lastExecutionMap) {
+		super(config, offsetManager);
+		this.queries = config.getBulkApiQueries().stream().map(SOQLQuery::fromQueryString)
+				.collect(Collectors.toCollection(LinkedList::new));
+
+		this.engine = engine;
+		this.lastExecutionTime = lastExecutionMap;
+		this.delay = config.getMinimumQueryExecutionDelay();
+		this.backoff = setupBackOffTimer();
+	}
+
+	private Backoff setupBackOffTimer() {
+		Duration delay = Duration.ofSeconds(5);
+		BackoffConfig backOffConfig = new BackoffConfig() {
+			/**
+			 *
+			 * @return
+			 */
+			@Override
+			public SupplierOfLong getSupplierOfTimeRemaining() {
+				return delay::toMillis;
+			}
+
+			/**
+			 *
+			 * @return
+			 */
+			@Override
+			public AbortTrigger getAbortTrigger() {
+				return null;
+			}
+
+			/**
+			 *
+			 * @return
+			 */
+			@Override
+			public boolean applyTimerRule() {
+				return false;
+			}
+		};
+		Backoff backoff = new Backoff(backOffConfig);
+		backoff.setMinimumDelay(delay);
+		return backoff;
 	}
 	/**
 	 * get the source name from the data
@@ -223,14 +268,14 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				// Re queue to end of the list;
 				queries.offerLast(element);
 				String lastModifiedDate = lastExecutionTime.getOrDefault(element.getSOQLQuery(), null);
-
-				if (lastModifiedDate != null && ZonedDateTime.now(ZoneId.of("UTC")).plusSeconds(delay.getSeconds())
-						.isAfter(ZonedDateTime.parse(lastModifiedDate))) {
+				while (lastModifiedDate != null && ZonedDateTime.now(ZoneId.of("UTC"))
+						.isBefore(ZonedDateTime.parse(lastModifiedDate).plusSeconds(delay.getSeconds()))) {
 					// Is this holding too long? Nothing is processing so it shouldn't be a problem?
+					LOGGER.info("Back Off");
 					backoff.cleanDelay();
 				}
 
-				String newLastModifiedDate = ZonedDateTime.now(ZoneId.of("UTC"))
+				String newLastModifiedDate = ZonedDateTime.now(ZoneId.of("UTC")).minusSeconds(15)
 						.format(new DateTimeFormatterBuilder().appendInstant(3).toFormatter());
 				try {
 					return engine.getRecords(element, lastExecutionTime.getOrDefault(element.getSOQLQuery(), null))

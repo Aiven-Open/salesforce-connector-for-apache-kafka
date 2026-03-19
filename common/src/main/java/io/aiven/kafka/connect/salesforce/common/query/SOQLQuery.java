@@ -259,9 +259,9 @@ public class SOQLQuery {
 	 * @return A useable SOQL query
 	 */
 	public String getQueryString(String lastModifiedDate) {
-		return getPart(SELECT, select) + getPart(FROM, from) + getWhere(where, lastModifiedDate) + getPart(WITH, with)
+		return (getPart(SELECT, select) + getPart(FROM, from) + getWhere(where, lastModifiedDate) + getPart(WITH, with)
 				+ getPart(GROUP_BY, groupBy) + getPart(HAVING, having) + getPart(ORDER_BY, orderBy)
-				+ getPart(LIMIT, limit) + getPart(OFFSET, offset);
+				+ getPart(LIMIT, limit) + getPart(OFFSET, offset)).trim();
 	}
 
 	private String getWhere(String partInstruction, String lastModifiedDate) {
@@ -281,7 +281,7 @@ public class SOQLQuery {
 	}
 
 	private String getPart(String partName, String partInstruction) {
-		return !isEmpty(partInstruction) ? partName + partInstruction : "";
+		return !isEmpty(partInstruction) ? partName + " " + partInstruction + " " : "";
 	}
 
 	/**
@@ -323,31 +323,31 @@ public class SOQLQuery {
 		for (int i = 0; i < soqlQueryParts.length; i++) {
 			switch (soqlQueryParts[i]) {
 				case SELECT :
-					query.setSelect(soqlQueryParts[++i]);
+					query.setSelect(soqlQueryParts[++i].trim());
 					break;
 				case FROM :
-					query.setFrom(soqlQueryParts[++i]);
+					query.setFrom(soqlQueryParts[++i].trim());
 					break;
 				case GROUP_BY :
-					query.setGroupBy(soqlQueryParts[++i]);
+					query.setGroupBy(soqlQueryParts[++i].trim());
 					break;
 				case ORDER_BY :
-					query.setOrderBy(soqlQueryParts[++i]);
+					query.setOrderBy(soqlQueryParts[++i].trim());
 					break;
 				case HAVING :
-					query.setHaving(soqlQueryParts[++i]);
+					query.setHaving(soqlQueryParts[++i].trim());
 					break;
 				case LIMIT :
-					query.setLimit(soqlQueryParts[++i]);
+					query.setLimit(soqlQueryParts[++i].trim());
 					break;
 				case OFFSET :
-					query.setOffset(soqlQueryParts[++i]);
+					query.setOffset(soqlQueryParts[++i].trim());
 					break;
 				case WHERE :
-					query.setWhere(soqlQueryParts[++i]);
+					query.setWhere(soqlQueryParts[++i].trim());
 					break;
 				case WITH :
-					query.setWith(soqlQueryParts[++i]);
+					query.setWith(soqlQueryParts[++i].trim());
 					break;
 				default :
 					LOGGER.warn("Unrecognized token {}, in SOQL query {}", soqlQueryParts[i], queryString);
