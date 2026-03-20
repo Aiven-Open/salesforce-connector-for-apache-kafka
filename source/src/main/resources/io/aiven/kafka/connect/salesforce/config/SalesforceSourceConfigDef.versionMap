@@ -16,3 +16,4 @@
 io.aiven.commons:kafka-source-connector-framework:[,1.0.0]:1.0.0
 io.aiven.commons:aiven-kafka-connector-framework:[,1.0.0]:1.0.0
 io.aiven.commons:kafka-config:[,1.0.0]:1.0.0
+io.aiven.kafka.connect:salesforce-connector-for-kafka-connect[,1.0.0]:1.0.0

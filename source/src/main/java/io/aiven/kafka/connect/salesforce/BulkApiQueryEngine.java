@@ -67,6 +67,7 @@ public class BulkApiQueryEngine {
 		this.config = config;
 		this.apiClient = apiClient;
 		this.statusCheckDelay = config.getStatusCheckWaitTime();
+
 	}
 
 	/**
@@ -83,7 +84,7 @@ public class BulkApiQueryEngine {
 	 */
 	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
-		LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
+		LOGGER.debug("Query String to execute {}", query.getQueryString(lastModifiedDate));
 
 		// Submit the job
 		Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
@@ -92,6 +93,8 @@ public class BulkApiQueryEngine {
 			Optional<QueryResponse> optQueryResponse = apiClient.queryJobStatus(jobId);
 			if (optQueryResponse.isPresent()) {
 				QueryResponse queryResponse = optQueryResponse.get();
+				LOGGER.debug("JobId {} , State {}, Date Created {}, error message {}", queryResponse.getId(),
+						queryResponse.getState(), queryResponse.getCreatedDate(), queryResponse.getErrorMessage());
 				// wait until the job is finished processing
 				JobState completedState = waitUntilProcessingComplete(queryResponse.getState(), jobId);
 				switch (completedState) {
@@ -150,7 +153,7 @@ public class BulkApiQueryEngine {
 				try {
 					bulkApiResultResponseFuture.join();
 				} catch (CancellationException | CompletionException e) {
-					LOGGER.debug("Iterator error {}", e.getMessage(), e);
+					LOGGER.info("Iterator error {}", e.getMessage(), e);
 					return false;
 				}
 			}

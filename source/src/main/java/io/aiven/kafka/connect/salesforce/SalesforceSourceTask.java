@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
@@ -22,6 +23,7 @@ import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
 import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 
@@ -29,6 +31,9 @@ import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -40,7 +45,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 	/** The offset manager this task uses */
 	private OffsetManager offsetManager;
-
+	private Map<String, ZonedDateTime> lastSeenModifiedDate;
 	/**
 	 * Should check about adding this
 	 */
@@ -62,6 +67,30 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
 		LOGGER.info("Salesforce Source task started.");
 		this.offsetManager = new OffsetManager(context);
+		this.lastSeenModifiedDate = new HashMap<>();
+		// set the csv transformer for bulk api
+		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+		return new SalesforceSourceConfig(props);
+	}
+
+	/**
+	 * Called by the test suit to test the functionality of the SalesforceSourceTask
+	 * 
+	 * @param props
+	 *            The properties that are being used in the config for the test
+	 * @param offsetManager
+	 *            The offset Manager that is being used in the test
+	 * @param lastSeenModifiedDate
+	 *            The last seen modifiedDate map, contains all the sqlQueryHash to
+	 *            lastSeenModifiedDates
+	 * @return The SourceCommonConfig for the test
+	 */
+	@VisibleForTesting
+	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager,
+			HashMap<String, ZonedDateTime> lastSeenModifiedDate) {
+		LOGGER.info("Salesforce Source task configured for testing.");
+		this.offsetManager = offsetManager;
+		this.lastSeenModifiedDate = lastSeenModifiedDate;
 		// set the csv transformer for bulk api
 		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
 		return new SalesforceSourceConfig(props);
@@ -85,9 +114,9 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 	 */
 	@Override
 	protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
-		LOGGER.info("getIterator() query BulkApi");
 		SalesforceSourceConfig myConfig = (SalesforceSourceConfig) config;
-		return new EvolvingSourceRecordIterator(myConfig, new BulkApiSourceData(myConfig, offsetManager));
+		return new EvolvingSourceRecordIterator(myConfig,
+				new BulkApiSourceData(myConfig, offsetManager, lastSeenModifiedDate));
 	}
 
 	@Override
@@ -107,7 +136,22 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 
 	@Override
 	protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
-
+		try {
+			LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
+			BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
+			ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
+			if (lastModifiedDate != null) {
+				lastSeenModifiedDate.put(key.getQueryHash(),
+						ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
+								? ZonedDateTime.parse(value.get("LastModifiedDate"))
+								: lastModifiedDate);
+			} else {
+				lastSeenModifiedDate.put(key.getQueryHash(), ZonedDateTime.parse(value.get("LastModifiedDate")));
+			}
+		} catch (Exception e) {
+			// nothing
+			LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);
+		}
 		return evolvingSourceRecord;
 	}
 }

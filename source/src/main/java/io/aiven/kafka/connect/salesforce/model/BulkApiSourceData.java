@@ -31,18 +31,21 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+import org.apache.commons.codec.digest.MurmurHash3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatterBuilder;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,7 +58,17 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	private static final String BULK_API = "bulkApi";
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
 	final Backoff backoff;
-	private final Duration delay;
+	private final Duration minimumDelayBetweenQueries;
+	/**
+	 * This is a map of the latest lastModifiedDate for each query that has been
+	 * identified We use this to get the lastModifiedDate for the next query
+	 */
+	private final Map<String, ZonedDateTime> lastSeenModifiedDate;
+	/**
+	 * Track the last time a query was executed and allows a back off to be used as
+	 * to how often it can be called.
+	 */
+	private final Map<String, ZonedDateTime> lastQueryExecuted;
 	/**
 	 * The Bulk Api Query Engine handles the lifecycle of bulk api requests
 	 */
@@ -66,7 +79,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	private final LinkedList<SOQLQuery> queries;
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
 	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
-	private final Map<String, String> lastExecutionTime;
+
 	private final static KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
 		public String toString(BulkApiKey nativeKey) {
 			return nativeKey.toString();
@@ -84,16 +97,19 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 *            for configuring the BulkApiSourceData
 	 * @param offsetManager
 	 *            the offsetManager used in this implementation of BulkApiSourceData
+	 * @param lastSeenModifiedDate
+	 *            Map of last Seen LastModifiedDates processed
 	 */
-	public BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager) {
+	public BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager,
+			Map<String, ZonedDateTime> lastSeenModifiedDate) {
 		super(config, offsetManager);
 		this.queries = config.getBulkApiQueries().stream().map(SOQLQuery::fromQueryString)
 				.collect(Collectors.toCollection(LinkedList::new));
-
+		this.lastQueryExecuted = new HashMap<>();
 		this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
-		this.lastExecutionTime = new HashMap<>();
-		this.delay = config.getMinimumQueryExecutionDelay();
+		this.lastSeenModifiedDate = lastSeenModifiedDate;
 		this.backoff = setupBackOffTimer();
+		this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
 	}
 
 	/**
@@ -105,23 +121,23 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 *            The OffsetManager
 	 * @param engine
 	 *            A BulkApiQueryEngine
-	 * @param lastExecutionMap
-	 *            A Map of SOQL Queries to execution times
+	 * @param lastSeenModifiedDate
+	 *            last Seen LastModifiedDate processed
 	 */
 	protected BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager,
-			BulkApiQueryEngine engine, Map<String, String> lastExecutionMap) {
+			BulkApiQueryEngine engine, Map<String, ZonedDateTime> lastSeenModifiedDate) {
 		super(config, offsetManager);
 		this.queries = config.getBulkApiQueries().stream().map(SOQLQuery::fromQueryString)
 				.collect(Collectors.toCollection(LinkedList::new));
-
+		this.lastQueryExecuted = new HashMap<>();
 		this.engine = engine;
-		this.lastExecutionTime = lastExecutionMap;
-		this.delay = config.getMinimumQueryExecutionDelay();
+		this.lastSeenModifiedDate = lastSeenModifiedDate;
 		this.backoff = setupBackOffTimer();
+		this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
 	}
 
 	private Backoff setupBackOffTimer() {
-		Duration delay = Duration.ofSeconds(5);
+		Duration delay = Duration.ofSeconds(3);
 		BackoffConfig backOffConfig = new BackoffConfig() {
 			/**
 			 *
@@ -187,7 +203,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
 		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(),
-				lastExecutionTime.getOrDefault(queries.getLast().getSOQLQuery(), null)), data);
+				lastSeenModifiedDate.getOrDefault(getQueryHash(), null) != null
+						? lastSeenModifiedDate.get(getQueryHash()).toString()
+						: null),
+				data);
+	}
+
+	private String getQueryHash() {
+
+		return Arrays.toString(MurmurHash3
+				.hash128(queries.getLast().getSOQLQuery().replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
 	}
 
 	/**
@@ -218,6 +243,21 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	}
 
 	/**
+	 * This method allows us to back off for a while and not constantly be trying to
+	 * re run the same query too quickly.
+	 */
+	private void backOff() {
+		ZonedDateTime lastExecutedDateTime = lastQueryExecuted.getOrDefault(getQueryHash(), null);
+		if (lastExecutedDateTime == null) {
+			return;
+		}
+		while (lastExecutedDateTime.plusSeconds(minimumDelayBetweenQueries.getSeconds())
+				.isAfter(ZonedDateTime.now(ZoneId.of("UTC")))) {
+			backoff.cleanDelay();
+		}
+	}
+
+	/**
 	 * Get the KeySerde for the String
 	 *
 	 * @return The native Key.
@@ -238,7 +278,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	public Stream<BulkApiNativeInfo> getSalesforceBulkApiStream() {
 
 		return Streams.stream(new Iterator<>() {
-
+			AtomicBoolean latch = new AtomicBoolean(false);
 			/**
 			 * Returns {@code true} if the iteration has more elements. (In other words,
 			 * returns {@code true} if {@link #next} would return an element rather than
@@ -248,7 +288,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 			 */
 			@Override
 			public boolean hasNext() {
-				return !queries.isEmpty();
+				return !queries.isEmpty() && !latch.get();
 			}
 
 			/**
@@ -267,21 +307,19 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				SOQLQuery element = queries.pop();
 				// Re queue to end of the list;
 				queries.offerLast(element);
-				String lastModifiedDate = lastExecutionTime.getOrDefault(element.getSOQLQuery(), null);
-				while (lastModifiedDate != null && ZonedDateTime.now(ZoneId.of("UTC"))
-						.isBefore(ZonedDateTime.parse(lastModifiedDate).plusSeconds(delay.getSeconds()))) {
-					// Is this holding too long? Nothing is processing so it shouldn't be a problem?
-					LOGGER.info("Back Off");
+				while (latch.compareAndSet(false, true)) {
+					LOGGER.info("delay while waiting for latch");
 					backoff.cleanDelay();
 				}
+				// Regular back off
+				backOff();
+				ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
 
-				String newLastModifiedDate = ZonedDateTime.now(ZoneId.of("UTC")).minusSeconds(15)
-						.format(new DateTimeFormatterBuilder().appendInstant(3).toFormatter());
 				try {
-					return engine.getRecords(element, lastExecutionTime.getOrDefault(element.getSOQLQuery(), null))
+					return engine.getRecords(element, lastModifiedDate != null ? lastModifiedDate.toString() : null)
 							.next();
 				} finally {
-					lastExecutionTime.put(element.getSOQLQuery(), newLastModifiedDate);
+					lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of("UTC")));
 				}
 			}
 		});

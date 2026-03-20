@@ -27,6 +27,7 @@ import java.util.List;
  * queries by adding specifically supported SOQL keywords.
  */
 public class SOQLQuery {
+	private static final String FIELDS_STANDARD = "FIELDS(STANDARD)";
 	private static final String LAST_MODIFIED_DATE = "LastModifiedDate";
 	private static final Logger LOGGER = LoggerFactory.getLogger(SOQLQuery.class);
 	private static final String SELECT = "SELECT";
@@ -294,7 +295,15 @@ public class SOQLQuery {
 	public boolean validate() {
 		// Should not include the LastModifiedDate in the where clause so we can
 		// manipulate it.
-		return where == null || !where.contains(LAST_MODIFIED_DATE);
+		if (!select.contains(FIELDS_STANDARD) && !select.contains(LAST_MODIFIED_DATE)) {
+			return false;
+		}
+		// Should not include the LastModifiedDate in the where clause so we can
+		// manipulate it.
+		if (where != null && where.contains(LAST_MODIFIED_DATE)) {
+			return false;
+		}
+		return true;
 	}
 
 	/**

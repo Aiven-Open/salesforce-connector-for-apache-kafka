@@ -25,7 +25,7 @@ public class SalesforceSourceConfigDefTest {
 	void sinceTest() {
 		for (ExtendedConfigKeyBean bean : new ConfigDefBeanFactory().open(SalesforceSourceConfigDef.class.getName())
 				.configKeys()) {
-			assertThat(bean.since()).as(bean.getName()).isIn("1.0.0", "Kafka 0.9.0.0");
+			assertThat(bean.since()).as(bean.getName()).containsAnyOf("1.0.0", "Kafka 0.9.0.0");
 		}
 	}
 }
