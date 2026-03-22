@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -143,10 +144,14 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 			if (lastModifiedDate != null) {
 				lastSeenModifiedDate.put(key.getQueryHash(),
 						ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
-								? ZonedDateTime.parse(value.get("LastModifiedDate"))
-								: lastModifiedDate);
+								? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
+								: lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
+				LOGGER.info("Stored Last Mod date {}", lastSeenModifiedDate.get(key.getQueryHash()));
+				LOGGER.info("String value of LastModifiedDate {}", value.get("LastModifiedDate"));
 			} else {
-				lastSeenModifiedDate.put(key.getQueryHash(), ZonedDateTime.parse(value.get("LastModifiedDate")));
+				lastSeenModifiedDate.put(key.getQueryHash(),
+						ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
+				LOGGER.info("Stored Last Mod date {} from the else", lastSeenModifiedDate.get(key.getQueryHash()));
 			}
 		} catch (Exception e) {
 			// nothing

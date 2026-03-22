@@ -55,7 +55,7 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
-	private static final String BULK_API = "bulkApi";
+	// private static final String BULK_API = "bulkApi";
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
 	final Backoff backoff;
 	private final Duration minimumDelayBetweenQueries;
@@ -202,11 +202,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(),
-				lastSeenModifiedDate.getOrDefault(getQueryHash(), null) != null
-						? lastSeenModifiedDate.get(getQueryHash()).toString()
-						: null),
-				data);
+		return null;
 	}
 
 	private String getQueryHash() {

@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -52,7 +53,7 @@ public class SalesforceSourceTaskTest {
 	@Test
 	void lastModDateIsUpdatedFromNull() {
 
-		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC));
+		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
 		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
@@ -61,7 +62,7 @@ public class SalesforceSourceTaskTest {
 
 	@Test
 	void lastModDateIsNotUpdatedFromOlderTimestamp() {
-		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC));
+		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
 		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
@@ -76,7 +77,7 @@ public class SalesforceSourceTaskTest {
 
 	@Test
 	void lastModDateIsUpdatedToNewerTimestamp() {
-		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC));
+		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
 		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
