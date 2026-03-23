@@ -25,6 +25,7 @@ public class SalesforceContext extends Context {
 	private String jobId;
 	private int totalRecords;
 	private String lastModifiedTimestamp;
+	private String locator;
 
 	/**
 	 * SalesforceContext
@@ -47,6 +48,7 @@ public class SalesforceContext extends Context {
 		this.jobId = anotherContext.jobId;
 		this.totalRecords = anotherContext.totalRecords;
 		this.lastModifiedTimestamp = anotherContext.getLastModifiedTimestamp();
+		this.locator = anotherContext.getLocator();
 	}
 
 	/**
@@ -104,5 +106,25 @@ public class SalesforceContext extends Context {
 	 */
 	public void setLastModifiedTimestamp(String lastModifiedTimestamp) {
 		this.lastModifiedTimestamp = lastModifiedTimestamp;
+	}
+
+	/**
+	 * This is the locator for a specific page of data results for a job
+	 * 
+	 * @return The locator string
+	 */
+	public String getLocator() {
+		return locator;
+	}
+
+	/**
+	 * Set the locator string for the job id which references a specific page of
+	 * data
+	 * 
+	 * @param locator
+	 *            The locator String
+	 */
+	public void setLocator(String locator) {
+		this.locator = locator;
 	}
 }

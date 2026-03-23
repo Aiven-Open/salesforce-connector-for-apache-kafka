@@ -36,6 +36,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	private final String jobId;
 	private final int totalRecords;
 	private final String lastModifiedDate;
+	private final String locator;
 
 	/**
 	 * Constructor.
@@ -50,14 +51,17 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 *            The offset id to produce the event to
 	 * @param jobId
 	 *            The job Id that the records are retrieved from
+	 * @param locator
+	 *            The locator for a specific page of data, should be the current
+	 *            page that is being processed not the next page
 	 * @param totalRecords
 	 *            The total number of records in the job
 	 * @param lastModifiedDate
 	 *            The lastModifiedDate used in the creation of this job
 	 */
 	public BulkApiNativeInfo(final NativeInfo<BulkApiKey, String> nativeInfo, final String topic,
-			final Integer partition, final Long offset, final String jobId, final int totalRecords,
-			final String lastModifiedDate) {
+			final Integer partition, final Long offset, final String jobId, final String locator,
+			final int totalRecords, final String lastModifiedDate) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
@@ -65,6 +69,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 		this.jobId = jobId;
 		this.totalRecords = totalRecords;
 		this.lastModifiedDate = lastModifiedDate;
+		this.locator = locator;
 	}
 
 	/**
@@ -81,6 +86,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 		ctx.setJobId(jobId);
 		ctx.setTotalRecords(totalRecords);
 		ctx.setLastModifiedTimestamp(lastModifiedDate);
+		ctx.setLocator(locator);
 		return ctx;
 	}
 

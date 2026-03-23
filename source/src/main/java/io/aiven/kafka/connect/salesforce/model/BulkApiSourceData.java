@@ -20,10 +20,6 @@ import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 
-import io.aiven.commons.timing.AbortTrigger;
-import io.aiven.commons.timing.Backoff;
-import io.aiven.commons.timing.BackoffConfig;
-import io.aiven.commons.timing.SupplierOfLong;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
@@ -45,7 +41,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,9 +50,13 @@ import java.util.stream.Stream;
  */
 public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
-	// private static final String BULK_API = "bulkApi";
-	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class); // NOPMD
-	final Backoff backoff;
+	private static final String BULK_API = "bulkApi";
+	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
+	/**
+	 * The key to retrieve the Is complete information from the offset.
+	 */
+	private static final String IS_COMPLETE = "isComplete";
+	private static final String UTC = "UTC";
 	private final Duration minimumDelayBetweenQueries;
 	/**
 	 * This is a map of the latest lastModifiedDate for each query that has been
@@ -109,8 +108,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 		this.lastQueryExecuted = new HashMap<>();
 		this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
 		this.lastSeenModifiedDate = lastSeenModifiedDate;
-		this.backoff = setupBackOffTimer();
 		this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
+
+		// TODO pick up from where you left off
 	}
 
 	/**
@@ -133,44 +133,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 		this.lastQueryExecuted = new HashMap<>();
 		this.engine = engine;
 		this.lastSeenModifiedDate = lastSeenModifiedDate;
-		this.backoff = setupBackOffTimer();
 		this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
 	}
 
-	private Backoff setupBackOffTimer() {
-		Duration delay = Duration.ofSeconds(3);
-		BackoffConfig backOffConfig = new BackoffConfig() {
-			/**
-			 *
-			 * @return
-			 */
-			@Override
-			public SupplierOfLong getSupplierOfTimeRemaining() {
-				return delay::toMillis;
-			}
-
-			/**
-			 *
-			 * @return
-			 */
-			@Override
-			public AbortTrigger getAbortTrigger() {
-				return null;
-			}
-
-			/**
-			 *
-			 * @return
-			 */
-			@Override
-			public boolean applyTimerRule() {
-				return false;
-			}
-		};
-		Backoff backoff = new Backoff(backOffConfig);
-		backoff.setMinimumDelay(delay);
-		return backoff;
-	}
 	/**
 	 * get the source name from the data
 	 * 
@@ -195,8 +160,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	}
 
 	/**
-	 * Creates an offset manager entry using the data in the map. TODO Document why
-	 * this is returning null
+	 * Creates an offset manager entry using the data in the map.
+	 *
+	 * The BulkAi we are using returns a delta CSV of information on each query.
+	 * That means that when we encounter that the data already has isComplete
+	 * already set to true we know that we are starting to query a new job which has
+	 * a delta level of information. Returning null here forces the offsets to be
+	 * created from the context and create a new offset with all the correct
+	 * information for the new job, however when we have not yet completed the job
+	 * we allow the existing data to be used so that we can accurately track the
+	 * record count and metadata in the offset.
 	 * 
 	 * @param data
 	 *            the data to create the offset manager from.
@@ -204,10 +177,10 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		if ((boolean) data.getOrDefault("isComplete", false)) {
+		if ((boolean) data.getOrDefault(IS_COMPLETE, false)) {
 			return null;
 		}
-		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast().getSOQLQuery(), ""), data);
+		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(), ""), data);
 	}
 
 	private String getQueryHash() {
@@ -233,7 +206,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	protected OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Context context) {
 		SalesforceContext ctx = (SalesforceContext) context;
 
-		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey(), ctx.getJobId(),
+		return new SalesforceOffsetManagerEntry((BulkApiKey) context.getNativeKey(), ctx.getJobId(), ctx.getLocator(),
 				ctx.getTotalRecords(), ctx.getLastModifiedTimestamp());
 	}
 
@@ -259,7 +232,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 			return false;
 		}
 		return lastExecutedDateTime.plusSeconds(minimumDelayBetweenQueries.getSeconds())
-				.isAfter(ZonedDateTime.now(ZoneId.of("UTC")));
+				.isAfter(ZonedDateTime.now(ZoneId.of(UTC)));
 	}
 
 	/**
@@ -283,7 +256,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	public Stream<BulkApiNativeInfo> getSalesforceBulkApiStream() {
 
 		return Streams.stream(new Iterator<>() {
-			AtomicBoolean latch = new AtomicBoolean(false);
 			/**
 			 * Returns {@code true} if the iteration has more elements. (In other words,
 			 * returns {@code true} if {@link #next} would return an element rather than
@@ -293,7 +265,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 			 */
 			@Override
 			public boolean hasNext() {
-				// && !latch.get()
 				if (!queries.isEmpty()) {
 					if (iterator == null || !iterator.hasNext()) {
 						// If it has been too soon since the last execution of this query return false
@@ -309,14 +280,13 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 						ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
 						try {
-							LOGGER.info("Submit new query");
+							LOGGER.info("Submit new query for results");
 							iterator = engine.getRecords(element,
 									lastModifiedDate != null ? lastModifiedDate.toString() : null);
 						} finally {
-							lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of("UTC")));
+							lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of(UTC)));
 						}
 					}
-					LOGGER.info("Iterator hasNext() {}", iterator.hasNext());
 					return iterator.hasNext();
 				}
 				return false;

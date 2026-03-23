@@ -56,6 +56,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * Restricted keys
 	 */
 	static final List<String> RESTRICTED_KEYS = List.of(API_NAME, QUERY_HASH, JOB_ID);
+	private static final String LOCATOR = "locator";
 	/** The data map that stores all the values */
 	private final Map<String, Object> data = new HashMap<>();
 	private final BulkApiKey bulkApiKey;
@@ -79,12 +80,14 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 *            the Object the entry comes from
 	 * @param jobId
 	 *            the id of the job created against the bulk api
+	 * @param locator
+	 *            the locator of this page for the job
 	 * @param totalRecords
 	 *            the number of records the job says it has for processing
 	 * @param lastModifiedDate
 	 *            the lastModifiedDate used in the query
 	 */
-	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, int totalRecords,
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, String locator, int totalRecords,
 			String lastModifiedDate) {
 		this.bulkApiKey = bulkApiKey;
 		this.totalRecords = totalRecords;
@@ -93,6 +96,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		data.put(JOB_ID, jobId);
 		data.put(IS_COMPLETE, totalRecords == recordCount);
 		data.put(LAST_MODIFIED_TIMESTAMP, lastModifiedDate);
+		data.put(LOCATOR, locator);
 
 	}
 

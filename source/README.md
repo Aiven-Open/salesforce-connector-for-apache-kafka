@@ -4,7 +4,8 @@ Salesforce Connector for Apache Kafka
 
 Overview
 ========
-
+The Aiven Kafka Source Connector for Salesforce provides a mechanism to retrieve information from Salesforce and add it to Kafka.
+It provides an *at least once* approach to sending data to Kafka this means that duplicate events can be sent, particularly around restarts.
 
 Configuration
 =============
@@ -19,10 +20,11 @@ To make the connector work, a user has to specify Salesforce client credentials 
 
 * Define your query `salesforce.bulk.api.queries`
   * Queries are defined using the SOQL language 
-  * The queries all need to have the system fields Id and LastModifiedDate or FIELDS(ALL)
-  * The WHERE Clause is optional but should not contain the "LastModifiedDate"
+  * The queries all need to have the system field LastModifiedDate included
+  * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
   * Multiple queries are supported
   * example query
+    * SELECT Id, Name, LastModifiedDate FROM Account;
  ``
 
 * Some important configuration options to handle how often the Bulk API is queried by the connector
@@ -75,7 +77,7 @@ salesforce.client.id=YOUR_CLIENT_ID
 # The Salesforce OAUTH Uri may be unique for your salesforce deployment
 salesforce.oauth.uri=https://www.salesforce.com/services/oauth2/token
 
-salesforce.bulk.api.queries=Select FIELDS(ALL) FROM Account;Select Id,LastModifiedDate,Department,Email,FirstName,LastName FROM Contact WHERE HasOptedOutOfEmail=False;
+salesforce.bulk.api.queries=Select Id,Name,LastModifiedDate FROM Account;Select Id,LastModifiedDate,Department,Email,FirstName,LastName FROM Contact WHERE HasOptedOutOfEmail=False;
 
 # Optional
 # Wait at least an hour in between each query being called
@@ -96,8 +98,7 @@ Offsets
 =======
 How the offsets are handled
 * We include a hash of the query, LastExecutionDate and the API name as part of the offset Key
-* We include the Id and LastModifiedDate in the offset data
-  * If an entry is found to have the same Id and LastModifiedDate as an entry in the offset manager it will not be resent 
+* We include the LastModifiedDate, jobId, next Locator, recordCount in the offset data
 
 Features
 ============

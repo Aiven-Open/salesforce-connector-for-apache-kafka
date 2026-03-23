@@ -137,6 +137,7 @@ public class BulkApiQueryEngine {
 		private final String object;
 		private final BulkApiKey bulkApiKey;
 		private final String lastModifiedDate;
+		private String locator = null;
 
 		FutureIterator(final String jobId, final String object, final BulkApiKey bulkApiKey, String lastModifiedDate) {
 			this.jobId = jobId;
@@ -152,7 +153,7 @@ public class BulkApiQueryEngine {
 				try {
 					bulkApiResultResponseFuture.join();
 				} catch (CancellationException | CompletionException e) {
-					LOGGER.info("Iterator error {}", e.getMessage(), e);
+					LOGGER.error("Iterator error {}", e.getMessage(), e);
 					return false;
 				}
 			}
@@ -171,12 +172,13 @@ public class BulkApiQueryEngine {
 						bulkApiResultResponse.getResult().getObjectName());
 
 				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
-						bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
+						locator, bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
 
 				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())
 						&& !bulkApiResultResponse.getLocator().equals("null")) {
 					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
 							object, bulkApiKey);
+					locator = bulkApiResultResponse.getLocator();
 				} else {
 					bulkApiResultResponseFuture = null;
 				}
