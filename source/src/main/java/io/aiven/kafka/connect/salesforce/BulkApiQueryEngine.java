@@ -173,12 +173,11 @@ public class BulkApiQueryEngine {
 				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
 						bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
 
-				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())) {
-					LOGGER.info("Locator {}", bulkApiResultResponse.getLocator());
+				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())
+						&& !bulkApiResultResponse.getLocator().equals("null")) {
 					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
 							object, bulkApiKey);
 				} else {
-					LOGGER.info("Locator is null {}", bulkApiResultResponse.getLocator());
 					bulkApiResultResponseFuture = null;
 				}
 				return bulkApiNativeInfo;

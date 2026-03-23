@@ -216,6 +216,12 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				.hash128(queries.getLast().getSOQLQuery().replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
 	}
 
+	private String getNextQueryHash() {
+
+		return Arrays.toString(MurmurHash3
+				.hash128(queries.getFirst().getSOQLQuery().replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
+	}
+
 	/**
 	 * Creates an offset manager entry from a context.
 	 *
@@ -247,15 +253,13 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 * This method allows us to back off for a while and not constantly be trying to
 	 * re run the same query too quickly.
 	 */
-	private void backOff() {
-		ZonedDateTime lastExecutedDateTime = lastQueryExecuted.getOrDefault(getQueryHash(), null);
+	private boolean backOff() {
+		ZonedDateTime lastExecutedDateTime = lastQueryExecuted.getOrDefault(getNextQueryHash(), null);
 		if (lastExecutedDateTime == null) {
-			return;
+			return false;
 		}
-		while (lastExecutedDateTime.plusSeconds(minimumDelayBetweenQueries.getSeconds())
-				.isAfter(ZonedDateTime.now(ZoneId.of("UTC")))) {
-			backoff.cleanDelay();
-		}
+		return lastExecutedDateTime.plusSeconds(minimumDelayBetweenQueries.getSeconds())
+				.isAfter(ZonedDateTime.now(ZoneId.of("UTC")));
 	}
 
 	/**
@@ -292,16 +296,17 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 				// && !latch.get()
 				if (!queries.isEmpty()) {
 					if (iterator == null || !iterator.hasNext()) {
-						// TODO this can be cleaned up a bit by changing the queries queue to the last
-						// BulkApiNativeInfo and we add the last execution time to the native info then
-						// we can store the execution as a long and use in the in getRecords()
-						// calculation without parsing and allow the BulkApiNativeInfo to format it for
-						// other purposes.
+						// If it has been too soon since the last execution of this query return false
+						// and backoff
+						if (backOff()) {
+							LOGGER.info("Back off on executing query {}", queries.getFirst().toString());
+							return false;
+						}
 						SOQLQuery element = queries.pop();
 						// Re queue to end of the list;
 						queries.offerLast(element);
 						// Regular back off
-						backOff();
+
 						ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
 						try {
 							LOGGER.info("Submit new query");
