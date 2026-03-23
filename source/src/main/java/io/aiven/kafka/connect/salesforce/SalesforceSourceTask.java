@@ -27,6 +27,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
 
+import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.utils.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,12 +147,16 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 						ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
 								? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
 								: lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
-				LOGGER.info("Stored Last Mod date {}", lastSeenModifiedDate.get(key.getQueryHash()));
-				LOGGER.info("String value of LastModifiedDate {}", value.get("LastModifiedDate"));
 			} else {
 				lastSeenModifiedDate.put(key.getQueryHash(),
 						ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
-				LOGGER.info("Stored Last Mod date {} from the else", lastSeenModifiedDate.get(key.getQueryHash()));
+			}
+			// If this is the last offset Record update to the last seen timestamp so we
+			// know where to begin from on a restart
+			SalesforceOffsetManagerEntry offsetRecord = (SalesforceOffsetManagerEntry) evolvingSourceRecord
+					.getOffsetManagerEntry();
+			if ((boolean) offsetRecord.getProperty("isComplete")) {
+				offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
 			}
 		} catch (Exception e) {
 			// nothing

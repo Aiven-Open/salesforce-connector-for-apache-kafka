@@ -79,6 +79,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	private final LinkedList<SOQLQuery> queries;
 	// https://developer.salesforce.com/docs/atlas.en-us.260.0.object_reference.meta/object_reference/sforce_api_objects_concepts.htm
 	// We use the lastModifiedDate to only get deltas of changes in the Bulk API
+	private Iterator<BulkApiNativeInfo> iterator = null;
 
 	private final static KeySerde<BulkApiKey> BULKAPIKEY_SERDE = new KeySerde<>() {
 		public String toString(BulkApiKey nativeKey) {
@@ -194,15 +195,19 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	}
 
 	/**
-	 * Creates an offset manager entry using the data in the map.
-	 *
+	 * Creates an offset manager entry using the data in the map. TODO Document why
+	 * this is returning null
+	 * 
 	 * @param data
 	 *            the data to create the offset manager from.
 	 * @return a valid offset manager entry.
 	 */
 	@Override
 	public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-		return null;
+		if ((boolean) data.getOrDefault("isComplete", false)) {
+			return null;
+		}
+		return new SalesforceOffsetManagerEntry(new BulkApiKey("bulkapi", queries.getLast().getSOQLQuery(), ""), data);
 	}
 
 	private String getQueryHash() {
@@ -284,7 +289,32 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 			 */
 			@Override
 			public boolean hasNext() {
-				return !queries.isEmpty() && !latch.get();
+				// && !latch.get()
+				if (!queries.isEmpty()) {
+					if (iterator == null || !iterator.hasNext()) {
+						// TODO this can be cleaned up a bit by changing the queries queue to the last
+						// BulkApiNativeInfo and we add the last execution time to the native info then
+						// we can store the execution as a long and use in the in getRecords()
+						// calculation without parsing and allow the BulkApiNativeInfo to format it for
+						// other purposes.
+						SOQLQuery element = queries.pop();
+						// Re queue to end of the list;
+						queries.offerLast(element);
+						// Regular back off
+						backOff();
+						ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
+						try {
+							LOGGER.info("Submit new query");
+							iterator = engine.getRecords(element,
+									lastModifiedDate != null ? lastModifiedDate.toString() : null);
+						} finally {
+							lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of("UTC")));
+						}
+					}
+					LOGGER.info("Iterator hasNext() {}", iterator.hasNext());
+					return iterator.hasNext();
+				}
+				return false;
 			}
 
 			/**
@@ -295,28 +325,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 			 */
 			@Override
 			public BulkApiNativeInfo next() {
-				// TODO this can be cleaned up a bit by changing the queries queue to the last
-				// BulkApiNativeInfo and we add the last execution time to the native info then
-				// we can store the execution as a long and use in the in getRecords()
-				// calculation without parsing and allow the BulkApiNativeInfo to format it for
-				// other purposes.
-				SOQLQuery element = queries.pop();
-				// Re queue to end of the list;
-				queries.offerLast(element);
-				while (latch.compareAndSet(false, true)) {
-					LOGGER.info("delay while waiting for latch");
-					backoff.cleanDelay();
-				}
-				// Regular back off
-				backOff();
-				ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
+				LOGGER.info("Get next set of results");
+				return iterator.next();
 
-				try {
-					return engine.getRecords(element, lastModifiedDate != null ? lastModifiedDate.toString() : null)
-							.next();
-				} finally {
-					lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of("UTC")));
-				}
 			}
 		});
 
