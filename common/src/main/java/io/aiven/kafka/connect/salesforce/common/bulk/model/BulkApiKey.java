@@ -19,6 +19,7 @@ import org.apache.commons.codec.digest.MurmurHash3;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * This BulkApiKey is used to contain all the important information required to
@@ -29,22 +30,47 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 	private final String lastExecutionTime;
 	private final String queryHash;
 	private final String apiName;
+	private final String locator;
 
 	/**
 	 * Constructor
-	 * 
+	 *
+	 * @param apiName
+	 *            The name of the api
+	 * @param query
+	 *            The query that was used to return the data, this query will be
+	 *            automatically hashed
+	 * @param lastExecutionTime
+	 *            The execution time this query was executed at
+	 * @param locator
+	 *            The locator specifies the page of results that is being returned
+	 */
+	public BulkApiKey(String apiName, String query, String lastExecutionTime, String locator) {
+		this(apiName, query, lastExecutionTime, locator, true);
+	}
+
+	/**
+	 * Constructor
+	 *
 	 * @param apiName
 	 *            The name of the api
 	 * @param query
 	 *            The query that was used to return the data
 	 * @param lastExecutionTime
 	 *            The execution time this query was executed at
+	 * @param locator
+	 *            The locator specifies the page of results that is being returned
+	 * @param hashQueryString
+	 *            boolean to determine wether the query should be hashed can be
+	 *            false if already hashed
 	 */
-	public BulkApiKey(String apiName, String query, String lastExecutionTime) {
+	public BulkApiKey(String apiName, String query, String lastExecutionTime, String locator, boolean hashQueryString) {
 		this.apiName = apiName;
-		this.queryHash = Arrays
-				.toString(MurmurHash3.hash128(query.replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
+		this.queryHash = hashQueryString
+				? Arrays.toString(MurmurHash3.hash128(query.replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)))
+				: query;
 		this.lastExecutionTime = lastExecutionTime;
+		this.locator = locator;
 	}
 
 	/**
@@ -56,7 +82,7 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 	 */
 	public static BulkApiKey parse(String buildApiString) {
 		String[] parts = buildApiString.split("\\Q" + SEGMENT_SEPARATOR + "\\E");
-		return new BulkApiKey(parts[0], parts[1], parts[2]);
+		return new BulkApiKey(parts[0], parts[1], parts[2], parts[4]);
 	}
 
 	/**
@@ -88,6 +114,15 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 	}
 
 	/**
+	 * Get the locator object
+	 * 
+	 * @return The locator which specifies a page of results from the api
+	 */
+	public String getLocator() {
+		return locator;
+	}
+
+	/**
 	 * Compare two BulkApiKey's to see if they are the same
 	 * 
 	 * @param other
@@ -101,13 +136,31 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 			result = other.getQueryHash().compareTo(queryHash);
 			if (result == 0) {
 				result = other.getLastExecutionTime().compareTo(lastExecutionTime);
+				if (result == 0) {
+					result = other.getLocator().compareTo(locator);
+				}
 			}
 		}
 		return result;
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		BulkApiKey that = (BulkApiKey) o;
+		return Objects.equals(lastExecutionTime, that.lastExecutionTime) && Objects.equals(queryHash, that.queryHash)
+				&& Objects.equals(apiName, that.apiName) && Objects.equals(locator, that.locator);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(lastExecutionTime, queryHash, apiName, locator);
+	}
+
+	@Override
 	public String toString() {
-		return String.join(SEGMENT_SEPARATOR, apiName, queryHash, lastExecutionTime);
+		return String.join(SEGMENT_SEPARATOR, apiName, queryHash, lastExecutionTime, locator);
 	}
 }

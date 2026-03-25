@@ -25,11 +25,12 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -45,7 +46,7 @@ import java.util.concurrent.CompletionException;
  */
 public class BulkApiQueryEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiQueryEngine.class);
-	private final Duration minimumWaitBetweenQueries;
+	private static final String BULK_API = "bulkApi";
 	/**
 	 * To be configured through config, the amount of time to wait in between
 	 * executing the same query again.
@@ -66,8 +67,8 @@ public class BulkApiQueryEngine {
 			io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient) {
 		this.config = config;
 		this.apiClient = apiClient;
-		this.minimumWaitBetweenQueries = config.getMinimumQueryExecutionDelay();
 		this.statusCheckDelay = config.getStatusCheckWaitTime();
+
 	}
 
 	/**
@@ -84,20 +85,7 @@ public class BulkApiQueryEngine {
 	 */
 	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
-		LOGGER.debug("lastModifiedDate {}", lastModifiedDate);
-
-		if (lastModifiedDate != null && ZonedDateTime.now().plusSeconds(statusCheckDelay.getSeconds())
-				.isBefore(ZonedDateTime.parse(lastModifiedDate))) {
-			try {
-				// Look at using backoff class
-				LOGGER.info("Waiting to re-execute query");
-				Thread.sleep(minimumWaitBetweenQueries.toMillis());
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			return Collections.emptyIterator();
-		}
-
+		LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
 		// Submit the job
 		Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
 		if (optJobId.isPresent()) {
@@ -105,13 +93,15 @@ public class BulkApiQueryEngine {
 			Optional<QueryResponse> optQueryResponse = apiClient.queryJobStatus(jobId);
 			if (optQueryResponse.isPresent()) {
 				QueryResponse queryResponse = optQueryResponse.get();
+				LOGGER.debug("JobId {} , State {}, Date Created {}, error message {}", queryResponse.getId(),
+						queryResponse.getState(), queryResponse.getCreatedDate(), queryResponse.getErrorMessage());
 				// wait until the job is finished processing
 				JobState completedState = waitUntilProcessingComplete(queryResponse.getState(), jobId);
 				switch (completedState) {
 					case JobComplete :
-						BulkApiKey bulkApiKey = new BulkApiKey("bulkApi", query.getSOQLQuery(),
-								queryResponse.getCreatedDate());
-						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey);
+						BulkApiKey bulkApiKey = new BulkApiKey(BULK_API, query.getSOQLQuery(),
+								queryResponse.getCreatedDate(), "");
+						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey, lastModifiedDate);
 					case Aborted :
 					case Failed :
 					default :
@@ -146,12 +136,15 @@ public class BulkApiQueryEngine {
 		private CompletableFuture<BulkApiResultResponse> bulkApiResultResponseFuture;
 		private final String jobId;
 		private final String object;
-		private final BulkApiKey bulkApiKey;
+		private BulkApiKey bulkApiKey;
+		private final String lastModifiedDate;
+		private String locator = null;
 
-		FutureIterator(final String jobId, final String object, final BulkApiKey bulkApiKey) {
+		FutureIterator(final String jobId, final String object, final BulkApiKey bulkApiKey, String lastModifiedDate) {
 			this.jobId = jobId;
 			this.object = object;
 			this.bulkApiKey = bulkApiKey;
+			this.lastModifiedDate = lastModifiedDate;
 			this.bulkApiResultResponseFuture = apiClient.getJobResults(jobId, null, object, bulkApiKey);
 		}
 
@@ -161,12 +154,13 @@ public class BulkApiQueryEngine {
 				try {
 					bulkApiResultResponseFuture.join();
 				} catch (CancellationException | CompletionException e) {
-					LOGGER.debug("Iterator error {}", e.getMessage(), e);
+					LOGGER.error("Iterator error {}", e.getMessage(), e);
 					return false;
 				}
 			}
 			return bulkApiResultResponseFuture != null && !bulkApiResultResponseFuture.isCancelled()
 					&& !bulkApiResultResponseFuture.isCompletedExceptionally();
+
 		}
 
 		@Override
@@ -177,12 +171,20 @@ public class BulkApiQueryEngine {
 				final NativeInfo<BulkApiKey, String> nativeInfo = bulkApiResultResponse.getResult().getNativeInfo();
 				String topic = String.format("%s.%s.%s", config.getTopicPrefix(), nativeInfo.nativeKey().getApiName(),
 						bulkApiResultResponse.getResult().getObjectName());
-				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null);
-				if (bulkApiResultResponse.getLocator().isPresent()) {
-					bulkApiResultResponseFuture = apiClient.getJobResults(jobId,
-							bulkApiResultResponse.getLocator().get(), object, bulkApiKey);
+
+				BulkApiNativeInfo bulkApiNativeInfo = new BulkApiNativeInfo(nativeInfo, topic, null, null, jobId,
+						locator, bulkApiResultResponse.getNumberOfRecords(), lastModifiedDate);
+
+				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())
+						&& !bulkApiResultResponse.getLocator().equals("null")) {
+					locator = bulkApiResultResponse.getLocator();
+					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
+							object, bulkApiKey);
+					bulkApiKey = new BulkApiKey(bulkApiKey.getApiName(), bulkApiKey.getQueryHash(),
+							bulkApiKey.getLastExecutionTime(), locator, false);
 				} else {
 					bulkApiResultResponseFuture = null;
+					locator = null;
 				}
 				return bulkApiNativeInfo;
 			}

@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.common.query;
 
+import org.codehaus.plexus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +27,7 @@ import java.util.List;
  * queries by adding specifically supported SOQL keywords.
  */
 public class SOQLQuery {
-	private static final String SELECT_ALL_FIELDS = "FIELDS(ALL)";
-	private static final String ID = "Id";
+	private static final String FIELDS_STANDARD = "FIELDS(STANDARD)";
 	private static final String LAST_MODIFIED_DATE = "LastModifiedDate";
 	private static final Logger LOGGER = LoggerFactory.getLogger(SOQLQuery.class);
 	private static final String SELECT = "SELECT";
@@ -260,19 +260,29 @@ public class SOQLQuery {
 	 * @return A useable SOQL query
 	 */
 	public String getQueryString(String lastModifiedDate) {
-		return getPart(SELECT, select) + getPart(FROM, from) + getWhere(where, lastModifiedDate) + getPart(WITH, with)
+		return (getPart(SELECT, select) + getPart(FROM, from) + getWhere(where, lastModifiedDate) + getPart(WITH, with)
 				+ getPart(GROUP_BY, groupBy) + getPart(HAVING, having) + getPart(ORDER_BY, orderBy)
-				+ getPart(LIMIT, limit) + getPart(OFFSET, offset);
+				+ getPart(LIMIT, limit) + getPart(OFFSET, offset)).trim();
 	}
 
 	private String getWhere(String partInstruction, String lastModifiedDate) {
-		return lastModifiedDate != null && !partInstruction.isEmpty()
-				? WHERE + partInstruction + " LastModifiedDate > " + lastModifiedDate
-				: partInstruction != null && !partInstruction.isEmpty() ? WHERE + partInstruction : "";
+
+		String where = getPart(WHERE, partInstruction);
+
+		if (StringUtils.isBlank(where)) {
+			return getPart(WHERE, lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : null);
+		} else {
+			where += lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : "";
+			return where;
+		}
+	}
+
+	private static boolean isEmpty(String partInstruction) {
+		return partInstruction == null || partInstruction.isEmpty();
 	}
 
 	private String getPart(String partName, String partInstruction) {
-		return partInstruction != null && !partInstruction.isEmpty() ? partName + partInstruction : "";
+		return !isEmpty(partInstruction) ? partName + " " + partInstruction + " " : "";
 	}
 
 	/**
@@ -283,9 +293,9 @@ public class SOQLQuery {
 	 *         this connector
 	 */
 	public boolean validate() {
-		// Must contain the Id and LastModifiedDate in the Select or all fields so we
-		// can set the offsets correctly
-		if (!select.contains(SELECT_ALL_FIELDS) && (!select.contains(ID) || !select.contains(LAST_MODIFIED_DATE))) {
+		// Should not include the LastModifiedDate in the where clause so we can
+		// manipulate it.
+		if (!select.contains(FIELDS_STANDARD) && !select.contains(LAST_MODIFIED_DATE)) {
 			return false;
 		}
 		// Should not include the LastModifiedDate in the where clause so we can
@@ -293,7 +303,6 @@ public class SOQLQuery {
 		if (where != null && where.contains(LAST_MODIFIED_DATE)) {
 			return false;
 		}
-
 		return true;
 	}
 
@@ -323,31 +332,31 @@ public class SOQLQuery {
 		for (int i = 0; i < soqlQueryParts.length; i++) {
 			switch (soqlQueryParts[i]) {
 				case SELECT :
-					query.setSelect(soqlQueryParts[++i]);
+					query.setSelect(soqlQueryParts[++i].trim());
 					break;
 				case FROM :
-					query.setFrom(soqlQueryParts[++i]);
+					query.setFrom(soqlQueryParts[++i].trim());
 					break;
 				case GROUP_BY :
-					query.setGroupBy(soqlQueryParts[++i]);
+					query.setGroupBy(soqlQueryParts[++i].trim());
 					break;
 				case ORDER_BY :
-					query.setOrderBy(soqlQueryParts[++i]);
+					query.setOrderBy(soqlQueryParts[++i].trim());
 					break;
 				case HAVING :
-					query.setHaving(soqlQueryParts[++i]);
+					query.setHaving(soqlQueryParts[++i].trim());
 					break;
 				case LIMIT :
-					query.setLimit(soqlQueryParts[++i]);
+					query.setLimit(soqlQueryParts[++i].trim());
 					break;
 				case OFFSET :
-					query.setOffset(soqlQueryParts[++i]);
+					query.setOffset(soqlQueryParts[++i].trim());
 					break;
 				case WHERE :
-					query.setWhere(soqlQueryParts[++i]);
+					query.setWhere(soqlQueryParts[++i].trim());
 					break;
 				case WITH :
-					query.setWith(soqlQueryParts[++i]);
+					query.setWith(soqlQueryParts[++i].trim());
 					break;
 				default :
 					LOGGER.warn("Unrecognized token {}, in SOQL query {}", soqlQueryParts[i], queryString);
@@ -359,7 +368,7 @@ public class SOQLQuery {
 	}
 
 	/**
-	 * Builds a regex that will extract the consituent parts of a SOQL query so it
+	 * Builds a regex that will extract the constituent parts of a SOQL query so it
 	 * can be properly validated
 	 * 
 	 * @return A regex String to split a SOQL query string

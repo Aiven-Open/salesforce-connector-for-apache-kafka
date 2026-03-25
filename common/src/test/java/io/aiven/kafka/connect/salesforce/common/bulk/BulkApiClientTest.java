@@ -273,6 +273,47 @@ public class BulkApiClientTest {
 
 	}
 
+	public void testGetResults(JobState state) throws JsonProcessingException {
+		apiClient = createClient();
+
+		when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+
+		QueryResponse response = new QueryResponse();
+		response.setId(TEST_JOB_ID);
+		response.setObject("Account");
+		QueryResponse checkResponse = new QueryResponse();
+		checkResponse.setId(TEST_JOB_ID);
+		checkResponse.setObject("Account");
+		checkResponse.setState(state);
+		HttpResponse<Object> mockCheckQueryResponse = mockResponse(mapper.writeValueAsString(checkResponse), 200);
+		HttpResponse<Object> mockQuerySubmitResponse = mockResponse(mapper.writeValueAsString(response), 200);
+		when(client.sendAsync(any(HttpRequest.class), any()))
+				.thenReturn(CompletableFuture.completedFuture(mockQuerySubmitResponse))
+				.thenReturn(CompletableFuture.completedFuture(mockCheckQueryResponse));
+
+		String jobId = apiClient.submitQueryJob("SELECT * FROM ACCOUNT").get();
+		QueryResponse queryResp = apiClient.queryJobStatus(jobId).get();
+		JobState jobStatus = queryResp.getState();
+		assertEquals(state, jobStatus);
+		// No 401's so this does not get called.
+
+		verify(login, times(1)).getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET));
+
+		// Submit job and delete job.
+		verify(client, times(2)).sendAsync(any(HttpRequest.class), any());
+
+		var jobStatusRequest = HttpRequest
+				.newBuilder(URI.create(TEST_SALESFORCE_URI
+						+ String.format(io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient.queryJobByIdUri,
+								SALESFORCE_API_VERSION, jobId)))
+				.header("Content-Type", "application/json").header("Authorization", "Bearer " + BEARER_TOKEN).GET()
+				.build();
+
+		// specifically ensure delete job is called.
+		verify(client, times(1)).sendAsync(eq(jobStatusRequest), any());
+
+	}
+
 	private HttpResponse<Object> mockResponse(String payload, int statusCode) {
 		HttpResponse<Object> mockHttpResponse = Mockito.mock(HttpResponse.class);
 		when(mockHttpResponse.body()).thenReturn(payload);

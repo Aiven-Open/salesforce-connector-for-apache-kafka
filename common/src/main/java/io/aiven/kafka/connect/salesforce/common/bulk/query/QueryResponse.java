@@ -36,6 +36,7 @@ public class QueryResponse {
 	private String apiVersion;
 	private String lineEnding;
 	private String columnDelimiter;
+	private String errorMessage;
 
 	/**
 	 * Default constructor
@@ -251,5 +252,24 @@ public class QueryResponse {
 	 */
 	public void setColumnDelimiter(String columnDelimiter) {
 		this.columnDelimiter = columnDelimiter;
+	}
+
+	/**
+	 * Error Message
+	 * 
+	 * @return error Message from the bulk api
+	 */
+	public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	/**
+	 * Set the Error message from the Bulk API
+	 * 
+	 * @param errorMessage
+	 *            the Error message from the Bulk API
+	 */
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
 	}
 }

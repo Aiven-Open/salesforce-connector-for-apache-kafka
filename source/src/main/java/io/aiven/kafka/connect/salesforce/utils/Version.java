@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 public final class Version {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
 
-	private static final String PROPERTIES_FILENAME = "salesforce-source-connector-for-apache-kafka-version.properties";
+	private static final String PROPERTIES_FILENAME = "io/aiven/kafka/connect/salesforce/config/salesforce-source-connector-for-apache-kafka-version.properties";
 	private static final String DEPENDENCIES_PROPERTIES_FILENAME = "app.properties";
 	/**
 	 * Default constructor

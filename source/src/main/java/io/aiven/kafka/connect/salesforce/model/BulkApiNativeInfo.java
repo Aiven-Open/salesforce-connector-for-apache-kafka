@@ -19,6 +19,7 @@ import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.kafka.connector.source.AbstractSourceNativeInfo;
 import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -32,6 +33,10 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	private final String topic;
 	private final Integer partition;
 	private final Long offset;
+	private final String jobId;
+	private final int totalRecords;
+	private final String lastModifiedDate;
+	private final String locator;
 
 	/**
 	 * Constructor.
@@ -44,13 +49,27 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 *            The partition id to produce the event to
 	 * @param offset
 	 *            The offset id to produce the event to
+	 * @param jobId
+	 *            The job Id that the records are retrieved from
+	 * @param locator
+	 *            The locator for a specific page of data, should be the current
+	 *            page that is being processed not the next page
+	 * @param totalRecords
+	 *            The total number of records in the page of results
+	 * @param lastModifiedDate
+	 *            The lastModifiedDate used in the creation of this job
 	 */
 	public BulkApiNativeInfo(final NativeInfo<BulkApiKey, String> nativeInfo, final String topic,
-			final Integer partition, final Long offset) {
+			final Integer partition, final Long offset, final String jobId, final String locator,
+			final int totalRecords, final String lastModifiedDate) {
 		super(nativeInfo);
 		this.topic = topic;
 		this.partition = partition;
 		this.offset = offset;
+		this.jobId = jobId;
+		this.totalRecords = totalRecords;
+		this.lastModifiedDate = lastModifiedDate;
+		this.locator = locator;
 	}
 
 	/**
@@ -60,10 +79,14 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 */
 	@Override
 	public Context getContext() {
-		Context ctx = new Context(nativeKey());
+		SalesforceContext ctx = new SalesforceContext(nativeKey());
 		ctx.setTopic(topic);
 		ctx.setPartition(partition);
 		ctx.setOffset(offset);
+		ctx.setJobId(jobId);
+		ctx.setTotalRecords(totalRecords);
+		ctx.setLastModifiedTimestamp(lastModifiedDate);
+		ctx.setLocator(locator);
 		return ctx;
 	}
 

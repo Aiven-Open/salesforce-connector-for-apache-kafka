@@ -17,6 +17,8 @@ package io.aiven.kafka.connect.salesforce.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Map;
  * well so we can make sure we don't re-read the data as well.
  */
 public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceOffsetManagerEntry.class); // NOPMD
 	/**
 	 * Specifies if the data is coming from the bulk api, streaming api or pub/sub
 	 * api
@@ -39,31 +41,27 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 * Address, etc
 	 */
 	public static final String QUERY_HASH = "queryHash";
+	private static final String RECORD_COUNT = "recordCount";
+	private static final String TOTAL_RECORD_COUNT = "totalRecordCount";
+	private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedTimestamp";
 	/**
-	 * The time this query was executed against salesforce allowing us to know when
-	 * the data was queried
+	 * The jobId that is being processed
 	 */
-	public static final String QUERY_EXECUTION_TIME = "queryExecutionTime";
-
-	/**
-	 * The last modified date of a particular row of data from a Salesforce Object
-	 */
-	public static final String LAST_MODIFIED_DATE = "lastModifiedDate";
-	/**
-	 * The number of records read in this interaction
-	 */
-	public static final String ID = "id";
+	private static final String JOB_ID = "jobId";
 	/**
 	 * Defines whether a query has completed processing or not
 	 */
-	public static final String IS_COMPLETE = "isComplete";
-	static final List<String> RESTRICTED_KEYS = List.of(ID, LAST_MODIFIED_DATE, IS_COMPLETE);
+	private static final String IS_COMPLETE = "isComplete";
+	/**
+	 * Restricted keys
+	 */
+	static final List<String> RESTRICTED_KEYS = List.of(API_NAME, QUERY_HASH, JOB_ID);
+	private static final String LOCATOR = "locator";
 	/** The data map that stores all the values */
 	private final Map<String, Object> data = new HashMap<>();
 	private final BulkApiKey bulkApiKey;
-	private String id;
-	private String lastModifiedDate;
 	private int recordCount;
+	private int totalRecords;
 
 	/**
 	 * Construct the SalesforceOffsetManagerEntry.
@@ -73,6 +71,33 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey) {
 		this.bulkApiKey = bulkApiKey;
+	}
+
+	/**
+	 * Construct the SalesforceOffsetManagerEntry.
+	 *
+	 * @param bulkApiKey
+	 *            the Object the entry comes from
+	 * @param jobId
+	 *            the id of the job created against the bulk api
+	 * @param locator
+	 *            the locator of this page for the job
+	 * @param totalRecords
+	 *            the number of records the job says it has for processing
+	 * @param lastModifiedDate
+	 *            the lastModifiedDate used in the query
+	 */
+	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, String jobId, String locator, int totalRecords,
+			String lastModifiedDate) {
+		this.bulkApiKey = bulkApiKey;
+		this.totalRecords = totalRecords;
+		this.recordCount = 0;
+		data.put(TOTAL_RECORD_COUNT, totalRecords);
+		data.put(JOB_ID, jobId);
+		data.put(IS_COMPLETE, totalRecords == recordCount);
+		data.put(LAST_MODIFIED_TIMESTAMP, lastModifiedDate);
+		data.put(LOCATOR, locator);
+
 	}
 
 	/**
@@ -88,8 +113,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
 		this(bulkApiKey);
 		data.putAll(properties);
-		data.putIfAbsent(IS_COMPLETE, false);
-
+		recordCount = getInt(RECORD_COUNT);
+		totalRecords = getInt(TOTAL_RECORD_COUNT);
 	}
 
 	/**
@@ -128,19 +153,27 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	 */
 	@Override
 	public Map<String, Object> getProperties() {
-		final Map<String, Object> result = new HashMap<>(data);
-		result.put(ID, id);
-		result.put(LAST_MODIFIED_DATE, lastModifiedDate);
-		result.put(QUERY_EXECUTION_TIME, bulkApiKey.getLastExecutionTime());
-		// TODO to be updated when csv file is processed to true.
-		result.put(IS_COMPLETE, false);
-		return result;
+		HashMap<String, Object> props = new HashMap<>(data);
+		props.putIfAbsent(QUERY_HASH, bulkApiKey.getQueryHash());
+		props.putIfAbsent(API_NAME, bulkApiKey.getApiName());
+		props.putIfAbsent(RECORD_COUNT, Integer.valueOf(recordCount));
+		props.putIfAbsent(TOTAL_RECORD_COUNT, Integer.valueOf(totalRecords));
+		return props;
 	}
 
 	@Override
 	public Object getProperty(final String key) {
-		if (ID.equals(key)) {
-			return id;
+		if (QUERY_HASH.equals(key)) {
+			return bulkApiKey.getQueryHash();
+		}
+		if (API_NAME.equals(key)) {
+			return bulkApiKey.getApiName();
+		}
+		if (RECORD_COUNT.equals(key)) {
+			return recordCount;
+		}
+		if (TOTAL_RECORD_COUNT.equals(key)) {
+			return totalRecords;
 		}
 		return data.get(key);
 	}
@@ -164,9 +197,13 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 		return asKey(bulkApiKey);
 	}
 
+	/**
+	 * Increments the record count by 1
+	 */
 	@Override
 	public void incrementRecordCount() {
 		recordCount++;
+		data.put(IS_COMPLETE, recordCount == totalRecords);
 	}
 
 	/**
@@ -224,11 +261,13 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 			result = getBulkApiKey().compareTo(other.getBulkApiKey());
 			if (result == 0) {
 				result = getLastExecutionTime().compareTo(other.getLastExecutionTime());
-				if (result == 0) {
-					result = Long.compare(getRecordCount(), other.getRecordCount());
+				if (result == 0 && getProperty(JOB_ID).equals(other.getProperty(JOB_ID))
+						&& getProperty(LOCATOR).equals(other.getProperty(LOCATOR))) {
+					return Long.compare(getRecordCount(), other.getRecordCount());
 				}
 			}
 		}
+
 		return result;
 	}
 
