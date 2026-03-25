@@ -54,7 +54,7 @@ public class SalesforceSourceTaskTest {
 	void lastModDateIsUpdatedFromNull() {
 
 		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
-		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
+		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
 
@@ -63,12 +63,12 @@ public class SalesforceSourceTaskTest {
 	@Test
 	void lastModDateIsNotUpdatedFromOlderTimestamp() {
 		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
-		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
+		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
 		ZonedDateTime olderLastModDate = lastModDate.minusSeconds(5);
 
-		apiKey = new BulkApiKey(BULK_API, QUERY, olderLastModDate.toString());
+		apiKey = new BulkApiKey(BULK_API, QUERY, olderLastModDate.toString(), "");
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, olderLastModDate.toString()));
 		// LastSeenModDate should still be the same as it is newer.
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
@@ -78,12 +78,12 @@ public class SalesforceSourceTaskTest {
 	@Test
 	void lastModDateIsUpdatedToNewerTimestamp() {
 		ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
-		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString());
+		BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
 		assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
 		ZonedDateTime newerLastModDate = lastModDate.plusSeconds(1);
 
-		apiKey = new BulkApiKey(BULK_API, QUERY, newerLastModDate.toString());
+		apiKey = new BulkApiKey(BULK_API, QUERY, newerLastModDate.toString(), "");
 		task.lastEvolution(mockEvolvingSourceRecord(apiKey, newerLastModDate.toString()));
 		// LastSeenModDate should updated as its newer
 		assertEquals(map.get(apiKey.getQueryHash()), newerLastModDate);

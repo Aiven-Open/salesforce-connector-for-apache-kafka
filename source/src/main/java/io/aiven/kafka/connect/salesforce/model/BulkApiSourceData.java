@@ -180,7 +180,8 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 		if ((boolean) data.getOrDefault(IS_COMPLETE, false)) {
 			return null;
 		}
-		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(), ""), data);
+		return new SalesforceOffsetManagerEntry(new BulkApiKey(BULK_API, queries.getLast().getSOQLQuery(),
+				lastQueryExecuted.get(getQueryHash()).toString(), ""), data);
 	}
 
 	private String getQueryHash() {
@@ -270,7 +271,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 						// If it has been too soon since the last execution of this query return false
 						// and backoff
 						if (backOff()) {
-							LOGGER.info("Back off on executing query {}", queries.getFirst().toString());
+							LOGGER.info("Back off on executing query {}", queries.getFirst().getSOQLQuery());
 							return false;
 						}
 						SOQLQuery element = queries.pop();

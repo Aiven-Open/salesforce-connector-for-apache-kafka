@@ -155,7 +155,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
 			// know where to begin from on a restart
 			SalesforceOffsetManagerEntry offsetRecord = (SalesforceOffsetManagerEntry) evolvingSourceRecord
 					.getOffsetManagerEntry();
-			if ((boolean) offsetRecord.getProperty("isComplete")) {
+			if ((boolean) offsetRecord.getProperty("isComplete") && offsetRecord.getProperty("locator") == null) {
 				offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
 			}
 		} catch (Exception e) {

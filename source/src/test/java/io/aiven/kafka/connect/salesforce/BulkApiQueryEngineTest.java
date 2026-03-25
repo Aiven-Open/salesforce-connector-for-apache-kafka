@@ -45,7 +45,7 @@ public class BulkApiQueryEngineTest {
 	private BulkApiQueryEngine engine;
 	private BulkApiClient apiClient;
 	private SalesforceSourceConfig config;
-	private BulkApiKey apiKey = new BulkApiKey("bulkApi", QUERY, null);
+	private BulkApiKey apiKey = new BulkApiKey("bulkApi", QUERY, null, "");
 	@BeforeEach
 	void startup() {
 		apiClient = Mockito.mock(BulkApiClient.class);

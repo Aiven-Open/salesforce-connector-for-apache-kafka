@@ -99,7 +99,7 @@ public class BulkApiQueryEngine {
 				switch (completedState) {
 					case JobComplete :
 						BulkApiKey bulkApiKey = new BulkApiKey(BULK_API, query.getSOQLQuery(),
-								queryResponse.getCreatedDate());
+								queryResponse.getCreatedDate(), "");
 						return new FutureIterator(jobId, queryResponse.getObject(), bulkApiKey, lastModifiedDate);
 					case Aborted :
 					case Failed :
@@ -135,7 +135,7 @@ public class BulkApiQueryEngine {
 		private CompletableFuture<BulkApiResultResponse> bulkApiResultResponseFuture;
 		private final String jobId;
 		private final String object;
-		private final BulkApiKey bulkApiKey;
+		private BulkApiKey bulkApiKey;
 		private final String lastModifiedDate;
 		private String locator = null;
 
@@ -176,11 +176,14 @@ public class BulkApiQueryEngine {
 
 				if (StringUtils.isNotBlank(bulkApiResultResponse.getLocator())
 						&& !bulkApiResultResponse.getLocator().equals("null")) {
+					locator = bulkApiResultResponse.getLocator();
 					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
 							object, bulkApiKey);
-					locator = bulkApiResultResponse.getLocator();
+					bulkApiKey = new BulkApiKey(bulkApiKey.getApiName(), bulkApiKey.getQueryHash(),
+							bulkApiKey.getLastExecutionTime(), locator);
 				} else {
 					bulkApiResultResponseFuture = null;
+					locator = null;
 				}
 				return bulkApiNativeInfo;
 			}
