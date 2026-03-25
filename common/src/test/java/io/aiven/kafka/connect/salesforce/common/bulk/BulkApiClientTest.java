@@ -17,6 +17,7 @@ package io.aiven.kafka.connect.salesforce.common.bulk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.aiven.commons.util.strings.HttpStatus;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
@@ -25,7 +26,6 @@ import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.AbortJob;
 import io.aiven.kafka.connect.salesforce.common.utils.TestingSalesforceCommonConfig;
 
-import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
