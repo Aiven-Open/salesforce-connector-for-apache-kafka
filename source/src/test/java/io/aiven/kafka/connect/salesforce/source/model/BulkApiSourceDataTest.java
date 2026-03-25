@@ -15,34 +15,11 @@
  */
 package io.aiven.kafka.connect.salesforce.source.model;
 
-import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
-import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
-import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
-import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
-import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
-import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 public class BulkApiSourceDataTest {
 
