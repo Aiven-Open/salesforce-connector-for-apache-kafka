@@ -21,7 +21,7 @@ ${esc.hash} ${project.name} configuration options
 
 All the configuration options are listed below in alphabetical order.
 
-#set($extendedConfigDef = ${configDefFactory.open("io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfigDef")})
+#set($extendedConfigDef = ${configDefFactory.open("io.aiven.kafka.connect.salesforce.config.source.SalesforceSourceConfigDef")})
 
 #foreach ($configKey in ${extendedConfigDef.configKeys})
 

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.config;
+package io.aiven.kafka.connect.salesforce.source.config;
 
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
 import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
 import io.aiven.commons.kafka.config.fragment.ConfigFragment;
 import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
-import io.aiven.kafka.connect.salesforce.validator.SOQLQueryValidator;
+import io.aiven.kafka.connect.salesforce.source.validator.SOQLQueryValidator;
 import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.List;

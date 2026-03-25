@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect.salesforce.source;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
@@ -23,8 +23,8 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
-import io.aiven.kafka.connect.salesforce.model.BulkApiNativeInfo;
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.source.model.BulkApiNativeInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

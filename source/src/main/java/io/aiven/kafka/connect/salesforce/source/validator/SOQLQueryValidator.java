@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.validator;
+package io.aiven.kafka.connect.salesforce.source.validator;
 
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import org.apache.kafka.common.config.ConfigDef;

@@ -71,7 +71,7 @@ Below is an example connector configuration with descriptions:
 ## These must have exactly these values:
 
 # The Java class for the connector
-connector.class=io.aiven.kafka.connect.salesforce.SalesforceSourceConnector
+connector.class=io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector
 
 # Number of worker tasks to run concurrently
 tasks.max=1
