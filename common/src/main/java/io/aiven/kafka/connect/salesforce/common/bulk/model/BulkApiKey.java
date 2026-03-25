@@ -34,7 +34,24 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 
 	/**
 	 * Constructor
-	 * 
+	 *
+	 * @param apiName
+	 *            The name of the api
+	 * @param query
+	 *            The query that was used to return the data, this query will be
+	 *            automatically hashed
+	 * @param lastExecutionTime
+	 *            The execution time this query was executed at
+	 * @param locator
+	 *            The locator specifies the page of results that is being returned
+	 */
+	public BulkApiKey(String apiName, String query, String lastExecutionTime, String locator) {
+		this(apiName, query, lastExecutionTime, locator, true);
+	}
+
+	/**
+	 * Constructor
+	 *
 	 * @param apiName
 	 *            The name of the api
 	 * @param query
@@ -43,11 +60,15 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
 	 *            The execution time this query was executed at
 	 * @param locator
 	 *            The locator specifies the page of results that is being returned
+	 * @param hashQueryString
+	 *            boolean to determine wether the query should be hashed can be
+	 *            false if already hashed
 	 */
-	public BulkApiKey(String apiName, String query, String lastExecutionTime, String locator) {
+	public BulkApiKey(String apiName, String query, String lastExecutionTime, String locator, boolean hashQueryString) {
 		this.apiName = apiName;
-		this.queryHash = Arrays
-				.toString(MurmurHash3.hash128(query.replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
+		this.queryHash = hashQueryString
+				? Arrays.toString(MurmurHash3.hash128(query.replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)))
+				: query;
 		this.lastExecutionTime = lastExecutionTime;
 		this.locator = locator;
 	}

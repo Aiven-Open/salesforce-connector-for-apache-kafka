@@ -273,7 +273,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 						// If it has been too soon since the last execution of this query return false
 						// and backoff
 						if (backOff()) {
-							LOGGER.info("Back off on executing query {}", queries.getFirst().getSOQLQuery());
+							LOGGER.debug("Back off on executing query {}", queries.getFirst().getSOQLQuery());
 							return false;
 						}
 						SOQLQuery element = queries.pop();
@@ -283,7 +283,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 
 						ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
 						try {
-							LOGGER.info("Submit new query for results");
+							LOGGER.info("Submit new query");
 							iterator = engine.getRecords(element,
 									lastModifiedDate != null ? lastModifiedDate.toString() : null);
 						} finally {

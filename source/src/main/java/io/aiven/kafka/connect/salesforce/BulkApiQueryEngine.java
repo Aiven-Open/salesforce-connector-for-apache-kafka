@@ -85,7 +85,7 @@ public class BulkApiQueryEngine {
 	 */
 	public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
 
-		LOGGER.debug("Query String to execute {}", query.getQueryString(lastModifiedDate));
+		LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
 		// Submit the job
 		Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
 		if (optJobId.isPresent()) {
@@ -181,7 +181,7 @@ public class BulkApiQueryEngine {
 					bulkApiResultResponseFuture = apiClient.getJobResults(jobId, bulkApiResultResponse.getLocator(),
 							object, bulkApiKey);
 					bulkApiKey = new BulkApiKey(bulkApiKey.getApiName(), bulkApiKey.getQueryHash(),
-							bulkApiKey.getLastExecutionTime(), locator);
+							bulkApiKey.getLastExecutionTime(), locator, false);
 				} else {
 					bulkApiResultResponseFuture = null;
 					locator = null;
