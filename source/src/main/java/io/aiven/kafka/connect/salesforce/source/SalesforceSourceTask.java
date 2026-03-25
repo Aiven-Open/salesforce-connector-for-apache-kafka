@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect.salesforce.source;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
@@ -24,11 +24,11 @@ import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
 import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
-import io.aiven.kafka.connect.salesforce.model.BulkApiSourceData;
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
 
-import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
-import io.aiven.kafka.connect.salesforce.utils.Version;
+import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
+import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

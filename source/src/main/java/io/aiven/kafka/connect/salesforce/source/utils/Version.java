@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.utils;
+package io.aiven.kafka.connect.salesforce.source.utils;
 
 import java.io.InputStream;
 import java.util.Properties;

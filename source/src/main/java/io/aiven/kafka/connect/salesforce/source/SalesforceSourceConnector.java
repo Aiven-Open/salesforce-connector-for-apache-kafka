@@ -1,4 +1,4 @@
-package io.aiven.kafka.connect.salesforce;
+package io.aiven.kafka.connect.salesforce.source;
 
 /*
  * Copyright 2026 Aiven Oy
@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfigDef;
-import io.aiven.kafka.connect.salesforce.utils.Version;
+import io.aiven.kafka.connect.salesforce.source.SalesforceSourceTask;
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfigDef;
+import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;

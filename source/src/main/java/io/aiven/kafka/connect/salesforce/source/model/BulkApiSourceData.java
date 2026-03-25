@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.model;
+package io.aiven.kafka.connect.salesforce.source.model;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
@@ -26,8 +26,8 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
-import io.aiven.kafka.connect.salesforce.config.SalesforceSourceConfig;
-import io.aiven.kafka.connect.salesforce.utils.SalesforceOffsetManagerEntry;
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
+import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import org.apache.commons.codec.digest.MurmurHash3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -285,7 +286,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 						try {
 							LOGGER.info("Submit new query");
 							iterator = engine.getRecords(element,
-									lastModifiedDate != null ? lastModifiedDate.toString() : null);
+									lastModifiedDate != null
+											? lastModifiedDate.truncatedTo(ChronoUnit.MILLIS).toString()
+											: null);
 						} finally {
 							lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of(UTC)));
 						}
