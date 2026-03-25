@@ -82,7 +82,7 @@
               <goal>java</goal>
             </goals>
             <configuration>
-              <mainClass>io.aiven.kafka.connect.salesforce.SalesforceSourceConnector</mainClass>
+              <mainClass>io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector</mainClass>
               <classpathScope>compile</classpathScope>
             </configuration>
           </execution>
