@@ -20,7 +20,7 @@ To make the connector work, a user has to specify Salesforce client credentials 
 
 * Define your query `salesforce.bulk.api.queries`
   * Queries are defined using the SOQL language 
-  * The queries all need to have the system field LastModifiedDate included
+  * The queries all need to have the system field LastModifiedDate included in the SELECT statement
   * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
   * Multiple queries are supported
   * example query

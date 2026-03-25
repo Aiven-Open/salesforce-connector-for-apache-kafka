@@ -37,7 +37,8 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse
 import io.aiven.kafka.connect.salesforce.common.exceptions.SFAuthException;
 import io.aiven.kafka.connect.salesforce.common.exceptions.SFForbiddenException;
 import io.aiven.kafka.connect.salesforce.common.exceptions.SFRetryException;
-import org.codehaus.plexus.util.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ public class BulkApiClient {
 	 */
 	public static final String EMPTY_QUERY_PARAM = "";
 	/**
-	 * This is the heander name of the locator which is used for pagination in the
+	 * This is the header name of the locator which is used for pagination in the
 	 * bulk api
 	 */
 	private static final String SFORCE_LOCATOR = "Sforce-Locator";
@@ -94,7 +95,7 @@ public class BulkApiClient {
 	/**
 	 * This is the header that tells you the current state of the api limit
 	 */
-	private static final String SFORCE_LIMIT_INFO = "sforce-limit-info";
+	private static final String SFORCE_LIMIT_INFO = "Sforce-Limit-Info";
 	/**
 	 * The Http client that is used to make http requests to Salesforce
 	 */
@@ -249,12 +250,14 @@ public class BulkApiClient {
 			BulkApiResultResponse resp = new BulkApiResultResponse();
 			// TODO this is setting the locator as "null" when it does not exist, needs to
 			// be understood and fixed
-			resp.setLocator(response.headers().firstValue(SFORCE_LOCATOR).orElse(null));
+			resp.setLocator(response.headers().firstValue(SFORCE_LOCATOR).isPresent()
+					? response.headers().firstValue(SFORCE_LOCATOR).get()
+					: null);
 			resp.setNumberOfRecords(
 					Integer.parseInt(response.headers().firstValue(SFORCE_NUMBER_OF_RECORDS).orElse("-1")));
 			resp.setApiUsage(response.headers().firstValue(SFORCE_LIMIT_INFO).orElse("Unknown"));
 			resp.setResult(new BulkApiResult(new NativeInfo<>(bulkApiKey, response.body()), objectName));
-			LOGGER.warn("Current Salesforce API allocation usage: {}", resp.getApiUsage());
+			LOGGER.info("Current Salesforce API allocation usage: {}", resp.getApiUsage());
 			return resp;
 		}
 	}
@@ -504,7 +507,6 @@ public class BulkApiClient {
 
 			backoff.cleanDelay();
 			if (LOGGER.isDebugEnabled()) {
-				// Prevents requesting data transformation from objects to string for logger
 				LOGGER.debug("response.request() {} : {}", response.request(), response.body());
 			}
 			result = client.sendAsync(response.request(), HttpResponse.BodyHandlers.ofString())

@@ -113,8 +113,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 	public SalesforceOffsetManagerEntry(final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
 		this(bulkApiKey);
 		data.putAll(properties);
-		recordCount = getInt(data.getOrDefault(RECORD_COUNT, 0));
-		totalRecords = getInt(data.getOrDefault(TOTAL_RECORD_COUNT, 0));
+		recordCount = getInt(RECORD_COUNT);
+		totalRecords = getInt(TOTAL_RECORD_COUNT);
 	}
 
 	/**
@@ -176,16 +176,6 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 			return totalRecords;
 		}
 		return data.get(key);
-	}
-
-	private int getInt(Object obj) {
-		if (obj instanceof Long) {
-			return ((Long) obj).intValue();
-		}
-		if (obj instanceof Integer) {
-			return (Integer) obj;
-		}
-		return (int) obj;
 	}
 
 	@Override
@@ -271,7 +261,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 			result = getBulkApiKey().compareTo(other.getBulkApiKey());
 			if (result == 0) {
 				result = getLastExecutionTime().compareTo(other.getLastExecutionTime());
-				if (result == 0 && getProperty(JOB_ID).equals(other.getProperty(JOB_ID))) {
+				if (result == 0 && getProperty(JOB_ID).equals(other.getProperty(JOB_ID))
+						&& getProperty(LOCATOR).equals(other.getProperty(LOCATOR))) {
 					return Long.compare(getRecordCount(), other.getRecordCount());
 				}
 			}

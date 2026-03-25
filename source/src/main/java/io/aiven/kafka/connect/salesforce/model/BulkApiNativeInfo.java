@@ -55,7 +55,7 @@ public class BulkApiNativeInfo extends AbstractSourceNativeInfo<BulkApiKey, Stri
 	 *            The locator for a specific page of data, should be the current
 	 *            page that is being processed not the next page
 	 * @param totalRecords
-	 *            The total number of records in the job
+	 *            The total number of records in the page of results
 	 * @param lastModifiedDate
 	 *            The lastModifiedDate used in the creation of this job
 	 */

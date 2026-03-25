@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.model;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
@@ -125,6 +126,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
 	 * @param lastSeenModifiedDate
 	 *            last Seen LastModifiedDate processed
 	 */
+	@VisibleForTesting
 	protected BulkApiSourceData(final SalesforceSourceConfig config, final OffsetManager offsetManager,
 			BulkApiQueryEngine engine, Map<String, ZonedDateTime> lastSeenModifiedDate) {
 		super(config, offsetManager);

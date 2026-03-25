@@ -33,7 +33,7 @@ public class SalesforceContext extends Context {
 	 * @param nativeKey
 	 *            The native key for the Context
 	 */
-	public SalesforceContext(Comparable<BulkApiKey> nativeKey) {
+	public SalesforceContext(BulkApiKey nativeKey) {
 		super(nativeKey);
 	}
 

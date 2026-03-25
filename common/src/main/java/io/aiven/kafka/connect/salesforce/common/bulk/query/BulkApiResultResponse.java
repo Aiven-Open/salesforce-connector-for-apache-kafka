@@ -37,7 +37,12 @@ public class BulkApiResultResponse {
 	private int numberOfRecords;
 
 	/**
-	 * The API Usage and tracks how much of the api limit has been consumed
+	 * The API Usage tracks how much of the api limit has been consumed in the last
+	 * 24 hours, it is returned as a string which looks like "155/15000" this says
+	 * that in the last 24 hour rolling window 155 out of the 15,000 allocation has
+	 * been used. This does not include just the connector but also all api usage
+	 * over that time period.
+	 * https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_api_usage.htm
 	 */
 	private String apiUsage;
 	/**
@@ -58,7 +63,7 @@ public class BulkApiResultResponse {
 
 	/**
 	 * Get the locator which is used in the retrieval of the next csv file if there
-	 * is a next csv file.
+	 * is a next csv file. Can be null.
 	 * 
 	 * @return A String which can be used to get the next set of results
 	 */
@@ -99,7 +104,10 @@ public class BulkApiResultResponse {
 	}
 
 	/**
-	 * Get the API Usage
+	 *
+	 * Get the Api Usage which gives us information on how much of our allocation of
+	 * the api limits has been used. format: '145/15000' in this case 145 of the
+	 * 15,000 allocation has been used
 	 * 
 	 * @return Get the Api Usage
 	 */
@@ -108,7 +116,9 @@ public class BulkApiResultResponse {
 	}
 
 	/**
-	 * Set the Api Usage
+	 * Set the Api Usage which gives us information on how much of our allocation of
+	 * the api limits has been used. format: '145/15000' in this case 145 of the
+	 * 15,000 allocation has been used
 	 * 
 	 * @param apiUsage
 	 *            the api usage
