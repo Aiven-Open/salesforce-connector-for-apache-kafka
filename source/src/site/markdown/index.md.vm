@@ -19,7 +19,7 @@
 
 ${esc.hash} ${project.name}
 
-This is an Apache Kafka#8482; connector that extracts data from Salesforce#8482;.
+This is an Apache Kafka&trade; connector that extracts data from Salesforce&trade;.
 
 
 ## Build
