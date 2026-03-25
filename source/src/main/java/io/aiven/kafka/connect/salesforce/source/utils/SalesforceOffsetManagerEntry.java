@@ -20,8 +20,6 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This is the Salesforce Offset manager Entry class, it handles creating the offsets which are
@@ -29,9 +27,6 @@ import org.slf4j.LoggerFactory;
  * re-read the data as well.
  */
 public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
-  private static final Logger LOGGER = // NOPMD
-      LoggerFactory.getLogger(SalesforceOffsetManagerEntry.class);
-
   /** Specifies if the data is coming from the bulk api, streaming api or pub/sub api */
   public static final String API_NAME = "apiName";
 

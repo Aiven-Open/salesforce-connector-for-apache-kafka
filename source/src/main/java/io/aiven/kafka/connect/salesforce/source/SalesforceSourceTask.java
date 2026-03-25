@@ -24,12 +24,12 @@ import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
 import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.time.ZonedDateTimeUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -136,13 +136,10 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       if (lastModifiedDate != null) {
         lastSeenModifiedDate.put(
             key.getQueryHash(),
-            ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
-                ? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
-                : lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
+            ZonedDateTimeUtil.getlatest(value.get("LastModifiedDate"), lastModifiedDate));
       } else {
         lastSeenModifiedDate.put(
-            key.getQueryHash(),
-            ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
+            key.getQueryHash(), ZonedDateTimeUtil.parseString(value.get("LastModifiedDate")));
       }
       // If this is the last offset Record update to the last seen timestamp so we
       // know where to begin from on a restart
@@ -150,7 +147,9 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
           (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
       if ((boolean) offsetRecord.getProperty("isComplete")
           && offsetRecord.getProperty("locator") == null) {
-        offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
+        offsetRecord.setProperty(
+            "lastModifiedDate",
+            ZonedDateTimeUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
       }
     } catch (Exception e) {
       // nothing

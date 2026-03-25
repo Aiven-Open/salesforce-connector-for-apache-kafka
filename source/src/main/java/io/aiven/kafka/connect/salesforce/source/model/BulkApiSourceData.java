@@ -24,14 +24,13 @@ import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
+import io.aiven.kafka.connect.salesforce.common.time.ZonedDateTimeUtil;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,7 +55,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   /** The key to retrieve the Is complete information from the offset. */
   private static final String IS_COMPLETE = "isComplete";
 
-  private static final String UTC = "UTC";
   private final Duration minimumDelayBetweenQueries;
 
   /**
@@ -254,7 +252,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
     }
     return lastExecutedDateTime
         .plusSeconds(minimumDelayBetweenQueries.getSeconds())
-        .isAfter(ZonedDateTime.now(ZoneId.of(UTC)));
+        .isAfter(ZonedDateTimeUtil.now());
   }
 
   /**
@@ -308,10 +306,10 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                       engine.getRecords(
                           element,
                           lastModifiedDate != null
-                              ? lastModifiedDate.truncatedTo(ChronoUnit.MILLIS).toString()
+                              ? ZonedDateTimeUtil.toMilliString(lastModifiedDate)
                               : null);
                 } finally {
-                  lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of(UTC)));
+                  lastQueryExecuted.put(getQueryHash(), ZonedDateTimeUtil.now());
                 }
               }
               return iterator.hasNext();
