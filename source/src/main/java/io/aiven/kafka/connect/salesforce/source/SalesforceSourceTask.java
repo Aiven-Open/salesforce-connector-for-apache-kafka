@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.source;
 
+import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
+
 import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
@@ -24,12 +26,12 @@ import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
 import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
-import io.aiven.kafka.connect.salesforce.common.time.ZonedDateTimeUtil;
+import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,7 +48,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
   /** The offset manager this task uses */
   private OffsetManager offsetManager;
 
-  private Map<String, ZonedDateTime> lastSeenModifiedDate;
+  private Map<String, Instant> lastSeenModifiedDate;
 
   /** Should check about adding this */
   public SalesforceSourceTask() {
@@ -84,7 +86,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
   protected SourceCommonConfig configure(
       Map<String, String> props,
       OffsetManager offsetManager,
-      HashMap<String, ZonedDateTime> lastSeenModifiedDate) {
+      HashMap<String, Instant> lastSeenModifiedDate) {
     LOGGER.info("Salesforce Source task configured for testing.");
     this.offsetManager = offsetManager;
     this.lastSeenModifiedDate = lastSeenModifiedDate;
@@ -132,22 +134,22 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
     try {
       LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
       BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
-      ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
+      Instant lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
       if (lastModifiedDate != null) {
         lastSeenModifiedDate.put(
             key.getQueryHash(),
-            ZonedDateTimeUtil.getlatest(value.get("LastModifiedDate"), lastModifiedDate));
+            InstantUtil.getlatest(value.get(LAST_MODIFIED_DATE), lastModifiedDate));
       } else {
         lastSeenModifiedDate.put(
-            key.getQueryHash(), ZonedDateTimeUtil.parseString(value.get("LastModifiedDate")));
+            key.getQueryHash(), InstantUtil.parseString(value.get(LAST_MODIFIED_DATE)));
       }
       // If this is the last offset Record update to the last seen timestamp so we
       // know where to begin from on a restart
       SalesforceOffsetManagerEntry offsetRecord =
           (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
       offsetRecord.setProperty(
-          "lastModifiedDate",
-          ZonedDateTimeUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
+          LAST_MODIFIED_DATE,
+          InstantUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
       evolvingSourceRecord.setOffsetManagerEntry(offsetRecord);
     } catch (Exception e) {
       // nothing

@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.source.model;
 
+import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
@@ -24,13 +26,13 @@ import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
-import io.aiven.kafka.connect.salesforce.common.time.ZonedDateTimeUtil;
+import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -61,13 +63,13 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    * This is a map of the latest lastModifiedDate for each query that has been identified We use
    * this to get the lastModifiedDate for the next query
    */
-  private final Map<String, ZonedDateTime> lastSeenModifiedDate;
+  private final Map<String, Instant> lastSeenModifiedDate;
 
   /**
    * Track the last time a query was executed and allows a back off to be used as to how often it
    * can be called.
    */
-  private final Map<String, ZonedDateTime> lastQueryExecuted;
+  private final Map<String, Instant> lastQueryExecuted;
 
   /** The Bulk Api Query Engine handles the lifecycle of bulk api requests */
   private final BulkApiQueryEngine engine;
@@ -101,7 +103,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   public BulkApiSourceData(
       final SalesforceSourceConfig config,
       final OffsetManager offsetManager,
-      Map<String, ZonedDateTime> lastSeenModifiedDate) {
+      Map<String, Instant> lastSeenModifiedDate) {
     super(config, offsetManager);
     this.queries =
         config.getBulkApiQueries().stream()
@@ -129,7 +131,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
         // Seed the last Seen modified Date
         lastSeenModifiedDate.put(
             getQueryHash(query),
-            ZonedDateTimeUtil.parseString((String) offset.get().get("lastModifiedDate")));
+            InstantUtil.parseString((String) offset.get().get(LAST_MODIFIED_DATE)));
         LOGGER.info(
             "LastModifiedDate on Startup {} for query {}",
             lastSeenModifiedDate,
@@ -152,7 +154,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
       final SalesforceSourceConfig config,
       final OffsetManager offsetManager,
       BulkApiQueryEngine engine,
-      Map<String, ZonedDateTime> lastSeenModifiedDate) {
+      Map<String, Instant> lastSeenModifiedDate) {
     super(config, offsetManager);
     this.queries =
         config.getBulkApiQueries().stream()
@@ -255,14 +257,14 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    * query too quickly.
    */
   private boolean backOff() {
-    ZonedDateTime lastExecutedDateTime =
+    Instant lastExecutedDateTime =
         lastQueryExecuted.getOrDefault(getQueryHash(queries.getFirst()), null);
     if (lastExecutedDateTime == null) {
       return false;
     }
     return lastExecutedDateTime
         .plusSeconds(minimumDelayBetweenQueries.getSeconds())
-        .isAfter(ZonedDateTimeUtil.now());
+        .isAfter(InstantUtil.now());
   }
 
   /**
@@ -308,7 +310,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                 queries.offerLast(element);
                 // Regular back off
 
-                ZonedDateTime lastModifiedDate =
+                Instant lastModifiedDate =
                     lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
                 try {
                   LOGGER.info("Submit new query");
@@ -316,11 +318,11 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                       engine.getRecords(
                           element,
                           lastModifiedDate != null
-                              ? ZonedDateTimeUtil.toMilliString(lastModifiedDate)
+                              ? InstantUtil.toMilliString(lastModifiedDate)
                               : null);
 
                 } finally {
-                  lastQueryExecuted.put(getQueryHash(queries.getLast()), ZonedDateTimeUtil.now());
+                  lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());
                 }
               }
               return iterator.hasNext();

@@ -35,7 +35,9 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 
   private static final String RECORD_COUNT = "recordCount";
   private static final String TOTAL_RECORD_COUNT = "totalRecordCount";
-  private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedDate";
+
+  /** The lastmodifiedDate key name that is used in the salesforce connector */
+  public static final String LAST_MODIFIED_DATE = "lastModifiedDate";
 
   /** The jobId that is being processed */
   private static final String JOB_ID = "jobId";
@@ -85,7 +87,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
     data.put(TOTAL_RECORD_COUNT, totalRecords);
     data.put(JOB_ID, jobId);
     data.put(IS_COMPLETE, totalRecords == recordCount);
-    data.put(LAST_MODIFIED_TIMESTAMP, lastModifiedDate);
+    data.put(LAST_MODIFIED_DATE, lastModifiedDate);
     data.put(LOCATOR, locator);
   }
 
