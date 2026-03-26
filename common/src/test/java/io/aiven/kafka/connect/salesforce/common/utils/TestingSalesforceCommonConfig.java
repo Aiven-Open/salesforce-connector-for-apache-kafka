@@ -20,85 +20,81 @@ import io.aiven.commons.kafka.connector.common.config.ConnectorCommonConfig;
 import io.aiven.commons.kafka.connector.common.config.ConnectorCommonConfigDef;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
-
 import java.time.Duration;
 import java.util.Map;
 
-public class TestingSalesforceCommonConfig extends ConnectorCommonConfig implements SalesforceCommonConfig {
+public class TestingSalesforceCommonConfig extends ConnectorCommonConfig
+    implements SalesforceCommonConfig {
 
-	final SalesforceCommonConfigFragment fragment;
+  final SalesforceCommonConfigFragment fragment;
 
-	private static ConnectorCommonConfigDef mkDef() {
-		ConnectorCommonConfigDef configDef = new ConnectorCommonConfigDef();
-		SalesforceCommonConfigFragment.update(configDef);
-		return configDef;
-	}
-	public TestingSalesforceCommonConfig(Map<String, String> props) {
-		super(mkDef(), props);
-		FragmentDataAccess dataAccess = FragmentDataAccess.from(this);
-		fragment = new SalesforceCommonConfigFragment(dataAccess);
-	}
+  private static ConnectorCommonConfigDef mkDef() {
+    ConnectorCommonConfigDef configDef = new ConnectorCommonConfigDef();
+    SalesforceCommonConfigFragment.update(configDef);
+    return configDef;
+  }
 
-	@Override
-	public String getOauthClientId() {
-		return fragment.getOauthClientId();
-	}
+  public TestingSalesforceCommonConfig(Map<String, String> props) {
+    super(mkDef(), props);
+    FragmentDataAccess dataAccess = FragmentDataAccess.from(this);
+    fragment = new SalesforceCommonConfigFragment(dataAccess);
+  }
 
-	@Override
-	public String getOauthClientSecret() {
-		return fragment.getOauthClientSecret();
-	}
+  @Override
+  public String getOauthClientId() {
+    return fragment.getOauthClientId();
+  }
 
-	@Override
-	public String getSalesforceUri() {
-		return fragment.getSalesforceUri();
-	}
+  @Override
+  public String getOauthClientSecret() {
+    return fragment.getOauthClientSecret();
+  }
 
-	@Override
-	public String getSalesforceApiVersion() {
-		return fragment.getSalesforceApiVersion();
-	}
+  @Override
+  public String getSalesforceUri() {
+    return fragment.getSalesforceUri();
+  }
 
-	@Override
-	public int getSalesforceMaxRecords() {
-		return fragment.getSalesforceMaxRecords();
-	}
+  @Override
+  public String getSalesforceApiVersion() {
+    return fragment.getSalesforceApiVersion();
+  }
 
-	@Override
-	public String getSalesforceOauthUri() {
-		return fragment.getSalesforceOauthUri();
-	}
+  @Override
+  public int getSalesforceMaxRecords() {
+    return fragment.getSalesforceMaxRecords();
+  }
 
-	@Override
-	public String getTopicPrefix() {
-		return fragment.getTopicPrefix();
-	}
+  @Override
+  public String getSalesforceOauthUri() {
+    return fragment.getSalesforceOauthUri();
+  }
 
-	@Override
-	public int getSalesforceMaxRetries() {
-		return fragment.getSalesforceMaxRetries();
-	}
+  @Override
+  public String getTopicPrefix() {
+    return fragment.getTopicPrefix();
+  }
 
-	/**
-	 * The time to wait in between querying the status of a job
-	 *
-	 * @return The time in seconds to wait between checking for the status of a bulk
-	 *         api job.
-	 */
-	@Override
-	public Duration getStatusCheckWaitTime() {
-		return fragment.getSalesforceStatusCheckWait();
-	}
+  @Override
+  public int getSalesforceMaxRetries() {
+    return fragment.getSalesforceMaxRetries();
+  }
 
-	/**
-	 *
-	 * @return The minimum time in seconds to wait between resubmitting the same
-	 *         SOQL query
-	 *
-	 */
-	@Override
-	public Duration getMinimumQueryExecutionDelay() {
-		return fragment.getSalesforceWaitBetweenQueries();
-	}
+  /**
+   * The time to wait in between querying the status of a job
+   *
+   * @return The time in seconds to wait between checking for the status of a bulk api job.
+   */
+  @Override
+  public Duration getStatusCheckWaitTime() {
+    return fragment.getSalesforceStatusCheckWait();
+  }
 
+  /**
+   * @return The minimum time in seconds to wait between resubmitting the same SOQL query
+   */
+  @Override
+  public Duration getMinimumQueryExecutionDelay() {
+    return fragment.getSalesforceWaitBetweenQueries();
+  }
 }

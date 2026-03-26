@@ -16,54 +16,48 @@
 package io.aiven.kafka.connect.salesforce.source.validator;
 
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
+import java.util.Objects;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
-import java.util.Objects;
-
-/**
- * A Config validator for the SOQL validators
- */
+/** A Config validator for the SOQL validators */
 public class SOQLQueryValidator implements ConfigDef.Validator {
 
-	/**
-	 * default constructor
-	 */
-	public SOQLQueryValidator() {
-		// default constructor
-	}
+  /** default constructor */
+  public SOQLQueryValidator() {
+    // default constructor
+  }
 
-	/**
-	 * Validates the list of SOQL queries
-	 * 
-	 * @param name
-	 *            The name of the config
-	 * @param value
-	 *            The value provided by the user that is to be validated
-	 */
-	@Override
-	public void ensureValid(String name, Object value) {
+  /**
+   * Validates the list of SOQL queries
+   *
+   * @param name The name of the config
+   * @param value The value provided by the user that is to be validated
+   */
+  @Override
+  public void ensureValid(String name, Object value) {
 
-		if (Objects.nonNull(value)) {
-			var valueStr = (String) value;
-			if (valueStr.isEmpty()) {
-				throw new ConfigException(name, value, "A SOQL query must be defined");
-			}
+    if (Objects.nonNull(value)) {
+      var valueStr = (String) value;
+      if (valueStr.isEmpty()) {
+        throw new ConfigException(name, value, "A SOQL query must be defined");
+      }
 
-			var valueStrArray = valueStr.split(";");
+      var valueStrArray = valueStr.split(";");
 
-			for (String queryString : valueStrArray) {
-				if (!SOQLQuery.fromQueryString(queryString).validate()) {
-					throw new ConfigException(String.format(
-							"%s : %s requires the FIELDS(ALL) or the Id and LastModifiedDate in the select statement and the where statement should not have LastModifiedDate specified",
-							name, queryString));
-				}
-			}
-		}
-	}
+      for (String queryString : valueStrArray) {
+        if (!SOQLQuery.fromQueryString(queryString).validate()) {
+          throw new ConfigException(
+              String.format(
+                  "%s : %s requires the FIELDS(ALL) or the Id and LastModifiedDate in the select statement and the where statement should not have LastModifiedDate specified",
+                  name, queryString));
+        }
+      }
+    }
+  }
 
-	@Override
-	public String toString() {
-		return "A valid SOQL Query. Requires the SELECT statement to have either FIELDS(ALL) or the Id and LastModifiedDate specified, it must also not specify the LastModifiedDate in the WHERE clause.";
-	}
+  @Override
+  public String toString() {
+    return "A valid SOQL Query. Requires the SELECT statement to have either FIELDS(ALL) or the Id and LastModifiedDate specified, it must also not specify the LastModifiedDate in the WHERE clause.";
+  }
 }

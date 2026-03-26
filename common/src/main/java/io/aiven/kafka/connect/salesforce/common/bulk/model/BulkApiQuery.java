@@ -15,49 +15,45 @@
  */
 package io.aiven.kafka.connect.salesforce.common.bulk.model;
 
-/**
- * A model for submitting a bulk api v2.0 Query job.
- */
+/** A model for submitting a bulk api v2.0 Query job. */
 public final class BulkApiQuery {
 
-	/**
-	 * Create a new Bulk Api Query to submit to the API
-	 * 
-	 * @param operation
-	 *            The type of operation to execute against the API currently only
-	 *            'query' is allowed
-	 * @param query
-	 *            The SOQL query to execute against the Bulk API
-	 */
-	public BulkApiQuery(String operation, String query) {
-		this.operation = operation;
-		this.query = query;
-	}
-	/*
-	 * default is "query"
-	 */
-	private final String operation;
-	/*
-	 * Query that uses the Salesforce Object Query Language
-	 */
-	private final String query;
+  /**
+   * Create a new Bulk Api Query to submit to the API
+   *
+   * @param operation The type of operation to execute against the API currently only 'query' is
+   *     allowed
+   * @param query The SOQL query to execute against the Bulk API
+   */
+  public BulkApiQuery(String operation, String query) {
+    this.operation = operation;
+    this.query = query;
+  }
 
-	/**
-	 * Get the operation type for this query
-	 * 
-	 * @return The operation type as a String
-	 */
-	public String getOperation() {
-		return operation;
-	}
+  /*
+   * default is "query"
+   */
+  private final String operation;
+  /*
+   * Query that uses the Salesforce Object Query Language
+   */
+  private final String query;
 
-	/**
-	 * Get the SOQL query for the operation
-	 * 
-	 * @return The SOQL query for the operation
-	 */
-	public String getQuery() {
-		return query;
-	}
+  /**
+   * Get the operation type for this query
+   *
+   * @return The operation type as a String
+   */
+  public String getOperation() {
+    return operation;
+  }
 
+  /**
+   * Get the SOQL query for the operation
+   *
+   * @return The SOQL query for the operation
+   */
+  public String getQuery() {
+    return query;
+  }
 }

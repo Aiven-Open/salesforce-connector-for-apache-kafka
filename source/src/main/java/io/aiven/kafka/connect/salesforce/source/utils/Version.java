@@ -17,44 +17,41 @@ package io.aiven.kafka.connect.salesforce.source.utils;
 
 import java.io.InputStream;
 import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Return the Version of the current compiled connector
- */
+/** Return the Version of the current compiled connector */
 public final class Version {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
 
-	private static final String PROPERTIES_FILENAME = "io/aiven/kafka/connect/salesforce/config/salesforce-source-connector-for-apache-kafka-version.properties";
-	private static final String DEPENDENCIES_PROPERTIES_FILENAME = "app.properties";
-	/**
-	 * Default constructor
-	 */
-	public Version() {
-		// Default constructor
-	}
-	/**
-	 * This is the Version that is made available to be returned to other areas
-	 * within the code.
-	 */
-	public static final String VERSION; // NOPMD AvoidFieldNameMatchingTypeName
+  private static final String PROPERTIES_FILENAME =
+      "io/aiven/kafka/connect/salesforce/config/salesforce-source-connector-for-apache-kafka-version.properties";
+  private static final String DEPENDENCIES_PROPERTIES_FILENAME = "app.properties";
 
-	static {
-		final Properties props = new Properties();
-		try (InputStream resourceStream = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream(PROPERTIES_FILENAME)) {
-			props.load(resourceStream);
-		} catch (final Exception e) { // NOPMD AvoidCatchingGenericException
-			LOGGER.warn("Error while loading {}: {}", PROPERTIES_FILENAME, e.getMessage());
-		}
-		VERSION = props.getProperty("version", "unknown").trim();
-		try (InputStream resourceStream = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream(DEPENDENCIES_PROPERTIES_FILENAME)) {
-			props.load(resourceStream);
-		} catch (final Exception e) { // NOPMD AvoidCatchingGenericException
-			LOGGER.warn("Error while loading {}: {}", DEPENDENCIES_PROPERTIES_FILENAME, e.getMessage());
-		}
-	}
+  /** Default constructor */
+  public Version() {
+    // Default constructor
+  }
+
+  /** This is the Version that is made available to be returned to other areas within the code. */
+  public static final String VERSION; // NOPMD AvoidFieldNameMatchingTypeName
+
+  static {
+    final Properties props = new Properties();
+    try (InputStream resourceStream =
+        Thread.currentThread().getContextClassLoader().getResourceAsStream(PROPERTIES_FILENAME)) {
+      props.load(resourceStream);
+    } catch (final Exception e) { // NOPMD AvoidCatchingGenericException
+      LOGGER.warn("Error while loading {}: {}", PROPERTIES_FILENAME, e.getMessage());
+    }
+    VERSION = props.getProperty("version", "unknown").trim();
+    try (InputStream resourceStream =
+        Thread.currentThread()
+            .getContextClassLoader()
+            .getResourceAsStream(DEPENDENCIES_PROPERTIES_FILENAME)) {
+      props.load(resourceStream);
+    } catch (final Exception e) { // NOPMD AvoidCatchingGenericException
+      LOGGER.warn("Error while loading {}: {}", DEPENDENCIES_PROPERTIES_FILENAME, e.getMessage());
+    }
+  }
 }

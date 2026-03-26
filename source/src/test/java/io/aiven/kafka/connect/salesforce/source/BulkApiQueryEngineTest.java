@@ -15,6 +15,12 @@
  */
 package io.aiven.kafka.connect.salesforce.source;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
@@ -25,101 +31,94 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiNativeInfo;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
 public class BulkApiQueryEngineTest {
 
-	public static final String QUERY = "SELECT Id, Name, LastModifiedDate FROM Account";
-	private BulkApiQueryEngine engine;
-	private BulkApiClient apiClient;
-	private SalesforceSourceConfig config;
-	private BulkApiKey apiKey = new BulkApiKey("bulkApi", QUERY, null, "");
-	@BeforeEach
-	void startup() {
-		apiClient = Mockito.mock(BulkApiClient.class);
-		config = Mockito.mock(SalesforceSourceConfig.class);
+  public static final String QUERY = "SELECT Id, Name, LastModifiedDate FROM Account";
+  private BulkApiQueryEngine engine;
+  private BulkApiClient apiClient;
+  private SalesforceSourceConfig config;
+  private BulkApiKey apiKey = new BulkApiKey("bulkApi", QUERY, null, "");
 
-	}
+  @BeforeEach
+  void startup() {
+    apiClient = Mockito.mock(BulkApiClient.class);
+    config = Mockito.mock(SalesforceSourceConfig.class);
+  }
 
-	@Test
-	void getSinglePage() {
-		String jobId = "ABCD123";
-		engine = new BulkApiQueryEngine(config, apiClient);
-		SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
+  @Test
+  void getSinglePage() {
+    String jobId = "ABCD123";
+    engine = new BulkApiQueryEngine(config, apiClient);
+    SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
 
-		when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
-		when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
-		when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
-				.thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
+    when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
+    when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
+    when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
+        .thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
 
-		Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
-		assertTrue(iterator.hasNext());
+    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
+    assertTrue(iterator.hasNext());
 
-		BulkApiNativeInfo next = iterator.next();
+    BulkApiNativeInfo next = iterator.next();
 
-		assertFalse(iterator.hasNext());
-	}
+    assertFalse(iterator.hasNext());
+  }
 
-	@Test
-	void getMultiplePages() {
-		String jobId = "ABCD123";
-		engine = new BulkApiQueryEngine(config, apiClient);
-		SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
+  @Test
+  void getMultiplePages() {
+    String jobId = "ABCD123";
+    engine = new BulkApiQueryEngine(config, apiClient);
+    SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
 
-		when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
-		when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
-		when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
-				.thenReturn(CompletableFuture.completedFuture(getJobResults("Locator1", 5)));
+    when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
+    when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
+    when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
+        .thenReturn(CompletableFuture.completedFuture(getJobResults("Locator1", 5)));
 
-		when(apiClient.getJobResults(eq(jobId), eq("Locator1"), eq(null), any(BulkApiKey.class)))
-				.thenReturn(CompletableFuture.completedFuture(getJobResults("Locator2", 5)));
+    when(apiClient.getJobResults(eq(jobId), eq("Locator1"), eq(null), any(BulkApiKey.class)))
+        .thenReturn(CompletableFuture.completedFuture(getJobResults("Locator2", 5)));
 
-		when(apiClient.getJobResults(eq(jobId), eq("Locator2"), eq(null), any(BulkApiKey.class)))
-				.thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
+    when(apiClient.getJobResults(eq(jobId), eq("Locator2"), eq(null), any(BulkApiKey.class)))
+        .thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
 
-		Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
-		assertTrue(iterator.hasNext());
+    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
+    assertTrue(iterator.hasNext());
 
-		BulkApiNativeInfo next = iterator.next();
+    BulkApiNativeInfo next = iterator.next();
 
-		assertTrue(iterator.hasNext());
-		next = iterator.next();
+    assertTrue(iterator.hasNext());
+    next = iterator.next();
 
-		assertTrue(iterator.hasNext());
-		next = iterator.next();
+    assertTrue(iterator.hasNext());
+    next = iterator.next();
 
-		assertFalse(iterator.hasNext());
-	}
+    assertFalse(iterator.hasNext());
+  }
 
-	private BulkApiResultResponse getJobResults(String locator, int numberOfRecords) {
-		BulkApiResultResponse response = new BulkApiResultResponse();
-		response.setLocator(locator);
-		response.setNumberOfRecords(numberOfRecords);
-		response.setResult(getResults(numberOfRecords));
-		return response;
-	}
+  private BulkApiResultResponse getJobResults(String locator, int numberOfRecords) {
+    BulkApiResultResponse response = new BulkApiResultResponse();
+    response.setLocator(locator);
+    response.setNumberOfRecords(numberOfRecords);
+    response.setResult(getResults(numberOfRecords));
+    return response;
+  }
 
-	private BulkApiResult getResults(int numberOfRecords) {
-		BulkApiResult apiResult = new BulkApiResult(new NativeInfo<>(apiKey, ""), "Account");
-		return apiResult;
-	}
+  private BulkApiResult getResults(int numberOfRecords) {
+    BulkApiResult apiResult = new BulkApiResult(new NativeInfo<>(apiKey, ""), "Account");
+    return apiResult;
+  }
 
-	private Optional<QueryResponse> getJobStatus(String jobId, JobState state) {
-		QueryResponse queryResponse = new QueryResponse();
-		queryResponse.setState(state);
-		queryResponse.setId(jobId);
-		return Optional.of(queryResponse);
-	}
+  private Optional<QueryResponse> getJobStatus(String jobId, JobState state) {
+    QueryResponse queryResponse = new QueryResponse();
+    queryResponse.setState(state);
+    queryResponse.setId(jobId);
+    return Optional.of(queryResponse);
+  }
 }
