@@ -111,8 +111,32 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
     this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
     this.lastSeenModifiedDate = lastSeenModifiedDate;
     this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
+    refreshSourceDataFromOffsets(offsetManager);
+  }
 
-    // TODO pick up from where you left off
+  /**
+   * Checks for offsets for each query and update the lastSeenModifiedDate for each query and if
+   * required seeds the data to continue from where it was previously processing.
+   */
+  private void refreshSourceDataFromOffsets(final OffsetManager offsetManager) {
+
+    for (SOQLQuery query : queries) {
+      Optional<Map<String, Object>> offset =
+          offsetManager.getEntryData(
+              SalesforceOffsetManagerEntry.asKey(
+                  new BulkApiKey(BULK_API, query.getSOQLQuery(), null, null)));
+      if (offset.isPresent()) {
+        // Seed the last Seen modified Date
+        lastSeenModifiedDate.put(
+            getQueryHash(query),
+            ZonedDateTimeUtil.parseString((String) offset.get().get("lastModifiedDate")));
+        LOGGER.info(
+            "LastModifiedDate on Startup {} for query {}",
+            lastSeenModifiedDate,
+            query.getSOQLQuery());
+      }
+      // Query hash will be null for initial if this is not set here
+    }
   }
 
   /**
@@ -185,31 +209,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
         new BulkApiKey(
             BULK_API,
             queries.getLast().getSOQLQuery(),
-            lastQueryExecuted.get(getQueryHash()).toString(),
+            lastQueryExecuted.get(getQueryHash(queries.getLast())).toString(),
             ""),
         data);
   }
 
-  private String getQueryHash() {
+  private String getQueryHash(SOQLQuery query) {
 
     return Arrays.toString(
         MurmurHash3.hash128(
-            queries
-                .getLast()
-                .getSOQLQuery()
-                .replaceAll("\\s+", "")
-                .getBytes(StandardCharsets.UTF_8)));
-  }
-
-  private String getNextQueryHash() {
-
-    return Arrays.toString(
-        MurmurHash3.hash128(
-            queries
-                .getFirst()
-                .getSOQLQuery()
-                .replaceAll("\\s+", "")
-                .getBytes(StandardCharsets.UTF_8)));
+            query.getSOQLQuery().replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
   }
 
   /**
@@ -246,7 +255,8 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    * query too quickly.
    */
   private boolean backOff() {
-    ZonedDateTime lastExecutedDateTime = lastQueryExecuted.getOrDefault(getNextQueryHash(), null);
+    ZonedDateTime lastExecutedDateTime =
+        lastQueryExecuted.getOrDefault(getQueryHash(queries.getFirst()), null);
     if (lastExecutedDateTime == null) {
       return false;
     }
@@ -299,7 +309,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                 // Regular back off
 
                 ZonedDateTime lastModifiedDate =
-                    lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
+                    lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
                 try {
                   LOGGER.info("Submit new query");
                   iterator =
@@ -308,8 +318,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                           lastModifiedDate != null
                               ? ZonedDateTimeUtil.toMilliString(lastModifiedDate)
                               : null);
+
                 } finally {
-                  lastQueryExecuted.put(getQueryHash(), ZonedDateTimeUtil.now());
+                  lastQueryExecuted.put(getQueryHash(queries.getLast()), ZonedDateTimeUtil.now());
                 }
               }
               return iterator.hasNext();

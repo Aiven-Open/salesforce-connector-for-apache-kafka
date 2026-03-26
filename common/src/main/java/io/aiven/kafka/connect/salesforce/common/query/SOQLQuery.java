@@ -251,7 +251,7 @@ public class SOQLQuery {
             + getPart(WITH, with)
             + getPart(GROUP_BY, groupBy)
             + getPart(HAVING, having)
-            + getPart(ORDER_BY, orderBy)
+            + getOrderByLastModifiedDateAsc()
             + getPart(LIMIT, limit)
             + getPart(OFFSET, offset))
         .trim();
@@ -268,6 +268,10 @@ public class SOQLQuery {
       where += lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : "";
       return where;
     }
+  }
+
+  private String getOrderByLastModifiedDateAsc() {
+    return getPart(ORDER_BY, "LastModifiedDate ASC");
   }
 
   private static boolean isEmpty(String partInstruction) {
@@ -288,6 +292,10 @@ public class SOQLQuery {
     // Should not include the LastModifiedDate in the where clause so we can
     // manipulate it.
     if (!select.contains(FIELDS_STANDARD) && !select.contains(LAST_MODIFIED_DATE)) {
+      return false;
+    }
+    //		Order by should be empty as it is used to order records for offsets and recovery
+    if (StringUtils.isNotBlank(orderBy)) {
       return false;
     }
     // Should not include the LastModifiedDate in the where clause so we can

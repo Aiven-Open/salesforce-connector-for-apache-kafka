@@ -115,33 +115,6 @@ public class BulkApiQueryEngine {
     return Collections.emptyIterator();
   }
 
-  /**
-   * A Salesforce query can last up to seven days before it is deleted, the offset contains the
-   * pertinent information to allow us to recover from this job and continue processing.
-   *
-   * @param query The query that is associated with this job it does not contain the
-   *     LastModifiedDate
-   * @param jobId The jobId of the salesforce query that was being processed
-   * @param lastModifiedDate The lastModifiedDate from the offset
-   * @param objectName The name of the Salesforce Object that is being queried
-   * @param locator The locator which determines the current page that was being processed
-   * @param createdDate The date the job was created at
-   * @return An Iterator of BulkNativeInfo that can be consumed and replayed back to Kafka skipping
-   *     already processed records
-   */
-  public Iterator<BulkApiNativeInfo> scanToPosition(
-      SOQLQuery query,
-      String jobId,
-      String lastModifiedDate,
-      String objectName,
-      String locator,
-      String createdDate) {
-
-    BulkApiKey bulkApiKey =
-        new BulkApiKey(BULK_API, query.getSOQLQuery(), createdDate, locator != null ? locator : "");
-    return new FutureIterator(jobId, objectName, bulkApiKey, locator, lastModifiedDate);
-  }
-
   private JobState waitUntilProcessingComplete(JobState state, String jobId) {
     if (state.isExecuting()) {
       Timer timer = new Timer(statusCheckDelay);

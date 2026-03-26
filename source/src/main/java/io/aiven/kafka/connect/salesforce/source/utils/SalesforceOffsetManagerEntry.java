@@ -35,7 +35,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 
   private static final String RECORD_COUNT = "recordCount";
   private static final String TOTAL_RECORD_COUNT = "totalRecordCount";
-  private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedTimestamp";
+  private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedDate";
 
   /** The jobId that is being processed */
   private static final String JOB_ID = "jobId";

@@ -33,7 +33,7 @@ public class ZonedDateTimeUtil {
    * where a date time may end up going to Salesforce
    */
   private static DateTimeFormatter formatter =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
   /** This is a default constructor nothing is required here */
   public ZonedDateTimeUtil() {

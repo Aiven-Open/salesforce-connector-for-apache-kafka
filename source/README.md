@@ -40,9 +40,11 @@ To make the connector work, a user has to specify Salesforce client credentials 
   * Queries are defined using the SOQL language 
   * The queries all need to have the system field LastModifiedDate included in the SELECT statement
   * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
+  * The Order By statement is not allowed to be used as this is used to order the query results 
   * Multiple queries are supported
   * example query
     * SELECT Id, Name, LastModifiedDate FROM Account;
+  * It is possible to get duplicate entries in particular if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
  ``
 
 * Some important configuration options to handle how often the Bulk API is queried by the connector
@@ -55,6 +57,9 @@ To make the connector work, a user has to specify Salesforce client credentials 
     * `salesforce.status.check.wait`
         * Should probably rename this but how long do you wait between checking if a bulk query is ready for consumption
             * default is 5 seconds hardcoded in BulkApiQueryEngine
+
+
+
 
 ## Configuration
 
@@ -117,6 +122,8 @@ Offsets
 How the offsets are handled
 * We include a hash of the query, LastExecutionDate and the API name as part of the offset Key
 * We include the LastModifiedDate, jobId, next Locator, recordCount in the offset data
+* As we order the result set that is returned we then are able to use the lastModifiedDate in the offset, on a restart we read the offset and seed the correct lastModifiedDate
+
 
 Features
 ============
