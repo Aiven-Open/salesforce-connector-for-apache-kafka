@@ -18,58 +18,53 @@ package io.aiven.kafka.connect.salesforce.common.time;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-public class ZonedDateTimeUtilsTest {
+public class InstantUtilTest {
 
   @Test
-  void parseZonedDateTimes() {
+  void parseInstants() {
     String timeString = "2026-03-25T10:03:00.000Z";
-    ZonedDateTime time = ZonedDateTimeUtil.parseString(timeString);
+    Instant time = InstantUtil.parseString(timeString);
   }
 
   @Test
-  void givenZonedDateTimeConvertBackToExactSameString() {
+  void givenInstantConvertBackToExactSameString() {
     String timeString = "2026-03-25T10:03:00.000Z";
-    ZonedDateTime time = ZonedDateTimeUtil.parseString(timeString);
-    String timeToMilliPrecision = ZonedDateTimeUtil.toMilliString(time);
+    Instant time = InstantUtil.parseString(timeString);
+    String timeToMilliPrecision = InstantUtil.toMilliString(time);
     assertEquals(timeString, timeToMilliPrecision);
   }
 
   @Test
   void whenGivenTwoTimesCheckWhichIsTheLatest() {
     String timeString = "2026-03-25T10:03:00.000Z";
-    ZonedDateTime time = ZonedDateTimeUtil.parseString(timeString);
+    Instant time = InstantUtil.parseString(timeString);
     String latestTimeString = "2026-03-25T10:03:00.011Z";
-    ZonedDateTime latestTime = ZonedDateTimeUtil.getlatest(latestTimeString, time);
+    Instant latestTime = InstantUtil.getlatest(latestTimeString, time);
     // We change all the time formats back to String for comparison because the default behaviour is
-    // for the ZonedDAteTime to truncate
+    // for the Instant to truncate
     // all 0's so if millis and seconds are all zeros they end up like
     // 2026-03-25T10:03 instead of 2026-03-25T10:03:00.000Z
-    assertNotEquals(
-        ZonedDateTimeUtil.toMilliString(latestTime), ZonedDateTimeUtil.toMilliString(time));
-    ZonedDateTime newLatestTime = ZonedDateTimeUtil.getlatest(timeString, latestTime);
-    assertEquals(
-        ZonedDateTimeUtil.toMilliString(latestTime),
-        ZonedDateTimeUtil.toMilliString(newLatestTime));
+    assertNotEquals(InstantUtil.toMilliString(latestTime), InstantUtil.toMilliString(time));
+    Instant newLatestTime = InstantUtil.getlatest(timeString, latestTime);
+    assertEquals(InstantUtil.toMilliString(latestTime), InstantUtil.toMilliString(newLatestTime));
   }
 
   @Test
   void whenGivenTwoTimesCheckWhichIsTheEarliest() {
     String timeString = "2026-03-25T10:03:00.022Z";
-    ZonedDateTime time = ZonedDateTimeUtil.parseString(timeString);
+    Instant time = InstantUtil.parseString(timeString);
     String latestTimeString = "2026-03-25T10:03:00.033Z";
-    ZonedDateTime latestTime = ZonedDateTimeUtil.getEarliest(latestTimeString, time);
+    Instant latestTime = InstantUtil.getEarliest(latestTimeString, time);
     // We change all the time formats back to String for comparison because the default behaviour is
-    // for the ZonedDAteTime to truncate
+    // for the Instant to truncate
     // all 0's so if millis and seconds are all zeros they end up like
     // 2026-03-25T10:03 instead of 2026-03-25T10:03:00.000Z
-    assertEquals(
-        ZonedDateTimeUtil.toMilliString(latestTime), ZonedDateTimeUtil.toMilliString(time));
-    ZonedDateTime earliestTime = ZonedDateTimeUtil.getEarliest(timeString, time);
-    assertEquals(
-        ZonedDateTimeUtil.toMilliString(time), ZonedDateTimeUtil.toMilliString(earliestTime));
-    assertNotEquals(latestTimeString, ZonedDateTimeUtil.toMilliString(earliestTime));
+    assertEquals(InstantUtil.toMilliString(latestTime), InstantUtil.toMilliString(time));
+    Instant earliestTime = InstantUtil.getEarliest(timeString, time);
+    assertEquals(InstantUtil.toMilliString(time), InstantUtil.toMilliString(earliestTime));
+    assertNotEquals(latestTimeString, InstantUtil.toMilliString(earliestTime));
   }
 }

@@ -15,8 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.common.time;
 
+import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit;
  * number of utilities to work with these times and also format the output correctly for Salesforce
  * All times are kept in UTC
  */
-public class ZonedDateTimeUtil {
+public class InstantUtil {
   private static final String UTC = "UTC";
 
   /**
@@ -33,41 +33,41 @@ public class ZonedDateTimeUtil {
    * where a date time may end up going to Salesforce
    */
   private static DateTimeFormatter formatter =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneId.of(UTC));
 
   /** This is a default constructor nothing is required here */
-  public ZonedDateTimeUtil() {
+  public InstantUtil() {
     // nothing to do
   }
 
   /**
-   * Returns a ZonedDateTime from a time string String with millisecond precision
+   * Returns a Instant from a time String with millisecond precision
    *
-   * @param timeString The time that needs to be transformed into a ZonedDateTime
-   * @return A ZonedDateTime with millisecond precision
+   * @param timeString The time that needs to be transformed into a Instant
+   * @return A Instant with millisecond precision
    */
-  public static ZonedDateTime parseString(String timeString) {
-    return ZonedDateTime.parse(timeString).truncatedTo(ChronoUnit.MILLIS);
+  public static Instant parseString(String timeString) {
+    return Instant.parse(timeString).truncatedTo(ChronoUnit.MILLIS);
   }
 
   /**
-   * Get a ZonedDateTime of the currentTime with millisecond precision using the UTC zoneId
+   * Get a Instant of the currentTime with millisecond precision using the UTC zoneId
    *
-   * @return a ZonedDateTime of the currentTime with millisecond precision using the UTC zoneId
+   * @return a Instant of the currentTime with millisecond precision using the UTC zoneId
    */
-  public static ZonedDateTime now() {
-    return ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
+  public static Instant now() {
+    return Instant.now().truncatedTo(ChronoUnit.MILLIS);
   }
 
   /**
-   * Compare a ZonedDateTime with a time String and get the earliest time returned
+   * Compare a Instant with a time String and get the earliest time returned
    *
    * @param time1 The first time string to be compared
-   * @param time2 The ZonedDateTime to be compared
-   * @return The earliest time as a ZonedDateTime
+   * @param time2 The Instant to be compared
+   * @return The earliest time as a Instant
    */
-  public static ZonedDateTime getEarliest(String time1, ZonedDateTime time2) {
-    ZonedDateTime parsedTime1 = parseString(time1);
+  public static Instant getEarliest(String time1, Instant time2) {
+    Instant parsedTime1 = parseString(time1);
     if (parsedTime1.isAfter(time2)) {
       return time2;
     } else {
@@ -76,14 +76,14 @@ public class ZonedDateTimeUtil {
   }
 
   /**
-   * Compare a ZonedDateTime with a time String and get the latest time returned
+   * Compare a Instant with a time String and get the latest time returned
    *
    * @param time1 The first time string to be compared
-   * @param time2 The ZonedDateTime to be compared
-   * @return The latest time as a ZonedDateTime
+   * @param time2 The Instant to be compared
+   * @return The latest time as an Instant
    */
-  public static ZonedDateTime getlatest(String time1, ZonedDateTime time2) {
-    ZonedDateTime parsedTime1 = parseString(time1);
+  public static Instant getlatest(String time1, Instant time2) {
+    Instant parsedTime1 = parseString(time1);
     if (parsedTime1.isAfter(time2)) {
       return parsedTime1;
     } else {
@@ -92,14 +92,14 @@ public class ZonedDateTimeUtil {
   }
 
   /**
-   * Get the ZonedDateTime in a String format that is suported by the Salesforce api as toString
-   * will return the smallest possible string version of the time.
+   * Get the Instant in a String format that is suported by the Salesforce api as toString will
+   * return the smallest possible string version of the time.
    *
-   * @param time The ZonedDateTime that is to be transformed into a String
+   * @param time The Instant that is to be transformed into a String
    * @return A String representation that will be returned with millisecond precision int the format
    *     of "yyyy-MM-ddTHH:mm:ss.SSSZ"
    */
-  public static String toMilliString(ZonedDateTime time) {
-    return time.format(formatter);
+  public static String toMilliString(Instant time) {
+    return formatter.format(time); // TODO fix this
   }
 }
