@@ -15,17 +15,14 @@
  */
 package io.aiven.kafka.connect.salesforce.common.exceptions;
 
-/**
- * An exception that is thrown when the retries are exhausted.
- */
+/** An exception that is thrown when the retries are exhausted. */
 public class SFRetryException extends Exception {
-	/**
-	 * Constructor.
-	 * 
-	 * @param message
-	 *            the message.
-	 */
-	public SFRetryException(String message) {
-		super(message);
-	}
+  /**
+   * Constructor.
+   *
+   * @param message the message.
+   */
+  public SFRetryException(String message) {
+    super(message);
+  }
 }

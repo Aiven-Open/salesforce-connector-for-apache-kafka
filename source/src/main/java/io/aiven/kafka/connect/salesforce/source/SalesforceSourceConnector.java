@@ -1,5 +1,3 @@
-package io.aiven.kafka.connect.salesforce.source;
-
 /*
  * Copyright 2026 Aiven Oy
  *
@@ -15,75 +13,72 @@ package io.aiven.kafka.connect.salesforce.source;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.aiven.kafka.connect.salesforce.source;
 
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfigDef;
+import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfigDef;
-import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Salesforce Source is a Kafka Connect Connector implementation that queries
- * the Salesforce objects and generates tasks to ingest contents.
+ * Salesforce Source is a Kafka Connect Connector implementation that queries the Salesforce objects
+ * and generates tasks to ingest contents.
  */
 public class SalesforceSourceConnector extends SourceConnector {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceConnector.class);
-	private static final String TASK_ID = "task.id";
+  private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceConnector.class);
+  private static final String TASK_ID = "task.id";
 
-	private Map<String, String> configProperties;
+  private Map<String, String> configProperties;
 
-	/**
-	 * Default constructor for initializing the Salesforce source Connector
-	 */
-	public SalesforceSourceConnector() {
-		super();
-	}
+  /** Default constructor for initializing the Salesforce source Connector */
+  public SalesforceSourceConnector() {
+    super();
+  }
 
-	@Override
-	public ConfigDef config() {
-		return new SalesforceSourceConfigDef();
-	}
+  @Override
+  public ConfigDef config() {
+    return new SalesforceSourceConfigDef();
+  }
 
-	@Override
-	public String version() {
-		return Version.VERSION;
-	}
+  @Override
+  public String version() {
+    return Version.VERSION;
+  }
 
-	@Override
-	public Class<? extends Task> taskClass() {
-		return SalesforceSourceTask.class;
-	}
+  @Override
+  public Class<? extends Task> taskClass() {
+    return SalesforceSourceTask.class;
+  }
 
-	@Override
-	public List<Map<String, String>> taskConfigs(final int maxTasks) {
-		final var taskProps = new ArrayList<Map<String, String>>();
-		for (int i = 0; i < maxTasks; i++) {
-			final var props = new HashMap<>(configProperties); // NOPMD
-			props.put(TASK_ID, String.valueOf(i));
-			taskProps.add(props);
-		}
-		return taskProps;
-	}
+  @Override
+  public List<Map<String, String>> taskConfigs(final int maxTasks) {
+    final var taskProps = new ArrayList<Map<String, String>>();
+    for (int i = 0; i < maxTasks; i++) {
+      final var props = new HashMap<>(configProperties); // NOPMD
+      props.put(TASK_ID, String.valueOf(i));
+      taskProps.add(props);
+    }
+    return taskProps;
+  }
 
-	@Override
-	public void start(final Map<String, String> properties) {
-		Objects.requireNonNull(properties, "properties haven't been set");
-		configProperties = Map.copyOf(properties);
-		LOGGER.info("Start Salesforce Source connector");
-	}
+  @Override
+  public void start(final Map<String, String> properties) {
+    Objects.requireNonNull(properties, "properties haven't been set");
+    configProperties = Map.copyOf(properties);
+    LOGGER.info("Start Salesforce Source connector");
+  }
 
-	@Override
-	public void stop() {
-		LOGGER.info("Stop Salesforce Source connector");
-	}
+  @Override
+  public void stop() {
+    LOGGER.info("Stop Salesforce Source connector");
+  }
 }

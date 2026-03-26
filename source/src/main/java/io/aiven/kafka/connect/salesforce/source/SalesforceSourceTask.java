@@ -26,142 +26,136 @@ import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
-
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * The salesforce source task is called by the kafka connect framework to start
- * the Salesforce source connector. It configures the connector and starts the
- * task.
+ * The salesforce source task is called by the kafka connect framework to start the Salesforce
+ * source connector. It configures the connector and starts the task.
  */
 public final class SalesforceSourceTask extends AbstractSourceTask {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
-	/** The offset manager this task uses */
-	private OffsetManager offsetManager;
-	private Map<String, ZonedDateTime> lastSeenModifiedDate;
-	/**
-	 * Should check about adding this
-	 */
-	public SalesforceSourceTask() {
-		super();
-	}
+  private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
-	/**
-	 * Called by {@link #start} to allows the concrete implementation to configure
-	 * itself based on properties.
-	 *
-	 * @param props
-	 *            The properties to use for configuration.
-	 * @param offsetManager
-	 *            the OffsetManager to use.
-	 * @return A SourceCommonConfig based configuration.
-	 */
-	@Override
-	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
-		LOGGER.info("Salesforce Source task started.");
-		this.offsetManager = new OffsetManager(context);
-		this.lastSeenModifiedDate = new HashMap<>();
-		// set the csv transformer for bulk api
-		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
-		return new SalesforceSourceConfig(props);
-	}
+  /** The offset manager this task uses */
+  private OffsetManager offsetManager;
 
-	/**
-	 * Called by the test suit to test the functionality of the SalesforceSourceTask
-	 * 
-	 * @param props
-	 *            The properties that are being used in the config for the test
-	 * @param offsetManager
-	 *            The offset Manager that is being used in the test
-	 * @param lastSeenModifiedDate
-	 *            The last seen modifiedDate map, contains all the sqlQueryHash to
-	 *            lastSeenModifiedDates
-	 * @return The SourceCommonConfig for the test
-	 */
-	@VisibleForTesting
-	protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager,
-			HashMap<String, ZonedDateTime> lastSeenModifiedDate) {
-		LOGGER.info("Salesforce Source task configured for testing.");
-		this.offsetManager = offsetManager;
-		this.lastSeenModifiedDate = lastSeenModifiedDate;
-		// set the csv transformer for bulk api
-		SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
-		return new SalesforceSourceConfig(props);
-	}
+  private Map<String, ZonedDateTime> lastSeenModifiedDate;
 
-	/**
-	 * Gets the iterator of SourceRecords. The iterator that SourceRecords are
-	 * extracted from for a poll event. When this iterator runs out of records it
-	 * should attempt to reset and read more records from the backend on the next
-	 * {@code hasNext()} call. In this way it should detect when new data has been
-	 * added to the backend and continue processing.
-	 * <p>
-	 * This method should handle any backend exception that can be retried. Any
-	 * runtime exceptions that are thrown when this iterator executes may cause the
-	 * task to abort.
-	 * </p>
-	 *
-	 * @param config
-	 *            the SourceCommonConfig instance.
-	 * @return The iterator of SourceRecords.
-	 */
-	@Override
-	protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
-		SalesforceSourceConfig myConfig = (SalesforceSourceConfig) config;
-		return new EvolvingSourceRecordIterator(myConfig,
-				new BulkApiSourceData(myConfig, offsetManager, lastSeenModifiedDate));
-	}
+  /** Should check about adding this */
+  public SalesforceSourceTask() {
+    super();
+  }
 
-	@Override
-	protected void closeResources() {
-		// no resources to close
-	}
+  /**
+   * Called by {@link #start} to allows the concrete implementation to configure itself based on
+   * properties.
+   *
+   * @param props The properties to use for configuration.
+   * @param offsetManager the OffsetManager to use.
+   * @return A SourceCommonConfig based configuration.
+   */
+  @Override
+  protected SourceCommonConfig configure(Map<String, String> props, OffsetManager offsetManager) {
+    LOGGER.info("Salesforce Source task started.");
+    this.offsetManager = new OffsetManager(context);
+    this.lastSeenModifiedDate = new HashMap<>();
+    // set the csv transformer for bulk api
+    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    return new SalesforceSourceConfig(props);
+  }
 
-	@Override
-	public String version() {
-		return Version.VERSION;
-	}
+  /**
+   * Called by the test suit to test the functionality of the SalesforceSourceTask
+   *
+   * @param props The properties that are being used in the config for the test
+   * @param offsetManager The offset Manager that is being used in the test
+   * @param lastSeenModifiedDate The last seen modifiedDate map, contains all the sqlQueryHash to
+   *     lastSeenModifiedDates
+   * @return The SourceCommonConfig for the test
+   */
+  @VisibleForTesting
+  protected SourceCommonConfig configure(
+      Map<String, String> props,
+      OffsetManager offsetManager,
+      HashMap<String, ZonedDateTime> lastSeenModifiedDate) {
+    LOGGER.info("Salesforce Source task configured for testing.");
+    this.offsetManager = offsetManager;
+    this.lastSeenModifiedDate = lastSeenModifiedDate;
+    // set the csv transformer for bulk api
+    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    return new SalesforceSourceConfig(props);
+  }
 
-	@Override
-	public void commit() {
-		LOGGER.info("Committed all records through last poll()");
-	}
+  /**
+   * Gets the iterator of SourceRecords. The iterator that SourceRecords are extracted from for a
+   * poll event. When this iterator runs out of records it should attempt to reset and read more
+   * records from the backend on the next {@code hasNext()} call. In this way it should detect when
+   * new data has been added to the backend and continue processing.
+   *
+   * <p>This method should handle any backend exception that can be retried. Any runtime exceptions
+   * that are thrown when this iterator executes may cause the task to abort.
+   *
+   * @param config the SourceCommonConfig instance.
+   * @return The iterator of SourceRecords.
+   */
+  @Override
+  protected EvolvingSourceRecordIterator getIterator(SourceCommonConfig config) {
+    SalesforceSourceConfig myConfig = (SalesforceSourceConfig) config;
+    return new EvolvingSourceRecordIterator(
+        myConfig, new BulkApiSourceData(myConfig, offsetManager, lastSeenModifiedDate));
+  }
 
-	@Override
-	protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
-		try {
-			LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
-			BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
-			ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
-			if (lastModifiedDate != null) {
-				lastSeenModifiedDate.put(key.getQueryHash(),
-						ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
-								? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
-								: lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
-			} else {
-				lastSeenModifiedDate.put(key.getQueryHash(),
-						ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
-			}
-			// If this is the last offset Record update to the last seen timestamp so we
-			// know where to begin from on a restart
-			SalesforceOffsetManagerEntry offsetRecord = (SalesforceOffsetManagerEntry) evolvingSourceRecord
-					.getOffsetManagerEntry();
-			if ((boolean) offsetRecord.getProperty("isComplete") && offsetRecord.getProperty("locator") == null) {
-				offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
-			}
-		} catch (Exception e) {
-			// nothing
-			LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);
-		}
-		return evolvingSourceRecord;
-	}
+  @Override
+  protected void closeResources() {
+    // no resources to close
+  }
+
+  @Override
+  public String version() {
+    return Version.VERSION;
+  }
+
+  @Override
+  public void commit() {
+    LOGGER.info("Committed all records through last poll()");
+  }
+
+  @Override
+  protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
+    try {
+      LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
+      BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
+      ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
+      if (lastModifiedDate != null) {
+        lastSeenModifiedDate.put(
+            key.getQueryHash(),
+            ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
+                ? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
+                : lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
+      } else {
+        lastSeenModifiedDate.put(
+            key.getQueryHash(),
+            ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
+      }
+      // If this is the last offset Record update to the last seen timestamp so we
+      // know where to begin from on a restart
+      SalesforceOffsetManagerEntry offsetRecord =
+          (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
+      if ((boolean) offsetRecord.getProperty("isComplete")
+          && offsetRecord.getProperty("locator") == null) {
+        offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
+      }
+    } catch (Exception e) {
+      // nothing
+      LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);
+    }
+    return evolvingSourceRecord;
+  }
 }

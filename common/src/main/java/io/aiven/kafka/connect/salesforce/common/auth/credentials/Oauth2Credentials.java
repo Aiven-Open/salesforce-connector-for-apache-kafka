@@ -18,119 +18,110 @@ package io.aiven.kafka.connect.salesforce.common.auth.credentials;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * This is a POJO for receiving an authentication response from salesforce in
- * the username-password oauth2 flow.
+ * This is a POJO for receiving an authentication response from salesforce in the username-password
+ * oauth2 flow.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Oauth2Credentials {
 
-	private String id;
-	private String issued_at;
-	private String signature;
-	private String access_token;
-	private String token_type;
-	// private String token_format;
+  private String id;
+  private String issued_at;
+  private String signature;
+  private String access_token;
+  private String token_type;
 
-	/**
-	 * Default constructor
-	 */
-	public Oauth2Credentials() {
-	}
+  // private String token_format;
 
-	/**
-	 * Get the id
-	 * 
-	 * @return the id
-	 */
-	public String getId() {
-		return id;
-	}
+  /** Default constructor */
+  public Oauth2Credentials() {}
 
-	/**
-	 * set the id
-	 * 
-	 * @param id
-	 *            The id
-	 */
-	public void setId(String id) {
-		this.id = id;
-	}
+  /**
+   * Get the id
+   *
+   * @return the id
+   */
+  public String getId() {
+    return id;
+  }
 
-	/**
-	 * Get the time that this token was issued at
-	 * 
-	 * @return the time that this token was issued at
-	 *
-	 */
-	public String getIssued_at() {
-		return issued_at;
-	}
+  /**
+   * set the id
+   *
+   * @param id The id
+   */
+  public void setId(String id) {
+    this.id = id;
+  }
 
-	/**
-	 * Time that the token was issues at
-	 * 
-	 * @param issued_at
-	 *            Time this token was issued at
-	 */
-	public void setIssued_at(String issued_at) {
-		this.issued_at = issued_at;
-	}
+  /**
+   * Get the time that this token was issued at
+   *
+   * @return the time that this token was issued at
+   */
+  public String getIssued_at() {
+    return issued_at;
+  }
 
-	/**
-	 * Return the signature on the access token
-	 * 
-	 * @return the signature on the access token
-	 *
-	 */
-	public String getSignature() {
-		return signature;
-	}
+  /**
+   * Time that the token was issues at
+   *
+   * @param issued_at Time this token was issued at
+   */
+  public void setIssued_at(String issued_at) {
+    this.issued_at = issued_at;
+  }
 
-	/**
-	 * Set the signature on the access token
-	 * 
-	 * @param signature
-	 *            The signature on the access token
-	 */
-	public void setSignature(String signature) {
-		this.signature = signature;
-	}
+  /**
+   * Return the signature on the access token
+   *
+   * @return the signature on the access token
+   */
+  public String getSignature() {
+    return signature;
+  }
 
-	/**
-	 * The Access Token
-	 * 
-	 * @return The access token that can be used for authentication
-	 */
-	public String getAccess_token() {
-		return access_token;
-	}
+  /**
+   * Set the signature on the access token
+   *
+   * @param signature The signature on the access token
+   */
+  public void setSignature(String signature) {
+    this.signature = signature;
+  }
 
-	/**
-	 * Set the access Token
-	 * 
-	 * @param access_token
-	 *            An access token that can be used for authentication
-	 */
-	public void setAccess_token(String access_token) {
-		this.access_token = access_token;
-	}
+  /**
+   * The Access Token
+   *
+   * @return The access token that can be used for authentication
+   */
+  public String getAccess_token() {
+    return access_token;
+  }
 
-	/**
-	 * Get the type of token that is being returned
-	 * 
-	 * @return The type of token that is being returned
-	 */
-	public String getToken_type() {
-		return token_type;
-	}
+  /**
+   * Set the access Token
+   *
+   * @param access_token An access token that can be used for authentication
+   */
+  public void setAccess_token(String access_token) {
+    this.access_token = access_token;
+  }
 
-	/**
-	 * The type of token that is being returned
-	 * 
-	 * @param token_type
-	 *            The type of token that is being returned
-	 */
-	public void setToken_type(String token_type) {
-		this.token_type = token_type;
-	}
+  /**
+   * Get the type of token that is being returned
+   *
+   * @return The type of token that is being returned
+   */
+  public String getToken_type() {
+    return token_type;
+  }
+
+  /**
+   * The type of token that is being returned
+   *
+   * @param token_type The type of token that is being returned
+   */
+  public void setToken_type(String token_type) {
+    this.token_type = token_type;
+  }
 }

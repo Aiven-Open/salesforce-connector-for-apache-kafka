@@ -15,17 +15,14 @@
  */
 package io.aiven.kafka.connect.salesforce.common.exceptions;
 
-/**
- * Exception thrown when authentication fails.
- */
+/** Exception thrown when authentication fails. */
 public class SFForbiddenException extends Exception {
-	/**
-	 * Constructor.
-	 * 
-	 * @param message
-	 *            the message.
-	 */
-	public SFForbiddenException(String message) {
-		super(message);
-	}
+  /**
+   * Constructor.
+   *
+   * @param message the message.
+   */
+  public SFForbiddenException(String message) {
+    super(message);
+  }
 }

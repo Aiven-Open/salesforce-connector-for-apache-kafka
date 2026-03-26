@@ -23,17 +23,17 @@ import org.mockito.Mockito;
 
 public class BulkApiSourceDataTest {
 
-	public static final String SELECT_FIELD_STANDARD_FROM_ACCOUNT = "SELECT FIELD(STANDARD) FROM Account";
-	private BulkApiSourceData sourceData;
-	private OffsetManager offsetManager;
-	private BulkApiQueryEngine engine;
-	private SalesforceSourceConfig config;
-	@BeforeEach
-	void setup() {
-		offsetManager = Mockito.mock(OffsetManager.class);
-		config = Mockito.mock(SalesforceSourceConfig.class);
-		engine = Mockito.mock(BulkApiQueryEngine.class);
+  public static final String SELECT_FIELD_STANDARD_FROM_ACCOUNT =
+      "SELECT FIELD(STANDARD) FROM Account";
+  private BulkApiSourceData sourceData;
+  private OffsetManager offsetManager;
+  private BulkApiQueryEngine engine;
+  private SalesforceSourceConfig config;
 
-	}
-
+  @BeforeEach
+  void setup() {
+    offsetManager = Mockito.mock(OffsetManager.class);
+    config = Mockito.mock(SalesforceSourceConfig.class);
+    engine = Mockito.mock(BulkApiQueryEngine.class);
+  }
 }

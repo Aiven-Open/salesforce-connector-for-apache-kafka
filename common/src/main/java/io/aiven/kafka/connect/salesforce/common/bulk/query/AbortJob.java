@@ -16,28 +16,21 @@
 package io.aiven.kafka.connect.salesforce.common.bulk.query;
 
 /**
- * Allow a job to be aborted, it can only be aborted if the state is InProgress
- * or UploadComplete
+ * Allow a job to be aborted, it can only be aborted if the state is InProgress or UploadComplete
  */
 public class AbortJob {
-	/**
-	 * Abort Job only has the abort state
-	 */
-	private final JobState state = JobState.Aborted;
+  /** Abort Job only has the abort state */
+  private final JobState state = JobState.Aborted;
 
-	/**
-	 * Default constructor
-	 */
-	public AbortJob() {
+  /** Default constructor */
+  public AbortJob() {}
 
-	}
-
-	/**
-	 * Get the abort state
-	 * 
-	 * @return JobState.Abort
-	 */
-	public JobState getState() {
-		return state;
-	}
+  /**
+   * Get the abort state
+   *
+   * @return JobState.Abort
+   */
+  public JobState getState() {
+    return state;
+  }
 }

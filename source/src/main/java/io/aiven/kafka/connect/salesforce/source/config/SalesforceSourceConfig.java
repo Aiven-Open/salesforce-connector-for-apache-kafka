@@ -19,112 +19,106 @@ import io.aiven.commons.kafka.config.fragment.FragmentDataAccess;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfig;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Salesforce Common Config to instantiate all the required configuration for
- * the salesforce connector that is common to a source and a sink connector.
+ * Salesforce Common Config to instantiate all the required configuration for the salesforce
+ * connector that is common to a source and a sink connector.
  */
-public final class SalesforceSourceConfig extends SourceCommonConfig implements SalesforceCommonConfig {
+public final class SalesforceSourceConfig extends SourceCommonConfig
+    implements SalesforceCommonConfig {
 
-	private final SalesforceCommonConfigFragment commonFragment;
-	private final SalesforceSourceConfigFragment sourceFragment;
-	/**
-	 * Instantiation of the SalesforceCommonConfig class
-	 * 
-	 * @param originals
-	 *            The original configuration that is stored in a Map of String,
-	 *            String
-	 */
-	public SalesforceSourceConfig(Map<String, String> originals) {
-		super(new SalesforceSourceConfigDef(), originals);
-		FragmentDataAccess dataAccess = FragmentDataAccess.from(this);
-		commonFragment = new SalesforceCommonConfigFragment(dataAccess);
-		sourceFragment = new SalesforceSourceConfigFragment(dataAccess);
-	}
+  private final SalesforceCommonConfigFragment commonFragment;
+  private final SalesforceSourceConfigFragment sourceFragment;
 
-	@Override
-	public String getOauthClientId() {
-		return commonFragment.getOauthClientId();
-	}
+  /**
+   * Instantiation of the SalesforceCommonConfig class
+   *
+   * @param originals The original configuration that is stored in a Map of String, String
+   */
+  public SalesforceSourceConfig(Map<String, String> originals) {
+    super(new SalesforceSourceConfigDef(), originals);
+    FragmentDataAccess dataAccess = FragmentDataAccess.from(this);
+    commonFragment = new SalesforceCommonConfigFragment(dataAccess);
+    sourceFragment = new SalesforceSourceConfigFragment(dataAccess);
+  }
 
-	@Override
-	public String getOauthClientSecret() {
-		return commonFragment.getOauthClientSecret();
-	}
+  @Override
+  public String getOauthClientId() {
+    return commonFragment.getOauthClientId();
+  }
 
-	@Override
-	public String getSalesforceUri() {
-		return commonFragment.getSalesforceUri();
-	}
+  @Override
+  public String getOauthClientSecret() {
+    return commonFragment.getOauthClientSecret();
+  }
 
-	@Override
-	public String getSalesforceApiVersion() {
-		return commonFragment.getSalesforceApiVersion();
-	}
+  @Override
+  public String getSalesforceUri() {
+    return commonFragment.getSalesforceUri();
+  }
 
-	@Override
-	public int getSalesforceMaxRecords() {
-		return commonFragment.getSalesforceMaxRecords();
-	}
+  @Override
+  public String getSalesforceApiVersion() {
+    return commonFragment.getSalesforceApiVersion();
+  }
 
-	@Override
-	public String getSalesforceOauthUri() {
-		return commonFragment.getSalesforceOauthUri();
-	}
+  @Override
+  public int getSalesforceMaxRecords() {
+    return commonFragment.getSalesforceMaxRecords();
+  }
 
-	@Override
-	public String getTopicPrefix() {
-		return commonFragment.getTopicPrefix();
-	}
+  @Override
+  public String getSalesforceOauthUri() {
+    return commonFragment.getSalesforceOauthUri();
+  }
 
-	@Override
-	public int getSalesforceMaxRetries() {
-		return commonFragment.getSalesforceMaxRetries();
-	}
+  @Override
+  public String getTopicPrefix() {
+    return commonFragment.getTopicPrefix();
+  }
 
-	/**
-	 * The time to wait in between querying the status of a job
-	 *
-	 * @return The time in seconds to wait between checking for the status of a bulk
-	 *         api job.
-	 */
-	@Override
-	public Duration getStatusCheckWaitTime() {
-		return commonFragment.getSalesforceStatusCheckWait();
-	}
+  @Override
+  public int getSalesforceMaxRetries() {
+    return commonFragment.getSalesforceMaxRetries();
+  }
 
-	/**
-	 *
-	 * @return The minimum time in seconds to wait between resubmitting the same
-	 *         SOQL query
-	 *
-	 */
-	@Override
-	public Duration getMinimumQueryExecutionDelay() {
-		return commonFragment.getSalesforceWaitBetweenQueries();
-	}
+  /**
+   * The time to wait in between querying the status of a job
+   *
+   * @return The time in seconds to wait between checking for the status of a bulk api job.
+   */
+  @Override
+  public Duration getStatusCheckWaitTime() {
+    return commonFragment.getSalesforceStatusCheckWait();
+  }
 
-	/**
-	 * The last ModifiedStartDateTime is used to determine what records in an object
-	 * to return can be null.
-	 *
-	 * @return The lastModifiedStartDateTime
-	 *
-	 */
-	public String getLastModifiedStartDateTime() {
-		return sourceFragment.getSalesforceLastModifiedStartDate();
-	}
+  /**
+   * @return The minimum time in seconds to wait between resubmitting the same SOQL query
+   */
+  @Override
+  public Duration getMinimumQueryExecutionDelay() {
+    return commonFragment.getSalesforceWaitBetweenQueries();
+  }
 
-	/**
-	 * Gets the list of queries to pass to the bulk api.
-	 * 
-	 * @return a list of queries.
-	 */
-	public List<String> getBulkApiQueries() {
-		return sourceFragment.getBulkApiQueries();
-	}
+  /**
+   * The last ModifiedStartDateTime is used to determine what records in an object to return can be
+   * null.
+   *
+   * @return The lastModifiedStartDateTime
+   */
+  public String getLastModifiedStartDateTime() {
+    return sourceFragment.getSalesforceLastModifiedStartDate();
+  }
+
+  /**
+   * Gets the list of queries to pass to the bulk api.
+   *
+   * @return a list of queries.
+   */
+  public List<String> getBulkApiQueries() {
+    return sourceFragment.getBulkApiQueries();
+  }
 }

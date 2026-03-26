@@ -17,9 +17,6 @@ package io.aiven.kafka.connect.salesforce.common.auth.credentials;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -27,86 +24,86 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * This class allows a username and password to login to salesforce and retrieve
- * an access token for authentication.
+ * This class allows a username and password to login to salesforce and retrieve an access token for
+ * authentication.
  */
 public class Oauth2Login {
-	private static final Logger LOGGER = LoggerFactory.getLogger(Oauth2Login.class);
-	private final String URI;
-	private final HttpClient client;
-	ObjectMapper mapper = new ObjectMapper();
+  private static final Logger LOGGER = LoggerFactory.getLogger(Oauth2Login.class);
+  private final String URI;
+  private final HttpClient client;
+  ObjectMapper mapper = new ObjectMapper();
 
-	/**
-	 * Constructor for Oauth2Login
-	 * 
-	 * @param uri
-	 *            The Uri to authenticate against
-	 * @param client
-	 *            The Http Client to use for authentication
-	 * @throws IllegalArgumentException
-	 *             If the uri is not valid the constructor will throw an
-	 *             IllegalArgumentException
-	 */
-	public Oauth2Login(String uri, HttpClient client) throws IllegalArgumentException {
-		this.URI = uri;
-		validateUri(URI);
-		this.client = client;
-	}
+  /**
+   * Constructor for Oauth2Login
+   *
+   * @param uri The Uri to authenticate against
+   * @param client The Http Client to use for authentication
+   * @throws IllegalArgumentException If the uri is not valid the constructor will throw an
+   *     IllegalArgumentException
+   */
+  public Oauth2Login(String uri, HttpClient client) throws IllegalArgumentException {
+    this.URI = uri;
+    validateUri(URI);
+    this.client = client;
+  }
 
-	/**
-	 * Validate the supplied URI to make sure it is using the proper scheme
-	 * 
-	 * @param uri
-	 *            the uri in string form that is to be validated
-	 */
-	private void validateUri(String uri) {
-		if (!uri.startsWith("https://")) {
-			throw new IllegalArgumentException(
-					"Provided URI for Salesforce authentication schema must be secure https://");
-		}
-	}
+  /**
+   * Validate the supplied URI to make sure it is using the proper scheme
+   *
+   * @param uri the uri in string form that is to be validated
+   */
+  private void validateUri(String uri) {
+    if (!uri.startsWith("https://")) {
+      throw new IllegalArgumentException(
+          "Provided URI for Salesforce authentication schema must be secure https://");
+    }
+  }
 
-	/**
-	 * Gets an access token from salesforce for authentication using the username
-	 * password oauth2 flow
-	 *
-	 * @param clientId
-	 *            Specifies the clientId that is configured in Salesforce for Oauth
-	 *            authentication
-	 * @param clientSecret
-	 *            Specifies the client Secret that is configured in Salesforce for
-	 *            Oauth authentication
-	 * @return Access Token for the Salesforce organization
-	 */
-	public String getAccessToken(String clientId, String clientSecret) {
+  /**
+   * Gets an access token from salesforce for authentication using the username password oauth2 flow
+   *
+   * @param clientId Specifies the clientId that is configured in Salesforce for Oauth
+   *     authentication
+   * @param clientSecret Specifies the client Secret that is configured in Salesforce for Oauth
+   *     authentication
+   * @return Access Token for the Salesforce organization
+   */
+  public String getAccessToken(String clientId, String clientSecret) {
 
-		// For this flow, requests to https://login.salesforce.com and
-		// https://test.salesforce.com aren't supported. Use your My Domain URL instead.
-		SalesforceClientCredentials creds = new SalesforceClientCredentials(clientId, clientSecret);
-		try {
-			URI uri = new URI(URI);
-			HttpRequest request = HttpRequest.newBuilder(uri)
-					.header("Content-Type", "application/x-www-form-urlencoded")
-					.POST(HttpRequest.BodyPublishers.ofString(creds.toFormUrlEncodedFormat())).build();
-			CompletableFuture<HttpResponse<String>> future = client.sendAsync(request,
-					HttpResponse.BodyHandlers.ofString());
-			HttpResponse<String> response = future.get();
-			if (response.statusCode() == 200) {
-				Oauth2Credentials credentials = mapper.readValue(response.body(), Oauth2Credentials.class);
-				return credentials.getAccess_token();
-			} else {
-				// TODO improve exception information
-				throw new RuntimeException(String.format("Invalid response code received from Salesforce oauth flow %s",
-						response.statusCode()));
-			}
+    // For this flow, requests to https://login.salesforce.com and
+    // https://test.salesforce.com aren't supported. Use your My Domain URL instead.
+    SalesforceClientCredentials creds = new SalesforceClientCredentials(clientId, clientSecret);
+    try {
+      URI uri = new URI(URI);
+      HttpRequest request =
+          HttpRequest.newBuilder(uri)
+              .header("Content-Type", "application/x-www-form-urlencoded")
+              .POST(HttpRequest.BodyPublishers.ofString(creds.toFormUrlEncodedFormat()))
+              .build();
+      CompletableFuture<HttpResponse<String>> future =
+          client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = future.get();
+      if (response.statusCode() == 200) {
+        Oauth2Credentials credentials = mapper.readValue(response.body(), Oauth2Credentials.class);
+        return credentials.getAccess_token();
+      } else {
+        // TODO improve exception information
+        throw new RuntimeException(
+            String.format(
+                "Invalid response code received from Salesforce oauth flow %s",
+                response.statusCode()));
+      }
 
-		} catch (URISyntaxException | ExecutionException | InterruptedException | JsonProcessingException e) {
-			LOGGER.error("Exception thrown authenticating with oauth", e);
-			throw new RuntimeException(e);
-		}
-
-	}
-
+    } catch (URISyntaxException
+        | ExecutionException
+        | InterruptedException
+        | JsonProcessingException e) {
+      LOGGER.error("Exception thrown authenticating with oauth", e);
+      throw new RuntimeException(e);
+    }
+  }
 }

@@ -15,57 +15,58 @@
  */
 package io.aiven.kafka.connect.salesforce.common.bulk;
 
-import javax.net.ssl.SSLSession;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
+import javax.net.ssl.SSLSession;
 
 public class FakeHttpResponse implements HttpResponse<Object> {
-	int statusCode;
-	public FakeHttpResponse(int statusCode) {
-		this.statusCode = statusCode;
-	}
+  int statusCode;
 
-	@Override
-	public int statusCode() {
-		return statusCode;
-	}
+  public FakeHttpResponse(int statusCode) {
+    this.statusCode = statusCode;
+  }
 
-	@Override
-	public HttpRequest request() {
-		throw new UnsupportedOperationException("'request' not implemented");
-	}
+  @Override
+  public int statusCode() {
+    return statusCode;
+  }
 
-	@Override
-	public Optional<HttpResponse<Object>> previousResponse() {
-		throw new UnsupportedOperationException("'previous result' not implemented");
-	}
+  @Override
+  public HttpRequest request() {
+    throw new UnsupportedOperationException("'request' not implemented");
+  }
 
-	@Override
-	public HttpHeaders headers() {
-		throw new UnsupportedOperationException("'headers' not implemented");
-	}
+  @Override
+  public Optional<HttpResponse<Object>> previousResponse() {
+    throw new UnsupportedOperationException("'previous result' not implemented");
+  }
 
-	@Override
-	public String body() {
-		return "";
-	}
+  @Override
+  public HttpHeaders headers() {
+    throw new UnsupportedOperationException("'headers' not implemented");
+  }
 
-	@Override
-	public Optional<SSLSession> sslSession() {
-		return Optional.empty();
-	}
+  @Override
+  public String body() {
+    return "";
+  }
 
-	@Override
-	public URI uri() {
-		throw new UnsupportedOperationException("'uri' not implemented");
-	}
+  @Override
+  public Optional<SSLSession> sslSession() {
+    return Optional.empty();
+  }
 
-	@Override
-	public HttpClient.Version version() {
-		throw new UnsupportedOperationException("'version' not implemented");
-	}
+  @Override
+  public URI uri() {
+    throw new UnsupportedOperationException("'uri' not implemented");
+  }
+
+  @Override
+  public HttpClient.Version version() {
+    throw new UnsupportedOperationException("'version' not implemented");
+  }
 }

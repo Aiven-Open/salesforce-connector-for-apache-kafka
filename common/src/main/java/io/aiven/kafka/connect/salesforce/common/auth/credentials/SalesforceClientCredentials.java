@@ -16,77 +16,71 @@
 package io.aiven.kafka.connect.salesforce.common.auth.credentials;
 
 /**
- * Client credentials body for authenticating with salesforce The toString()
- * method provides the appropriately formatted bod to be used with
- * application/www-x-form-urlencoded
+ * Client credentials body for authenticating with salesforce The toString() method provides the
+ * appropriately formatted bod to be used with application/www-x-form-urlencoded
  */
 public class SalesforceClientCredentials {
 
-	private final static String GRANT_TYPE = "client_credentials";
+  private static final String GRANT_TYPE = "client_credentials";
 
-	private String clientId;
+  private String clientId;
 
-	private String clientSecret;
+  private String clientSecret;
 
-	/**
-	 * The constructor for the client credentials
-	 * 
-	 * @param clientId
-	 *            the client Id used for authentication
-	 * @param clientSecret
-	 *            the client secret to be used for authentication
-	 */
-	public SalesforceClientCredentials(String clientId, String clientSecret) {
-		this.clientId = clientId;
-		this.clientSecret = clientSecret;
-	}
+  /**
+   * The constructor for the client credentials
+   *
+   * @param clientId the client Id used for authentication
+   * @param clientSecret the client secret to be used for authentication
+   */
+  public SalesforceClientCredentials(String clientId, String clientSecret) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+  }
 
-	/**
-	 * Returns the client id that is being used for authenticatoin
-	 * 
-	 * @return the client Id
-	 */
-	public String getClientId() {
-		return clientId;
-	}
+  /**
+   * Returns the client id that is being used for authenticatoin
+   *
+   * @return the client Id
+   */
+  public String getClientId() {
+    return clientId;
+  }
 
-	/**
-	 * The client id to authenticate with
-	 * 
-	 * @param clientId
-	 *            The client id
-	 */
-	public void setClientId(String clientId) {
-		this.clientId = clientId;
-	}
+  /**
+   * The client id to authenticate with
+   *
+   * @param clientId The client id
+   */
+  public void setClientId(String clientId) {
+    this.clientId = clientId;
+  }
 
-	/**
-	 * Get the client Secret
-	 * 
-	 * @return The client secret
-	 */
-	public String getClientSecret() {
-		return clientSecret;
-	}
+  /**
+   * Get the client Secret
+   *
+   * @return The client secret
+   */
+  public String getClientSecret() {
+    return clientSecret;
+  }
 
-	/**
-	 * Setter for the client secret
-	 * 
-	 * @param clientSecret
-	 *            the client secret
-	 */
-	public void setClientSecret(String clientSecret) {
-		this.clientSecret = clientSecret;
-	}
+  /**
+   * Setter for the client secret
+   *
+   * @param clientSecret the client secret
+   */
+  public void setClientSecret(String clientSecret) {
+    this.clientSecret = clientSecret;
+  }
 
-	/**
-	 * This method provides the expected format for the client credentials request
-	 * that aligns with the application/x-www-form-urlencoded that is expected by
-	 * the login api
-	 * 
-	 * @return A string for client credential authentication with Salesforce
-	 */
-	public String toFormUrlEncodedFormat() {
-		return "grant_type=" + GRANT_TYPE + "&client_id=" + clientId + "&client_secret=" + clientSecret;
-	}
+  /**
+   * This method provides the expected format for the client credentials request that aligns with
+   * the application/x-www-form-urlencoded that is expected by the login api
+   *
+   * @return A string for client credential authentication with Salesforce
+   */
+  public String toFormUrlEncodedFormat() {
+    return "grant_type=" + GRANT_TYPE + "&client_id=" + clientId + "&client_secret=" + clientSecret;
+  }
 }

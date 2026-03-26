@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 package io.aiven.kafka.connect.salesforce.source.config;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.aiven.commons.kafka.config.docs.ConfigDefBeanFactory;
 import io.aiven.commons.kafka.config.docs.ExtendedConfigKeyBean;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 public class SalesforceSourceConfigDefTest {
 
-	@Test
-	void sinceTest() {
-		for (ExtendedConfigKeyBean bean : new ConfigDefBeanFactory().open(SalesforceSourceConfigDef.class.getName())
-				.configKeys()) {
-			assertThat(bean.since()).as(bean.getName()).containsAnyOf("1.0.0", "Kafka 0.9.0.0");
-		}
-	}
+  @Test
+  void sinceTest() {
+    for (ExtendedConfigKeyBean bean :
+        new ConfigDefBeanFactory().open(SalesforceSourceConfigDef.class.getName()).configKeys()) {
+      assertThat(bean.since()).as(bean.getName()).containsAnyOf("1.0.0", "Kafka 0.9.0.0");
+    }
+  }
 }
