@@ -16,7 +16,7 @@
 package io.aiven.kafka.connect.salesforce.common.time;
 
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -25,18 +25,16 @@ import java.time.temporal.ChronoUnit;
  * number of utilities to work with these times and also format the output correctly for Salesforce
  * All times are kept in UTC
  */
-public class InstantUtil {
-  private static final String UTC = "UTC";
-
+public final class InstantUtil {
   /**
    * The format supported by the Salesforce API for querying, it should be used in all locations
    * where a date time may end up going to Salesforce
    */
   private static DateTimeFormatter formatter =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneId.of(UTC));
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
 
   /** This is a default constructor nothing is required here */
-  public InstantUtil() {
+  private InstantUtil() {
     // nothing to do
   }
 
@@ -82,7 +80,7 @@ public class InstantUtil {
    * @param time2 The Instant to be compared
    * @return The latest time as an Instant
    */
-  public static Instant getlatest(String time1, Instant time2) {
+  public static Instant getLatest(String time1, Instant time2) {
     Instant parsedTime1 = parseString(time1);
     if (parsedTime1.isAfter(time2)) {
       return parsedTime1;
@@ -92,7 +90,47 @@ public class InstantUtil {
   }
 
   /**
-   * Get the Instant in a String format that is suported by the Salesforce api as toString will
+   * From a list of time Strings return the oldest time
+   *
+   * @param times An array of Time Strings in the format of yyyy-MM-dd'T'HH:mm:ss.SSS'Z' for
+   *     comparison
+   * @return The oldest time from the list of times given
+   */
+  public static Instant min(String... times) {
+    Instant earliestTime = null;
+    for (String time : times) {
+      Instant comparison = parseString(time);
+      if (earliestTime == null) {
+        earliestTime = comparison;
+        continue;
+      }
+      earliestTime = earliestTime.isAfter(comparison) ? comparison : earliestTime;
+    }
+    return earliestTime;
+  }
+
+  /**
+   * From a list of time Strings return the latest time
+   *
+   * @param times An array of Time Strings in the format of yyyy-MM-dd'T'HH:mm:ss.SSS'Z' for
+   *     comparison
+   * @return The latest time from the list of times given
+   */
+  public static Instant max(String... times) {
+    Instant latestTime = null;
+    for (String time : times) {
+      Instant comparison = parseString(time);
+      if (latestTime == null) {
+        latestTime = comparison;
+        continue;
+      }
+      latestTime = latestTime.isBefore(comparison) ? comparison : latestTime;
+    }
+    return latestTime;
+  }
+
+  /**
+   * Get the Instant in a String format that is supported by the Salesforce api as toString will
    * return the smallest possible string version of the time.
    *
    * @param time The Instant that is to be transformed into a String

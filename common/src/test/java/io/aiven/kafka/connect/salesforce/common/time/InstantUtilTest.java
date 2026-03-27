@@ -27,6 +27,7 @@ public class InstantUtilTest {
   void parseInstants() {
     String timeString = "2026-03-25T10:03:00.000Z";
     Instant time = InstantUtil.parseString(timeString);
+    assertEquals(1774432980, time.getEpochSecond());
   }
 
   @Test
@@ -42,13 +43,13 @@ public class InstantUtilTest {
     String timeString = "2026-03-25T10:03:00.000Z";
     Instant time = InstantUtil.parseString(timeString);
     String latestTimeString = "2026-03-25T10:03:00.011Z";
-    Instant latestTime = InstantUtil.getlatest(latestTimeString, time);
+    Instant latestTime = InstantUtil.getLatest(latestTimeString, time);
     // We change all the time formats back to String for comparison because the default behaviour is
     // for the Instant to truncate
     // all 0's so if millis and seconds are all zeros they end up like
     // 2026-03-25T10:03 instead of 2026-03-25T10:03:00.000Z
     assertNotEquals(InstantUtil.toMilliString(latestTime), InstantUtil.toMilliString(time));
-    Instant newLatestTime = InstantUtil.getlatest(timeString, latestTime);
+    Instant newLatestTime = InstantUtil.getLatest(timeString, latestTime);
     assertEquals(InstantUtil.toMilliString(latestTime), InstantUtil.toMilliString(newLatestTime));
   }
 
@@ -66,5 +67,35 @@ public class InstantUtilTest {
     Instant earliestTime = InstantUtil.getEarliest(timeString, time);
     assertEquals(InstantUtil.toMilliString(time), InstantUtil.toMilliString(earliestTime));
     assertNotEquals(latestTimeString, InstantUtil.toMilliString(earliestTime));
+  }
+
+  @Test
+  void whenGivenAlistOfTimesReturnTheOldestTime() {
+    String oldestTime = "2022-03-25T10:03:00.022Z";
+    Instant oldestInstant =
+        InstantUtil.min(
+            "2026-03-25T10:03:00.022Z",
+            "2026-03-25T10:03:00.022Z",
+            "2026-03-24T10:03:00.022Z",
+            oldestTime,
+            "2026-06-25T10:03:00.022Z",
+            "2026-03-25T05:03:00.022Z",
+            "2026-03-25T17:03:00.022Z");
+    assertEquals(oldestTime, InstantUtil.toMilliString(oldestInstant));
+  }
+
+  @Test
+  void whenGivenAlistOfTimesReturnTheLatestTime() {
+    String latestTime = "2026-03-27T14:03:00.022Z";
+    Instant oldestInstant =
+        InstantUtil.max(
+            "2025-03-25T10:03:00.022Z",
+            "2026-02-25T10:03:00.022Z",
+            "2026-01-24T10:03:00.022Z",
+            latestTime,
+            "2026-03-25T10:03:00.022Z",
+            "2021-03-25T05:03:00.022Z",
+            latestTime);
+    assertEquals(latestTime, InstantUtil.toMilliString(oldestInstant));
   }
 }

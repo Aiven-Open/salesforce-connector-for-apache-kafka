@@ -129,6 +129,8 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                   new BulkApiKey(BULK_API, query.getSOQLQuery(), null, null)));
       if (offset.isPresent()) {
         // Seed the last Seen modified Date
+        // If there is no offset for a particular query then it will default to null and all data
+        // will be read from the query.
         lastSeenModifiedDate.put(
             getQueryHash(query),
             InstantUtil.parseString((String) offset.get().get(LAST_MODIFIED_DATE)));
@@ -137,7 +139,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
             lastSeenModifiedDate,
             query.getSOQLQuery());
       }
-      // Query hash will be null for initial if this is not set here
     }
   }
 

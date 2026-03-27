@@ -29,7 +29,6 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
-import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.time.Instant;
 import java.util.HashMap;
@@ -44,6 +43,12 @@ import org.slf4j.LoggerFactory;
  */
 public final class SalesforceSourceTask extends AbstractSourceTask {
   private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
+
+  /**
+   * The header from the CSV results are case sensitive the LastModifiedDate has a leading
+   * capitalized letter
+   */
+  private static final String LAST_MODIFIED_DATE_CSV_HEADER = "LastModifiedDate";
 
   /** The offset manager this task uses */
   private OffsetManager offsetManager;
@@ -138,19 +143,18 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       if (lastModifiedDate != null) {
         lastSeenModifiedDate.put(
             key.getQueryHash(),
-            InstantUtil.getlatest(value.get(LAST_MODIFIED_DATE), lastModifiedDate));
+            InstantUtil.getLatest(value.get(LAST_MODIFIED_DATE_CSV_HEADER), lastModifiedDate));
       } else {
         lastSeenModifiedDate.put(
-            key.getQueryHash(), InstantUtil.parseString(value.get(LAST_MODIFIED_DATE)));
+            key.getQueryHash(), InstantUtil.parseString(value.get(LAST_MODIFIED_DATE_CSV_HEADER)));
       }
-      // If this is the last offset Record update to the last seen timestamp so we
+      // Update to the last seen timestamp so we
       // know where to begin from on a restart
-      SalesforceOffsetManagerEntry offsetRecord =
-          (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
-      offsetRecord.setProperty(
-          LAST_MODIFIED_DATE,
-          InstantUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
-      evolvingSourceRecord.setOffsetManagerEntry(offsetRecord);
+      evolvingSourceRecord
+          .getOffsetManagerEntry()
+          .setProperty(
+              LAST_MODIFIED_DATE,
+              InstantUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
     } catch (Exception e) {
       // nothing
       LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);

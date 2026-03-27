@@ -94,13 +94,10 @@ public class SOQLQueryTest {
             "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' LIMIT 125",
             "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' ORDER BY LastModifiedDate ASC LIMIT 125",
             true),
-        Arguments.of(
-            "SELECT Id, Name, Industry FROM Account ORDER BY Industry, Id",
-            "SELECT Id, Name, Industry FROM Account ORDER BY Industry, Id",
-            false),
+        Arguments.of("SELECT Id, Name, Industry FROM Account ORDER BY Industry, Id", null, false),
         Arguments.of(
             "SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026",
-            "SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026 ORDER BY LastModifiedDate ASC",
+            null,
             false));
   }
 }
