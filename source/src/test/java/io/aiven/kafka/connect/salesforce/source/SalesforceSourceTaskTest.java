@@ -22,8 +22,7 @@ import static org.mockito.Mockito.when;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -36,10 +35,9 @@ public class SalesforceSourceTaskTest {
 
   private static final String QUERY = "SELECT Id,LastModifiedDAte From Account";
   private static final String BULK_API = "bulkApi";
-  private static final String UTC = "UTC";
   private SalesforceSourceTask task;
   private OffsetManager offsetManager;
-  private HashMap<String, ZonedDateTime> map;
+  private HashMap<String, Instant> map;
 
   @BeforeEach
   void setup() {
@@ -54,7 +52,7 @@ public class SalesforceSourceTaskTest {
   @Test
   void lastModDateIsUpdatedFromNull() {
 
-    ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
+    Instant lastModDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
     task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
     assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
@@ -62,11 +60,11 @@ public class SalesforceSourceTaskTest {
 
   @Test
   void lastModDateIsNotUpdatedFromOlderTimestamp() {
-    ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
+    Instant lastModDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
     task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
     assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
-    ZonedDateTime olderLastModDate = lastModDate.minusSeconds(5);
+    Instant olderLastModDate = lastModDate.minusSeconds(5);
 
     apiKey = new BulkApiKey(BULK_API, QUERY, olderLastModDate.toString(), "");
     task.lastEvolution(mockEvolvingSourceRecord(apiKey, olderLastModDate.toString()));
@@ -76,11 +74,11 @@ public class SalesforceSourceTaskTest {
 
   @Test
   void lastModDateIsUpdatedToNewerTimestamp() {
-    ZonedDateTime lastModDate = ZonedDateTime.now(ZoneId.of(UTC)).truncatedTo(ChronoUnit.MILLIS);
+    Instant lastModDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     BulkApiKey apiKey = new BulkApiKey(BULK_API, QUERY, lastModDate.toString(), "");
     task.lastEvolution(mockEvolvingSourceRecord(apiKey, lastModDate.toString()));
     assertEquals(map.get(apiKey.getQueryHash()), lastModDate);
-    ZonedDateTime newerLastModDate = lastModDate.plusSeconds(1);
+    Instant newerLastModDate = lastModDate.plusSeconds(1);
 
     apiKey = new BulkApiKey(BULK_API, QUERY, newerLastModDate.toString(), "");
     task.lastEvolution(mockEvolvingSourceRecord(apiKey, newerLastModDate.toString()));

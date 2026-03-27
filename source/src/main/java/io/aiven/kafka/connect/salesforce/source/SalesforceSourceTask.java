@@ -22,14 +22,14 @@ import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
-import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
+import io.aiven.commons.kafka.connector.source.extractor.CsvExtractor;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,10 +43,16 @@ import org.slf4j.LoggerFactory;
 public final class SalesforceSourceTask extends AbstractSourceTask {
   private static final Logger LOGGER = LoggerFactory.getLogger(SalesforceSourceTask.class);
 
+  /**
+   * The header from the CSV results are case sensitive the LastModifiedDate has a leading
+   * capitalized letter
+   */
+  private static final String LAST_MODIFIED_DATE_CSV_HEADER = "LastModifiedDate";
+
   /** The offset manager this task uses */
   private OffsetManager offsetManager;
 
-  private Map<String, ZonedDateTime> lastSeenModifiedDate;
+  private Map<String, Instant> lastSeenModifiedDate;
 
   /** Should check about adding this */
   public SalesforceSourceTask() {
@@ -67,7 +73,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
     this.offsetManager = new OffsetManager(context);
     this.lastSeenModifiedDate = new HashMap<>();
     // set the csv transformer for bulk api
-    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    SourceConfigFragment.setter(props).extractorClass(CsvExtractor.class);
     return new SalesforceSourceConfig(props);
   }
 
@@ -84,12 +90,12 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
   protected SourceCommonConfig configure(
       Map<String, String> props,
       OffsetManager offsetManager,
-      HashMap<String, ZonedDateTime> lastSeenModifiedDate) {
+      HashMap<String, Instant> lastSeenModifiedDate) {
     LOGGER.info("Salesforce Source task configured for testing.");
     this.offsetManager = offsetManager;
     this.lastSeenModifiedDate = lastSeenModifiedDate;
     // set the csv transformer for bulk api
-    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    SourceConfigFragment.setter(props).extractorClass(CsvExtractor.class);
     return new SalesforceSourceConfig(props);
   }
 
@@ -132,26 +138,21 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
     try {
       LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
       BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
-      ZonedDateTime lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
+      Instant lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
       if (lastModifiedDate != null) {
         lastSeenModifiedDate.put(
             key.getQueryHash(),
-            ZonedDateTime.parse(value.get("LastModifiedDate")).isAfter(lastModifiedDate)
-                ? ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS)
-                : lastModifiedDate.truncatedTo(ChronoUnit.MILLIS));
+            InstantUtil.getLatest(value.get(LAST_MODIFIED_DATE_CSV_HEADER), lastModifiedDate));
       } else {
         lastSeenModifiedDate.put(
-            key.getQueryHash(),
-            ZonedDateTime.parse(value.get("LastModifiedDate")).truncatedTo(ChronoUnit.MILLIS));
+            key.getQueryHash(), InstantUtil.parseString(value.get(LAST_MODIFIED_DATE_CSV_HEADER)));
       }
-      // If this is the last offset Record update to the last seen timestamp so we
+      // Update to the last seen timestamp so we
       // know where to begin from on a restart
       SalesforceOffsetManagerEntry offsetRecord =
           (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
-      if ((boolean) offsetRecord.getProperty("isComplete")
-          && offsetRecord.getProperty("locator") == null) {
-        offsetRecord.setProperty("lastModifiedDate", lastSeenModifiedDate.get(key.getQueryHash()));
-      }
+      offsetRecord.setLastModified(lastSeenModifiedDate.get(key.getQueryHash()));
+      evolvingSourceRecord.setOffsetManagerEntry(offsetRecord);
     } catch (Exception e) {
       // nothing
       LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);

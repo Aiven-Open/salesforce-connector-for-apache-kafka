@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.source.model;
 
+import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
@@ -24,14 +26,13 @@ import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
+import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,20 +57,19 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   /** The key to retrieve the Is complete information from the offset. */
   private static final String IS_COMPLETE = "isComplete";
 
-  private static final String UTC = "UTC";
   private final Duration minimumDelayBetweenQueries;
 
   /**
    * This is a map of the latest lastModifiedDate for each query that has been identified We use
    * this to get the lastModifiedDate for the next query
    */
-  private final Map<String, ZonedDateTime> lastSeenModifiedDate;
+  private final Map<String, Instant> lastSeenModifiedDate;
 
   /**
    * Track the last time a query was executed and allows a back off to be used as to how often it
    * can be called.
    */
-  private final Map<String, ZonedDateTime> lastQueryExecuted;
+  private final Map<String, Instant> lastQueryExecuted;
 
   /** The Bulk Api Query Engine handles the lifecycle of bulk api requests */
   private final BulkApiQueryEngine engine;
@@ -103,7 +103,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   public BulkApiSourceData(
       final SalesforceSourceConfig config,
       final OffsetManager offsetManager,
-      Map<String, ZonedDateTime> lastSeenModifiedDate) {
+      Map<String, Instant> lastSeenModifiedDate) {
     super(config, offsetManager);
     this.queries =
         config.getBulkApiQueries().stream()
@@ -113,8 +113,33 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
     this.engine = new BulkApiQueryEngine(config, new BulkApiClient(config));
     this.lastSeenModifiedDate = lastSeenModifiedDate;
     this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
+    refreshSourceDataFromOffsets(offsetManager);
+  }
 
-    // TODO pick up from where you left off
+  /**
+   * Checks for offsets for each query and update the lastSeenModifiedDate for each query and if
+   * required seeds the data to continue from where it was previously processing.
+   */
+  private void refreshSourceDataFromOffsets(final OffsetManager offsetManager) {
+
+    for (SOQLQuery query : queries) {
+      Optional<Map<String, Object>> offset =
+          offsetManager.getEntryData(
+              SalesforceOffsetManagerEntry.asKey(
+                  new BulkApiKey(BULK_API, query.getSOQLQuery(), null, null)));
+      if (offset.isPresent() && offset.get().getOrDefault(LAST_MODIFIED_DATE, null) != null) {
+        // Seed the last Seen modified Date
+        // If there is no offset for a particular query then it will default to null and all data
+        // will be read from the query.
+        lastSeenModifiedDate.put(
+            getQueryHash(query),
+            InstantUtil.fromEpochMillis((Long) offset.get().get(LAST_MODIFIED_DATE)));
+        LOGGER.info(
+            "LastModifiedDate on Startup {} for query {}",
+            lastSeenModifiedDate,
+            query.getSOQLQuery());
+      }
+    }
   }
 
   /**
@@ -130,7 +155,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
       final SalesforceSourceConfig config,
       final OffsetManager offsetManager,
       BulkApiQueryEngine engine,
-      Map<String, ZonedDateTime> lastSeenModifiedDate) {
+      Map<String, Instant> lastSeenModifiedDate) {
     super(config, offsetManager);
     this.queries =
         config.getBulkApiQueries().stream()
@@ -187,31 +212,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
         new BulkApiKey(
             BULK_API,
             queries.getLast().getSOQLQuery(),
-            lastQueryExecuted.get(getQueryHash()).toString(),
+            lastQueryExecuted.get(getQueryHash(queries.getLast())).toString(),
             ""),
         data);
   }
 
-  private String getQueryHash() {
+  private String getQueryHash(SOQLQuery query) {
 
     return Arrays.toString(
         MurmurHash3.hash128(
-            queries
-                .getLast()
-                .getSOQLQuery()
-                .replaceAll("\\s+", "")
-                .getBytes(StandardCharsets.UTF_8)));
-  }
-
-  private String getNextQueryHash() {
-
-    return Arrays.toString(
-        MurmurHash3.hash128(
-            queries
-                .getFirst()
-                .getSOQLQuery()
-                .replaceAll("\\s+", "")
-                .getBytes(StandardCharsets.UTF_8)));
+            query.getSOQLQuery().replaceAll("\\s+", "").getBytes(StandardCharsets.UTF_8)));
   }
 
   /**
@@ -229,7 +239,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
         ctx.getJobId(),
         ctx.getLocator(),
         ctx.getTotalRecords(),
-        ctx.getLastModifiedTimestamp());
+        ctx.getLastModifiedTimestamp() != null
+            ? InstantUtil.parseString(ctx.getLastModifiedTimestamp()).toEpochMilli()
+            : null);
   }
 
   /**
@@ -248,13 +260,14 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    * query too quickly.
    */
   private boolean backOff() {
-    ZonedDateTime lastExecutedDateTime = lastQueryExecuted.getOrDefault(getNextQueryHash(), null);
+    Instant lastExecutedDateTime =
+        lastQueryExecuted.getOrDefault(getQueryHash(queries.getFirst()), null);
     if (lastExecutedDateTime == null) {
       return false;
     }
     return lastExecutedDateTime
         .plusSeconds(minimumDelayBetweenQueries.getSeconds())
-        .isAfter(ZonedDateTime.now(ZoneId.of(UTC)));
+        .isAfter(InstantUtil.now());
   }
 
   /**
@@ -300,18 +313,19 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                 queries.offerLast(element);
                 // Regular back off
 
-                ZonedDateTime lastModifiedDate =
-                    lastSeenModifiedDate.getOrDefault(getQueryHash(), null);
+                Instant lastModifiedDate =
+                    lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
                 try {
                   LOGGER.info("Submit new query");
                   iterator =
                       engine.getRecords(
                           element,
                           lastModifiedDate != null
-                              ? lastModifiedDate.truncatedTo(ChronoUnit.MILLIS).toString()
+                              ? InstantUtil.toMilliString(lastModifiedDate)
                               : null);
+
                 } finally {
-                  lastQueryExecuted.put(getQueryHash(), ZonedDateTime.now(ZoneId.of(UTC)));
+                  lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());
                 }
               }
               return iterator.hasNext();

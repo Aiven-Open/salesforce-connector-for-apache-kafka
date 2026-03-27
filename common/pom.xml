@@ -51,8 +51,8 @@
     </dependency>
     <dependency>
       <groupId>io.aiven.commons</groupId>
-      <artifactId>strings</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <artifactId>common-util</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

@@ -26,48 +26,78 @@ public class SOQLQueryTest {
 
   @MethodSource("queryStrings")
   @ParameterizedTest
-  void fromQueryString(String query, boolean isValid) {
+  void fromQueryString(String query, String expectedQuery, boolean isValid) {
     SOQLQuery soqlQuery = SOQLQuery.fromQueryString(query);
 
     assertEquals(isValid, soqlQuery.validate());
-    assertEquals(query, soqlQuery.getQueryString(null));
+    // Everything gets appended with the Order By statement
+    if (isValid) {
+      assertEquals(expectedQuery, soqlQuery.getQueryString(null));
+    }
   }
 
   private static Stream<Arguments> queryStrings() {
     return Stream.of(
-        Arguments.of("SELECT Id,LastModifiedDate FROM Account", true),
-        Arguments.of("SELECT Id,LastModifiedDate FROM User LIMIT 200", true),
-        Arguments.of("SELECT FIELDS(STANDARD) FROM Contact LIMIT 200", true),
+        Arguments.of(
+            "SELECT Id,LastModifiedDate FROM Account",
+            "SELECT Id,LastModifiedDate FROM Account ORDER BY LastModifiedDate ASC",
+            true),
+        Arguments.of(
+            "SELECT Id,LastModifiedDate FROM User LIMIT 200",
+            "SELECT Id,LastModifiedDate FROM User ORDER BY LastModifiedDate ASC LIMIT 200",
+            true),
+        Arguments.of(
+            "SELECT FIELDS(STANDARD) FROM Contact LIMIT 200",
+            "SELECT FIELDS(STANDARD) FROM Contact ORDER BY LastModifiedDate ASC LIMIT 200",
+            true),
         Arguments.of(
             "SELECT FIELDS(STANDARD) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV'",
+            "SELECT FIELDS(STANDARD) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV' ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
             "SELECT Name,LastModifiedDate FROM Account WHERE BillingState IN ('California', 'New York')",
+            "SELECT Name,LastModifiedDate FROM Account WHERE BillingState IN ('California', 'New York') ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
-            "SELECT Id, Name,LastModifiedDate FROM Account WHERE Parent.Name = 'myaccount'", true),
+            "SELECT Id, Name,LastModifiedDate FROM Account WHERE Parent.Name = 'myaccount'",
+            "SELECT Id, Name,LastModifiedDate FROM Account WHERE Parent.Name = 'myaccount' ORDER BY LastModifiedDate ASC",
+            true),
         Arguments.of(
             "SELECT Title,LastModifiedDate FROM KnowledgeArticleVersion WHERE PublishStatus='online' WITH DATA CATEGORY Geography__c ABOVE usa__c",
+            "SELECT Title,LastModifiedDate FROM KnowledgeArticleVersion WHERE PublishStatus='online' WITH DATA CATEGORY Geography__c ABOVE usa__c ORDER BY LastModifiedDate ASC",
             true),
-        Arguments.of("SELECT LeadSource,LastModifiedDate FROM Lead GROUP BY LeadSource", true),
+        Arguments.of(
+            "SELECT LeadSource,LastModifiedDate FROM Lead GROUP BY LeadSource",
+            "SELECT LeadSource,LastModifiedDate FROM Lead GROUP BY LeadSource ORDER BY LastModifiedDate ASC",
+            true),
         Arguments.of(
             "SELECT LeadSource, COUNT(Name) cnt,LastModifiedDate FROM Lead GROUP BY ROLLUP(LeadSource)",
+            "SELECT LeadSource, COUNT(Name) cnt,LastModifiedDate FROM Lead GROUP BY ROLLUP(LeadSource) ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
             "SELECT LeadSource, Rating, GROUPING(LeadSource) grpLS, GROUPING(Rating) grpRating, COUNT(Name) cnt,LastModifiedDate FROM Lead GROUP BY ROLLUP(LeadSource, Rating)",
+            "SELECT LeadSource, Rating, GROUPING(LeadSource) grpLS, GROUPING(Rating) grpRating, COUNT(Name) cnt,LastModifiedDate FROM Lead GROUP BY ROLLUP(LeadSource, Rating) ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
             "SELECT LeadSource, COUNT(Name),LastModifiedDate FROM Lead GROUP BY LeadSource HAVING COUNT(Name) > 100",
+            "SELECT LeadSource, COUNT(Name),LastModifiedDate FROM Lead GROUP BY LeadSource HAVING COUNT(Name) > 100 ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
-            "SELECT Name, Industry,LastModifiedDate FROM Account ORDER BY Industry, Id", true),
+            "SELECT Name, Industry,LastModifiedDate FROM Account ",
+            "SELECT Name, Industry,LastModifiedDate FROM Account ORDER BY LastModifiedDate ASC",
+            true),
         Arguments.of(
-            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' LIMIT 125", true),
+            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' LIMIT 125",
+            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' ORDER BY LastModifiedDate ASC LIMIT 125",
+            true),
         Arguments.of(
-            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' LIMIT 125", true),
-        Arguments.of("SELECT Id, Name, Industry FROM Account ORDER BY Industry, Id", false),
+            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' LIMIT 125",
+            "SELECT Name,LastModifiedDate FROM Account WHERE Industry = 'Media' ORDER BY LastModifiedDate ASC LIMIT 125",
+            true),
+        Arguments.of("SELECT Id, Name, Industry FROM Account ORDER BY Industry, Id", null, false),
         Arguments.of(
-            "SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026 ORDER BY Industry, Id",
+            "SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026",
+            null,
             false));
   }
 }

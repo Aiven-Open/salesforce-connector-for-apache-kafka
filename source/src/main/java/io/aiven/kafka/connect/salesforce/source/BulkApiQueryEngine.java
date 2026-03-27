@@ -16,8 +16,8 @@
 package io.aiven.kafka.connect.salesforce.source;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
-import io.aiven.commons.timing.Backoff;
-import io.aiven.commons.timing.Timer;
+import io.aiven.commons.util.timing.Backoff;
+import io.aiven.commons.util.timing.Timer;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
@@ -101,7 +101,7 @@ public class BulkApiQueryEngine {
             BulkApiKey bulkApiKey =
                 new BulkApiKey(BULK_API, query.getSOQLQuery(), queryResponse.getCreatedDate(), "");
             return new FutureIterator(
-                jobId, queryResponse.getObject(), bulkApiKey, lastModifiedDate);
+                jobId, queryResponse.getObject(), bulkApiKey, null, lastModifiedDate);
           case Aborted:
           case Failed:
           default:
@@ -145,12 +145,15 @@ public class BulkApiQueryEngine {
         final String jobId,
         final String object,
         final BulkApiKey bulkApiKey,
+        String locator,
         String lastModifiedDate) {
       this.jobId = jobId;
       this.object = object;
       this.bulkApiKey = bulkApiKey;
       this.lastModifiedDate = lastModifiedDate;
-      this.bulkApiResultResponseFuture = apiClient.getJobResults(jobId, null, object, bulkApiKey);
+      this.locator = locator;
+      this.bulkApiResultResponseFuture =
+          apiClient.getJobResults(jobId, locator, object, bulkApiKey);
     }
 
     @Override

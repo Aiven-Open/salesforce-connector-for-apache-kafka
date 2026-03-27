@@ -17,11 +17,10 @@ package io.aiven.kafka.connect.salesforce.source.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This is the Salesforce Offset manager Entry class, it handles creating the offsets which are
@@ -29,9 +28,6 @@ import org.slf4j.LoggerFactory;
  * re-read the data as well.
  */
 public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManagerEntry {
-  private static final Logger LOGGER = // NOPMD
-      LoggerFactory.getLogger(SalesforceOffsetManagerEntry.class);
-
   /** Specifies if the data is coming from the bulk api, streaming api or pub/sub api */
   public static final String API_NAME = "apiName";
 
@@ -40,7 +36,9 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
 
   private static final String RECORD_COUNT = "recordCount";
   private static final String TOTAL_RECORD_COUNT = "totalRecordCount";
-  private static final String LAST_MODIFIED_TIMESTAMP = "lastModifiedTimestamp";
+
+  /** The lastmodifiedDate key name that is used in the salesforce connector */
+  public static final String LAST_MODIFIED_DATE = "lastModifiedDate";
 
   /** The jobId that is being processed */
   private static final String JOB_ID = "jobId";
@@ -83,14 +81,14 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
       String jobId,
       String locator,
       int totalRecords,
-      String lastModifiedDate) {
+      Long lastModifiedDate) {
     this.bulkApiKey = bulkApiKey;
     this.totalRecords = totalRecords;
     this.recordCount = 0;
     data.put(TOTAL_RECORD_COUNT, totalRecords);
     data.put(JOB_ID, jobId);
     data.put(IS_COMPLETE, totalRecords == recordCount);
-    data.put(LAST_MODIFIED_TIMESTAMP, lastModifiedDate);
+    data.put(LAST_MODIFIED_DATE, lastModifiedDate);
     data.put(LOCATOR, locator);
   }
 
@@ -256,5 +254,14 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
     }
 
     return result;
+  }
+
+  /**
+   * Set the lastModifiedDate property in the SalesforceOffsetManagerEntry
+   *
+   * @param instant An Instant time that is the lastModifiedDate
+   */
+  public void setLastModified(Instant instant) {
+    setProperty(LAST_MODIFIED_DATE, instant.toEpochMilli());
   }
 }
