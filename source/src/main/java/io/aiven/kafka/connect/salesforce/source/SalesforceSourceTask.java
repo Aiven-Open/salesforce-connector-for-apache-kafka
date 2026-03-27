@@ -24,7 +24,7 @@ import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
-import io.aiven.commons.kafka.connector.source.transformer.CsvTransformer;
+import io.aiven.commons.kafka.connector.source.extractor.CsvExtractor;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
@@ -69,7 +69,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
     this.offsetManager = new OffsetManager(context);
     this.lastSeenModifiedDate = new HashMap<>();
     // set the csv transformer for bulk api
-    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    SourceConfigFragment.setter(props).extractorClass(CsvExtractor.class);
     return new SalesforceSourceConfig(props);
   }
 
@@ -91,7 +91,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
     this.offsetManager = offsetManager;
     this.lastSeenModifiedDate = lastSeenModifiedDate;
     // set the csv transformer for bulk api
-    SourceConfigFragment.setter(props).transformerClass(CsvTransformer.class);
+    SourceConfigFragment.setter(props).extractorClass(CsvExtractor.class);
     return new SalesforceSourceConfig(props);
   }
 
