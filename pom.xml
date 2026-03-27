@@ -54,12 +54,12 @@
   </distributionManagement>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>17</maven.compiler.release>
     <grpc.version>1.64.0</grpc.version>
     <protoc.version>3.25.3</protoc.version>
     <protocJava.version>1.78.0</protocJava.version>
     <slf4j.version>1.7.26</slf4j.version>
+    <mockito.version>5.23.0</mockito.version>
+    <assertj.version>3.27.7</assertj.version>
   </properties>
 
   <dependencyManagement>
