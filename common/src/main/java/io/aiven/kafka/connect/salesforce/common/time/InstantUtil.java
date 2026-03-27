@@ -49,6 +49,16 @@ public final class InstantUtil {
   }
 
   /**
+   * Get an Instant time from Epoch Millis
+   *
+   * @param epochMillis A Long representation of epoch in milliseconds
+   * @return An Instant representation of the time
+   */
+  public static Instant fromEpochMillis(Long epochMillis) {
+    return Instant.ofEpochMilli(epochMillis);
+  }
+
+  /**
    * Get a Instant of the currentTime with millisecond precision using the UTC zoneId
    *
    * @return a Instant of the currentTime with millisecond precision using the UTC zoneId

@@ -17,6 +17,7 @@ package io.aiven.kafka.connect.salesforce.source.utils;
 
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
       String jobId,
       String locator,
       int totalRecords,
-      String lastModifiedDate) {
+      Long lastModifiedDate) {
     this.bulkApiKey = bulkApiKey;
     this.totalRecords = totalRecords;
     this.recordCount = 0;
@@ -253,5 +254,14 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
     }
 
     return result;
+  }
+
+  /**
+   * Set the lastModifiedDate property in the SalesforceOffsetManagerEntry
+   *
+   * @param instant An Instant time that is the lastModifiedDate
+   */
+  public void setLastModified(Instant instant) {
+    setProperty(LAST_MODIFIED_DATE, instant.toEpochMilli());
   }
 }

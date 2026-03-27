@@ -15,8 +15,6 @@
  */
 package io.aiven.kafka.connect.salesforce.source;
 
-import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
-
 import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
@@ -29,6 +27,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import io.aiven.kafka.connect.salesforce.source.model.BulkApiSourceData;
+import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry;
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.time.Instant;
 import java.util.HashMap;
@@ -150,11 +149,10 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       }
       // Update to the last seen timestamp so we
       // know where to begin from on a restart
-      evolvingSourceRecord
-          .getOffsetManagerEntry()
-          .setProperty(
-              LAST_MODIFIED_DATE,
-              InstantUtil.toMilliString(lastSeenModifiedDate.get(key.getQueryHash())));
+      SalesforceOffsetManagerEntry offsetRecord =
+          (SalesforceOffsetManagerEntry) evolvingSourceRecord.getOffsetManagerEntry();
+      offsetRecord.setLastModified(lastSeenModifiedDate.get(key.getQueryHash()));
+      evolvingSourceRecord.setOffsetManagerEntry(offsetRecord);
     } catch (Exception e) {
       // nothing
       LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);

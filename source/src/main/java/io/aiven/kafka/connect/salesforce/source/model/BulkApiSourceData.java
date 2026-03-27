@@ -127,13 +127,13 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
           offsetManager.getEntryData(
               SalesforceOffsetManagerEntry.asKey(
                   new BulkApiKey(BULK_API, query.getSOQLQuery(), null, null)));
-      if (offset.isPresent()) {
+      if (offset.isPresent() && offset.get().getOrDefault(LAST_MODIFIED_DATE, null) != null) {
         // Seed the last Seen modified Date
         // If there is no offset for a particular query then it will default to null and all data
         // will be read from the query.
         lastSeenModifiedDate.put(
             getQueryHash(query),
-            InstantUtil.parseString((String) offset.get().get(LAST_MODIFIED_DATE)));
+            InstantUtil.fromEpochMillis((Long) offset.get().get(LAST_MODIFIED_DATE)));
         LOGGER.info(
             "LastModifiedDate on Startup {} for query {}",
             lastSeenModifiedDate,
@@ -239,7 +239,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
         ctx.getJobId(),
         ctx.getLocator(),
         ctx.getTotalRecords(),
-        ctx.getLastModifiedTimestamp());
+        ctx.getLastModifiedTimestamp() != null
+            ? InstantUtil.parseString(ctx.getLastModifiedTimestamp()).toEpochMilli()
+            : null);
   }
 
   /**
