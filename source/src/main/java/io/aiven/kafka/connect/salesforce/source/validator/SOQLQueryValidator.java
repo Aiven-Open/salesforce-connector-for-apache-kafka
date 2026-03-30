@@ -44,7 +44,7 @@ public class SOQLQueryValidator implements ConfigDef.Validator {
         if (!SOQLQuery.fromQueryString(queryString).validate()) {
           throw new ConfigException(
               String.format(
-                  "%s : %s requires the FIELDS(ALL) or the Id and LastModifiedDate in the select statement and the where statement should not have LastModifiedDate specified",
+                  "%s : %s requires the SELECT statement to have LastModifiedDate specified, it must also not specify the LastModifiedDate in the WHERE clause.",
                   name, queryString));
         }
       }

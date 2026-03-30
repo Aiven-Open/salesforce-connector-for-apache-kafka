@@ -16,9 +16,11 @@ public class SalesforceSourceConfigTest {
 
     assertThatThrownBy(() -> new SalesforceSourceConfig(props))
         .isInstanceOf(ConfigException.class)
-        .hasMessageContaining("salesforce.bulk.api.queries: A SOQL query must be defined");
+        .hasMessageContaining("Missing required configuration ")
+        .hasMessageContaining("salesforce.bulk.api.queries")
+        .hasMessageContaining(" which has no default value.");
     SalesforceSourceConfigFragment.setter(props)
-        .bulkApiQueries("SELECT Id,lastModifiedDate FROM Account");
+        .bulkApiQueries("SELECT Id,LastModifiedDate FROM Account");
 
     SalesforceSourceConfig config = new SalesforceSourceConfig(props);
     assertEquals(config.getSalesforceApiVersion(), "v65.0");
