@@ -36,13 +36,8 @@ public class SOQLQueryValidator implements ConfigDef.Validator {
    */
   @Override
   public void ensureValid(String name, Object value) {
-
-    if (Objects.nonNull(value)) {
-      var valueStr = (String) value;
-      if (valueStr.isEmpty()) {
-        throw new ConfigException(name, value, "A SOQL query must be defined");
-      }
-
+    String valueStr = (String) value;
+    if (Objects.nonNull(valueStr) && !valueStr.isEmpty()) {
       var valueStrArray = valueStr.split(";");
 
       for (String queryString : valueStrArray) {
@@ -53,11 +48,13 @@ public class SOQLQueryValidator implements ConfigDef.Validator {
                   name, queryString));
         }
       }
+    } else {
+      throw new ConfigException(name, value, "A SOQL query must be defined");
     }
   }
 
   @Override
   public String toString() {
-    return "A valid SOQL Query. Requires the SELECT statement to have either FIELDS(ALL) or the Id and LastModifiedDate specified, it must also not specify the LastModifiedDate in the WHERE clause.";
+    return "A valid SOQL Query. Requires the SELECT statement to have LastModifiedDate specified, it must also not specify the LastModifiedDate in the WHERE clause.";
   }
 }
