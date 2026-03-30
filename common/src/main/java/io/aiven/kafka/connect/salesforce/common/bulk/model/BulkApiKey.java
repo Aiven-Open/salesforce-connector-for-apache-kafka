@@ -132,10 +132,8 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
       result = other.getQueryHash().compareTo(queryHash);
       if (result == 0) {
         result = other.getLastExecutionTime().compareTo(lastExecutionTime);
-        if (result == 0 && ObjectUtils.compare(locator, other.getLocator()) == 0) {
-          return result;
-        } else {
-          return 1;
+        if (result == 0) {
+          return ObjectUtils.compare(locator, other.getLocator());
         }
       }
     }

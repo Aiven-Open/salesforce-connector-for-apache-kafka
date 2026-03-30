@@ -184,7 +184,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    */
   @Override
   public Iterator<BulkApiNativeInfo> getNativeItemIterator(final BulkApiKey offset) {
-    LOGGER.info("Offset {}", offset);
     return getSalesforceBulkApiIterator();
   }
 
