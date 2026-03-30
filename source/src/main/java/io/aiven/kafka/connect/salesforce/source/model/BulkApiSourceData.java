@@ -18,7 +18,6 @@ package io.aiven.kafka.connect.salesforce.source.model;
 import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Streams;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
@@ -40,7 +39,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.codec.digest.MurmurHash3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,15 +176,16 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   }
 
   /**
-   * Get the native Item in a stream
+   * Get a native Item iterator
    *
    * @param offset the native key to start from. May be {@code null} ot indicate * start at the
    *     beginning.
    * @return A stream of native objects. May be empty but not {@code null}.
    */
   @Override
-  public Stream<BulkApiNativeInfo> getNativeItemStream(final BulkApiKey offset) {
-    return getSalesforceBulkApiStream();
+  public Iterator<BulkApiNativeInfo> getNativeItemIterator(final BulkApiKey offset) {
+    LOGGER.info("Offset {}", offset);
+    return getSalesforceBulkApiIterator();
   }
 
   /**
@@ -285,64 +284,62 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    * until no records are left to be consumed. If the iterator of results is empty on hasNext it
    * checks if there is another query to execute and on next() it executes said query
    *
-   * @return a stream of records
+   * @return an iterator of records
    */
-  public Stream<BulkApiNativeInfo> getSalesforceBulkApiStream() {
+  public Iterator<BulkApiNativeInfo> getSalesforceBulkApiIterator() {
 
-    return Streams.stream(
-        new Iterator<>() {
-          /**
-           * Returns {@code true} if the iteration has more elements. (In other words, returns
-           * {@code true} if {@link #next} would return an element rather than throwing an
-           * exception.)
-           *
-           * @return {@code true} if the iteration has more elements
-           */
-          @Override
-          public boolean hasNext() {
-            if (!queries.isEmpty()) {
-              if (iterator == null || !iterator.hasNext()) {
-                // If it has been too soon since the last execution of this query return false
-                // and backoff
-                if (backOff()) {
-                  LOGGER.debug("Back off on executing query {}", queries.getFirst().getSOQLQuery());
-                  return false;
-                }
-                SOQLQuery element = queries.pop();
-                // Re queue to end of the list;
-                queries.offerLast(element);
-                // Regular back off
-
-                Instant lastModifiedDate =
-                    lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
-                try {
-                  LOGGER.info("Submit new query");
-                  iterator =
-                      engine.getRecords(
-                          element,
-                          lastModifiedDate != null
-                              ? InstantUtil.toMilliString(lastModifiedDate)
-                              : null);
-
-                } finally {
-                  lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());
-                }
-              }
-              return iterator.hasNext();
+    return new Iterator<>() {
+      /**
+       * Returns {@code true} if the iteration has more elements. (In other words, returns {@code
+       * true} if {@link #next} would return an element rather than throwing an exception.)
+       *
+       * @return {@code true} if the iteration has more elements
+       */
+      @Override
+      public boolean hasNext() {
+        if (!queries.isEmpty()) {
+          if (iterator == null || !iterator.hasNext()) {
+            // If it has been too soon since the last execution of this query return false
+            // and backoff
+            if (backOff()) {
+              LOGGER.debug("Back off on executing query {}", queries.getFirst().getSOQLQuery());
+              return false;
             }
-            return false;
-          }
+            SOQLQuery element = queries.pop();
+            // Re queue to end of the list;
+            queries.offerLast(element);
+            // Regular back off
 
-          /**
-           * Returns the next element in the iteration.
-           *
-           * @return the next element in the iteration
-           */
-          @Override
-          public BulkApiNativeInfo next() {
-            LOGGER.info("Get next set of results");
-            return iterator.next();
+            Instant lastModifiedDate =
+                lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
+            try {
+              LOGGER.info("Submit new query");
+              iterator =
+                  engine.getRecords(
+                      element,
+                      lastModifiedDate != null
+                          ? InstantUtil.toMilliString(lastModifiedDate)
+                          : null);
+
+            } finally {
+              lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());
+            }
           }
-        });
+          return iterator.hasNext();
+        }
+        return false;
+      }
+
+      /**
+       * Returns the next element in the iteration.
+       *
+       * @return the next element in the iteration
+       */
+      @Override
+      public BulkApiNativeInfo next() {
+        LOGGER.info("Get next set of results");
+        return iterator.next();
+      }
+    };
   }
 }

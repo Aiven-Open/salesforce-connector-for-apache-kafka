@@ -103,8 +103,8 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
       final BulkApiKey bulkApiKey, final Map<String, Object> properties) {
     this(bulkApiKey);
     data.putAll(properties);
-    recordCount = getInt(RECORD_COUNT);
-    totalRecords = getInt(TOTAL_RECORD_COUNT);
+    recordCount = ((Number) data.getOrDefault(RECORD_COUNT, 0)).intValue();
+    totalRecords = ((Number) data.getOrDefault(TOTAL_RECORD_COUNT, 0)).intValue();
   }
 
   /**
