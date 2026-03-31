@@ -22,7 +22,10 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFra
 import java.time.Duration;
 import java.util.HashMap;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class SalesforceSourceConfigTest {
 
@@ -41,7 +44,6 @@ public class SalesforceSourceConfigTest {
     SalesforceSourceConfig config = new SalesforceSourceConfig(props);
     assertEquals("v65.0", config.getSalesforceApiVersion());
     assertEquals(null, config.getSalesforceOauthUri());
-    assertEquals(null, config.getLastModifiedStartDateTime());
     assertEquals(Duration.ofSeconds(5), config.getStatusCheckWaitTime());
     assertEquals(Duration.ofSeconds(300), config.getMinimumQueryExecutionDelay());
     assertEquals(3, config.getSalesforceMaxRetries());
@@ -70,5 +72,18 @@ public class SalesforceSourceConfigTest {
     assertEquals("https://oauth.uri", config.getSalesforceOauthUri());
     assertEquals("ClientId", config.getOauthClientId());
     assertEquals("ClientSecret", config.getOauthClientSecret());
+  }
+
+  @ParameterizedTest
+  @CsvSource(value = {"2", "5", "8", "10"})
+  void testMaxTasksValue(String maxTasks) {
+    final var props = new HashMap<String, String>();
+    SalesforceSourceConfigFragment.setter(props)
+        .bulkApiQueries("SELECT Id,LastModifiedDate FROM Account");
+    props.put(ConnectorConfig.TASKS_MAX_CONFIG, maxTasks);
+
+    assertThatThrownBy(() -> new SalesforceSourceConfig(props))
+        .isInstanceOf(ConfigException.class)
+        .hasMessageContaining("This source connector only supports tasks.max set to '1'");
   }
 }

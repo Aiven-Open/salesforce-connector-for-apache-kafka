@@ -104,16 +104,6 @@ public final class SalesforceSourceConfig extends SourceCommonConfig
   }
 
   /**
-   * The last ModifiedStartDateTime is used to determine what records in an object to return can be
-   * null.
-   *
-   * @return The lastModifiedStartDateTime
-   */
-  public String getLastModifiedStartDateTime() {
-    return sourceFragment.getSalesforceLastModifiedStartDate();
-  }
-
-  /**
    * Gets the list of queries to pass to the bulk api.
    *
    * @return a list of queries.

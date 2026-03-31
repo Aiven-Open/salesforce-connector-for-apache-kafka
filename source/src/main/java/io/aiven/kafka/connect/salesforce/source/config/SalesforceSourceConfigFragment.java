@@ -26,6 +26,9 @@ import io.aiven.kafka.connect.salesforce.source.validator.SOQLQueryValidator;
 import java.util.List;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.config.ConfigValue;
+import org.apache.kafka.connect.runtime.ConnectorConfig;
 
 /** A fragment defining the configuration options specific to Salesforce Source connector. */
 public final class SalesforceSourceConfigFragment extends ConfigFragment {
@@ -36,10 +39,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    */
   private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
 
-  /** The last modified start time to start returning records from the salesforce object */
-  private static final String SALESFORCE_LAST_MODIFIED_START_DATE =
-      "salesforce.lastModifiedStartDate";
-
   private static final String group = "Salesforce Source";
 
   /**
@@ -49,6 +48,24 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    */
   SalesforceSourceConfigFragment(FragmentDataAccess dataAccess) {
     super(dataAccess);
+  }
+
+  /**
+   * Override of the validate method
+   *
+   * @param configMap The map of all values for configuration
+   */
+  @Override
+  public void validate(Map<String, ConfigValue> configMap) { // NOPMD
+    super.validate(configMap);
+    // useless overriding method ignore as we will add
+    // handle any restrictions between options here.
+    if (getInt(ConnectorConfig.TASKS_MAX_CONFIG).intValue() != 1) {
+      throw new ConfigException(
+          String.format(
+              "This source connector only supports %s set to '1'",
+              ConnectorConfig.TASKS_MAX_CONFIG));
+    }
   }
 
   /**
@@ -87,19 +104,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
                     + "`SELECT Id,Name, LastModifiedDate FROM Account ; SELECT Id, FirstName, Name, LastModifiedDate FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
             .width(ConfigDef.Width.LONG)
             .build());
-
-    configDef.define(
-        ExtendedConfigKey.builder(SALESFORCE_LAST_MODIFIED_START_DATE)
-            .group(group)
-            .orderInGroup(++groupOrder)
-            .since(siBuilder.version("1.0.0").build())
-            .type(ConfigDef.Type.STRING)
-            .importance(ConfigDef.Importance.MEDIUM)
-            .documentation(
-                SALESFORCE_LAST_MODIFIED_START_DATE
-                    + " allows a user to query data starting from a specific time, reducing the amount of data that is returned by the api. The default behaviour returns all matching entries from the query regardless of its age. Expected format is 2026-11-08T00:00:00Z (YYYY-MM-DDTHH:MM:SSZ)")
-            .width(ConfigDef.Width.LONG)
-            .build());
   }
 
   /**
@@ -116,9 +120,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    *
    * @return lastModifiedDate as a String
    */
-  public String getSalesforceLastModifiedStartDate() {
-    return dataAccess.getString(SALESFORCE_LAST_MODIFIED_START_DATE);
-  }
 
   /** The setter for the Salesforce Source config. */
   public static final class Setter extends AbstractFragmentSetter<Setter> {

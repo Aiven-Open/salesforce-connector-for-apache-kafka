@@ -505,7 +505,7 @@ public class BulkApiClient {
 
       backoff.cleanDelay();
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("response.request() {} : {}", response.request(), response.body());
+        LOGGER.debug("response.body() {}", response.body());
       }
       result =
           client
