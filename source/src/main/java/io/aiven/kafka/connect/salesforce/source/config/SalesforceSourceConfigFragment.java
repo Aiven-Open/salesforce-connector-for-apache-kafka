@@ -39,10 +39,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    */
   private static final String SALESFORCE_BULK_API_QUERIES = "salesforce.bulk.api.queries";
 
-  /** The last modified start time to start returning records from the salesforce object */
-  private static final String SALESFORCE_LAST_MODIFIED_START_DATE =
-      "salesforce.lastModifiedStartDate";
-
   private static final String group = "Salesforce Source";
 
   /**
@@ -108,19 +104,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
                     + "`SELECT Id,Name, LastModifiedDate FROM Account ; SELECT Id, FirstName, Name, LastModifiedDate FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
             .width(ConfigDef.Width.LONG)
             .build());
-
-    configDef.define(
-        ExtendedConfigKey.builder(SALESFORCE_LAST_MODIFIED_START_DATE)
-            .group(group)
-            .orderInGroup(++groupOrder)
-            .since(siBuilder.version("1.0.0").build())
-            .type(ConfigDef.Type.STRING)
-            .importance(ConfigDef.Importance.MEDIUM)
-            .documentation(
-                SALESFORCE_LAST_MODIFIED_START_DATE
-                    + " allows a user to query data starting from a specific time, reducing the amount of data that is returned by the api. The default behaviour returns all matching entries from the query regardless of its age. Expected format is 2026-11-08T00:00:00Z (YYYY-MM-DDTHH:MM:SSZ)")
-            .width(ConfigDef.Width.LONG)
-            .build());
   }
 
   /**
@@ -137,9 +120,6 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    *
    * @return lastModifiedDate as a String
    */
-  public String getSalesforceLastModifiedStartDate() {
-    return dataAccess.getString(SALESFORCE_LAST_MODIFIED_START_DATE);
-  }
 
   /** The setter for the Salesforce Source config. */
   public static final class Setter extends AbstractFragmentSetter<Setter> {

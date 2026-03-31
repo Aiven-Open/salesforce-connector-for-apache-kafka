@@ -44,7 +44,6 @@ public class SalesforceSourceConfigTest {
     SalesforceSourceConfig config = new SalesforceSourceConfig(props);
     assertEquals("v65.0", config.getSalesforceApiVersion());
     assertEquals(null, config.getSalesforceOauthUri());
-    assertEquals(null, config.getLastModifiedStartDateTime());
     assertEquals(Duration.ofSeconds(5), config.getStatusCheckWaitTime());
     assertEquals(Duration.ofSeconds(300), config.getMinimumQueryExecutionDelay());
     assertEquals(3, config.getSalesforceMaxRetries());
