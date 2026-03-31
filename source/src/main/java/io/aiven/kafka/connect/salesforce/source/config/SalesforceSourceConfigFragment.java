@@ -26,6 +26,9 @@ import io.aiven.kafka.connect.salesforce.source.validator.SOQLQueryValidator;
 import java.util.List;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.config.ConfigValue;
+import org.apache.kafka.connect.runtime.ConnectorConfig;
 
 /** A fragment defining the configuration options specific to Salesforce Source connector. */
 public final class SalesforceSourceConfigFragment extends ConfigFragment {
@@ -49,6 +52,24 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
    */
   SalesforceSourceConfigFragment(FragmentDataAccess dataAccess) {
     super(dataAccess);
+  }
+
+  /**
+   * Override of the validate method
+   *
+   * @param configMap The map of all values for configuration
+   */
+  @Override
+  public void validate(Map<String, ConfigValue> configMap) { // NOPMD
+    super.validate(configMap);
+    // useless overriding method ignore as we will add
+    // handle any restrictions between options here.
+    if (getInt(ConnectorConfig.TASKS_MAX_CONFIG).intValue() != 1) {
+      throw new ConfigException(
+          String.format(
+              "This source connector only supports %s set to '1'",
+              ConnectorConfig.TASKS_MAX_CONFIG));
+    }
   }
 
   /**

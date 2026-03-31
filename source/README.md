@@ -57,7 +57,7 @@ To make the connector work, a user has to specify Salesforce client credentials 
     * `salesforce.status.check.wait`
         * Should probably rename this but how long do you wait between checking if a bulk query is ready for consumption
             * default is 5 seconds hardcoded in BulkApiQueryEngine
-
+* This connector supports just one task this helps prevent issues with timing and also prevents using using up the api calls available to your account too quickly.
 
 
 
@@ -73,12 +73,10 @@ Below is an example connector configuration with descriptions:
 
 ## Fill in your values in these:
 
-## These must have exactly these values:
-
 # The Java class for the connector
 connector.class=io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector
 
-# Number of worker tasks to run concurrently
+# Number of worker tasks to run concurrently, only '1' is supported on this connector
 tasks.max=1
 
 # All data will be produced to topics with the prefix using the below an example topic would be
