@@ -15,6 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.source.config;
 
+import static org.apache.kafka.common.config.ConfigDef.NO_DEFAULT_VALUE;
+
 import io.aiven.commons.kafka.config.ExtendedConfigKey;
 import io.aiven.commons.kafka.config.SinceInfo;
 import io.aiven.commons.kafka.config.fragment.AbstractFragmentSetter;
@@ -76,12 +78,13 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
             .group(group)
             .orderInGroup(++groupOrder)
             .validator(new SOQLQueryValidator())
+            .defaultValue(NO_DEFAULT_VALUE)
             .since(siBuilder.version("1.0.0").build().setVersionOnly())
             .type(ConfigDef.Type.STRING)
             .importance(ConfigDef.Importance.MEDIUM)
             .documentation(
-                "Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name FROM Account` or when querying multiple Objects "
-                    + "`SELECT {{Id}},Name, {{LastModifiedDate}} FROM Account ; SELECT Id, FirstName, Name FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
+                "Salesforce bulk api queries are used to query for large amounts of data using SOQL a query typically looks like `SELECT Id,Name,LastModifiedDate FROM Account` or when querying multiple Objects "
+                    + "`SELECT Id,Name, LastModifiedDate FROM Account ; SELECT Id, FirstName, Name, LastModifiedDate FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
             .width(ConfigDef.Width.LONG)
             .build());
 

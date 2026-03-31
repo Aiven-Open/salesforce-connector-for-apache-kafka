@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.codec.digest.MurmurHash3;
+import org.apache.commons.lang3.ObjectUtils;
 
 /**
  * This BulkApiKey is used to contain all the important information required to be able to rebuild
@@ -132,10 +133,11 @@ public final class BulkApiKey implements Comparable<BulkApiKey> {
       if (result == 0) {
         result = other.getLastExecutionTime().compareTo(lastExecutionTime);
         if (result == 0) {
-          result = other.getLocator().compareTo(locator);
+          return ObjectUtils.compare(locator, other.getLocator());
         }
       }
     }
+
     return result;
   }
 

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
+import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfigFragment;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ import org.mockito.Mockito;
 
 public class SalesforceSourceTaskTest {
 
-  private static final String QUERY = "SELECT Id,LastModifiedDAte From Account";
+  private static final String QUERY = "SELECT Id,LastModifiedDate From Account";
   private static final String BULK_API = "bulkApi";
   private SalesforceSourceTask task;
   private OffsetManager offsetManager;
@@ -46,7 +47,10 @@ public class SalesforceSourceTaskTest {
     when(task.lastEvolution(any())).thenCallRealMethod();
     when(task.configure(any(), any(), any())).thenCallRealMethod();
     map = new HashMap<>();
-    task.configure(new HashMap<>(), offsetManager, map);
+    task.configure(
+        SalesforceSourceConfigFragment.setter(new HashMap<>()).bulkApiQueries(QUERY).data(),
+        offsetManager,
+        map);
   }
 
   @Test
