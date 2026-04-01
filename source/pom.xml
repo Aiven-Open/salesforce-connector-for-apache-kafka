@@ -41,6 +41,10 @@ SPDX-License-Identifier: Apache-2.0
     </site>
   </distributionManagement>
 
+  <properties>
+    <io.aiven.kafka.connect.source-connector-for-salesforce.version>${project.version}</io.aiven.kafka.connect.source-connector-for-salesforce.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.aiven.commons</groupId>
@@ -69,26 +73,19 @@ SPDX-License-Identifier: Apache-2.0
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.3.0</version>
         <executions>
           <execution>
-            <id>config-docs</id>
             <goals>
-              <goal>java</goal>
+              <goal>write-project-properties</goal>
             </goals>
+            <phase>generate-resources</phase>
             <configuration>
-              <mainClass>io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector</mainClass>
-              <classpathScope>compile</classpathScope>
+              <outputFile>${project.build.outputDirectory}/${project.groupId}/${artifactId}.properties</outputFile>
             </configuration>
           </execution>
         </executions>

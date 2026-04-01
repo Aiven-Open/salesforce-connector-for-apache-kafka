@@ -15,8 +15,8 @@
  */
 package io.aiven.kafka.connect.salesforce.source;
 
+import io.aiven.commons.util.strings.Version;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfigDef;
-import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +51,8 @@ public class SalesforceSourceConnector extends SourceConnector {
 
   @Override
   public String version() {
-    return Version.VERSION;
+    return new Version("io.aiven.kafka.connect/source-connector-for-salesforce.properties")
+        .of("io.aiven.kafka.connect.source-connector-for-salesforce.version");
   }
 
   @Override
