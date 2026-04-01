@@ -5,13 +5,15 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
  */
 package io.aiven.kafka.connect.salesforce.common.config;
 
@@ -124,12 +126,15 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
     SinceInfo.Builder siBuilder =
         SinceInfo.builder()
             .groupId("io.aiven.kafka.connect")
-            .artifactId("salesforce-connector-for-kafka-connect");
+            .artifactId("connector-common-for-salesforce");
+    // This is the base Since version that we're standardizing on.  When we finally bump to 1.0.0,
+    // it should follow.
+    var baseVersion = siBuilder.version("0.1.0").build();
     configDef.define(
         ExtendedConfigKey.builder(SALESFORCE_MAX_RECORDS)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .defaultValue(SALESFORCE_MAX_RECORDS_DEFAULT)
             .type(ConfigDef.Type.INT)
             .validator(ConfigDef.Range.between(1, 150000))
@@ -144,7 +149,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_MAX_RETRIES)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .defaultValue(SALESFORCE_MAX_RETRIES_DEFAULT)
             .type(ConfigDef.Type.INT)
             .validator(ConfigDef.Range.between(1, 5))
@@ -159,7 +164,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_API_VERSION)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .defaultValue(SALESFORCE_API_VERSION_DEFAULT)
             .type(ConfigDef.Type.STRING)
             .validator(new ConfigDef.NonEmptyString())
@@ -175,7 +180,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_CLIENT_ID)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.PASSWORD)
             .validator(null)
             .importance(ConfigDef.Importance.MEDIUM)
@@ -188,7 +193,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_CLIENT_SECRET)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.PASSWORD)
             .validator(null)
             .importance(ConfigDef.Importance.MEDIUM)
@@ -201,7 +206,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_URI)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.STRING)
             .validator(new ConfigDef.NonEmptyString())
             .importance(ConfigDef.Importance.MEDIUM)
@@ -213,7 +218,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(SALESFORCE_OAUTH_URI)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.STRING)
             .validator(new ConfigDef.NonEmptyString())
             .importance(ConfigDef.Importance.MEDIUM)
@@ -226,7 +231,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
         ExtendedConfigKey.builder(TOPIC_PREFIX)
             .group(GROUP_SALESFORCE)
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.STRING)
             .importance(ConfigDef.Importance.HIGH)
             .documentation(
@@ -241,7 +246,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
             .group(GROUP_SALESFORCE)
             .defaultValue(SALESFORCE_WAIT_BETWEEN_QUERIES_DEFAULT.getSeconds())
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.LONG)
             .validator(ConfigDef.Range.between(1, 604800))
             .importance(ConfigDef.Importance.MEDIUM)
@@ -258,7 +263,7 @@ public final class SalesforceCommonConfigFragment extends ConfigFragment {
             .group(GROUP_SALESFORCE)
             .defaultValue(SALESFORCE_STATUS_CHECK_WAIT_DEFAULT.toSeconds())
             .orderInGroup(++salesforceGroupCounter)
-            .since(siBuilder.version("1.0.0").build())
+            .since(baseVersion)
             .type(ConfigDef.Type.LONG)
             .validator(ConfigDef.Range.between(5, 3600))
             .importance(ConfigDef.Importance.MEDIUM)
