@@ -21,7 +21,7 @@ SPDX-License-Identifier: Apache-2.0
   <parent>
     <groupId>io.aiven.commons</groupId>
     <artifactId>aiven-commons</artifactId>
-    <version>3-SNAPSHOT</version>
+    <version>3</version>
   </parent>
 
   <groupId>io.aiven.kafka.connect</groupId>
