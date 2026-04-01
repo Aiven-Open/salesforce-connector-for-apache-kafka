@@ -1,32 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Copyright 2026 Aiven Oy and project contributors
+Copyright 2026 Aiven Oy
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
     https://www.apache.org/licenses/LICENSE-2.0
 
-    Unless required by applicable law or agreed to in writing,
-    software distributed under the License is distributed on an
-    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-    KIND, either express or implied.  See the License for the
-    specific language governing permissions and limitations
-    under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
-    SPDX-License-Identifier: Apache-2
+SPDX-License-Identifier: Apache-2.0
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.aiven.kafka.connect</groupId>
     <artifactId>connectors-for-salesforce</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>source-connector-for-salesforce</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>Aiven source connector for Salesforce on Apache Kafka</name>
   <description>Apache Kafka connector to extract data from Salesforce</description>
   <distributionManagement>
@@ -53,7 +51,7 @@
     <dependency>
       <groupId>io.aiven.kafka.connect</groupId>
       <artifactId>connector-common-for-salesforce</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
 

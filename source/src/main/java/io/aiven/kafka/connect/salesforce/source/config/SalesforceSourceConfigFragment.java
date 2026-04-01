@@ -5,13 +5,15 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
  */
 package io.aiven.kafka.connect.salesforce.source.config;
 
@@ -89,14 +91,14 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
     SinceInfo.Builder siBuilder =
         SinceInfo.builder()
             .groupId("io.aiven.kafka.connect")
-            .artifactId("salesforce-source-connector");
+            .artifactId("source-connector-for-salesforce");
     configDef.define(
         ExtendedConfigKey.builder(SALESFORCE_BULK_API_QUERIES)
             .group(group)
             .orderInGroup(++groupOrder)
             .validator(new SOQLQueryValidator())
             .defaultValue(NO_DEFAULT_VALUE)
-            .since(siBuilder.version("1.0.0").build().setVersionOnly())
+            .since(siBuilder.version("0.1.0").build().setVersionOnly())
             .type(ConfigDef.Type.STRING)
             .importance(ConfigDef.Importance.MEDIUM)
             .documentation(
