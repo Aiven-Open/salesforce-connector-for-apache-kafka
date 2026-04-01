@@ -29,6 +29,19 @@ public final class SalesforceSourceConfigDef extends SourceCommonConfig.SourceCo
     super();
     SalesforceCommonConfigFragment.update(this);
     SalesforceSourceConfigFragment.update(this);
+    hideDocumentation();
+  }
+
+  /** Hide all the documentation that the user doesn't need to see */
+  protected void hideDocumentation() {
+    hideCompressionType(true);
+    hideDistributionType(true);
+    hideExtractorBuffer(true);
+    hideExtractorCacheSize(true);
+    hideExtractorCSVHeaders(true);
+    hideExtractorCSVHeadersEnabled(true);
+    hideExtractorExtractorClass(true);
+    hide("kafka.retry.backoff.ms", true);
   }
 
   /**
