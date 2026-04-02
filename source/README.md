@@ -16,27 +16,27 @@
 
     SPDX-License-Identifier: Apache-2
 -->
-Salesforce Connector for Apache Kafka
+Salesforce Source Connector for Apache Kafka
 ======================
-This Connector has been developed by Aiven to utilise the Salesforce Bulk Api 2.0 to retrieve data from Salesforce and put the data onto various Kafka topics. 
+This Connector has been developed by Aiven to utilise the Salesforce Bulk API 2.0 to retrieve data from Salesforce and put the data onto various Kafka topics. 
 
 Overview
 ========
 The Aiven Kafka Source Connector for Salesforce provides a mechanism to retrieve information from Salesforce and add it to Kafka.
-It provides an *at least once* approach to sending data to Kafka this means that duplicate events can be sent, particularly around restarts.
+It provides an *at least once* approach to sending data to Kafka. This means that duplicate events can be sent, particularly around restarts.
 
 Configuration
 =============
 
 Authentication
-To make the connector work, a user has to specify Salesforce client credentials to allow it to connect to Salesforce:
-1. Client Credentials are the only supported credentials at the moment
+To make the connector work, a user has to specify Salesforce Client Credentials to allow it to connect to Salesforce:
+1. Salesforce Client Credentials are the only supported credentials at the moment
    1. [Configure Client Credentials flow documentation](https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&type=5)
-   1. specify the client credentials using the configuration options
-      1. `salesforce.client.secret` for the Salesforce client secret
-      1. `salesforce.client.id` for the Salesforce client id
-1. Configure your login urls
-   1. `salesforce.oauth.uri` is used to authenticate against often this will be  "https://MyCompany.my.salesforce.com/services/oauth2/token"
+   1. Specify the credentials using the configuration options
+      1. `salesforce.client.secret` for the Salesforce client secret (also known as consumer secret)
+      1. `salesforce.client.id` for the Salesforce client id (also known as consumer key)
+1. Configure your Salesforce urls
+   1. `salesforce.oauth.uri` is used to authenticate against.  Often this will be  "https://MyCompany.my.salesforce.com/services/oauth2/token"
       1. More details can be found on the Salesforce [website](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_endpoints.htm&type=5)
    1. `salesforce.uri` is the api we query against and is often "https://MyCompany.my.salesforce.com"
 1.  The api version you wish to use of the Bulk API is also selectable
@@ -50,10 +50,9 @@ To make the connector work, a user has to specify Salesforce client credentials 
   * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
   * The Order By statement is not allowed to be used as this is used to order the query results 
   * Multiple queries are supported
-  * example query
-    * SELECT Id, Name, LastModifiedDate FROM Account;
-  * It is possible to get duplicate entries in particular if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
-  * The Connector does not support using sub queries as part of your bulk api query
+  * Example query: `SELECT Id, Name, LastModifiedDate FROM Account;`
+  * * It is possible to get duplicate entries. In particular, if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
+  * The Connector does not support using sub queries as part of your Bulk API query
  ``
 
 * Some important configuration options to handle how often the Bulk API is queried by the connector
@@ -61,12 +60,12 @@ To make the connector work, a user has to specify Salesforce client credentials 
       * How long to wait between querying a Salesforce object
         * The default is 60 seconds, but if this data does not change very often we would recommend extending this delay to help preserve your API limits
     * `salesforce.status.check.wait`
-      * How long after submitting a query  to Salesforce do you wait between checking if a bulk query is ready for consumption
-        * default is 5 seconds, if you are expecting a large amount of data you may need to extend this time to reduce the number of api calls. 
+      * How long to wait after submitting a query to Salesforce before checking if a bulk query is ready for consumption
+        * The default is 5 seconds. If you are expecting a large amount of data you may need to extend this time to reduce the number of API calls.
     * 'salesforce.max.records'
-      * Defines how many records per page should be returned by the BulkApi, with larger Objects this may need to be decreased to allow for smaller chunking of data to the api
+      * Defines how many records per page should be returned by the Bulk API.  With larger Objects this may need to be decreased to allow for smaller chunking of data to the API.
         * The default is 50,000 records
-* This connector supports just one task this helps prevent issues with timing and also prevents using up the api calls available to your account too quickly.
+* This connector supports just one task. This helps prevent issues with timing and also prevents using up the API calls available to your account too quickly.
   * See further details on Salesforce allocations and limits on the [Bulk API 2.0](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_common_limits.htm)
 
 
