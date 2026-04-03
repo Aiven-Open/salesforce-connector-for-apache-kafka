@@ -59,7 +59,7 @@ Notes
     * `salesforce.status.check.wait`
         * How long to wait after submitting a query to Salesforce before checking if a bulk query is ready for consumption
             * The default is 5 seconds. If you are expecting a large amount of data you may need to extend this time to reduce the number of API calls.
-    * 'salesforce.max.records'
+    * `salesforce.max.records`
         * Defines how many records per page should be returned by the Bulk API.  With larger Objects this may need to be decreased to allow for smaller chunking of data to the API.
             * The default is 50,000 records
 * This connector supports just one task. This helps prevent issues with timing and also prevents using up the API calls available to your account too quickly.
