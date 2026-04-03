@@ -22,13 +22,16 @@
       xsi:schemaLocation="http://maven.apache.org/SITE/2.0.0 https://maven.apache.org/xsd/site-2.0.0.xsd"
       name="Aiven Common Utilities">
 
-
     <poweredBy>
         <logo name="Aiven" href="https://aiven.io/">
             <image src="https://aiven.io/remix-assets/logo-aiven-DLhBz3IO.svg"/>
         </logo>
     </poweredBy>
     <body>
+        <head>
+            <![CDATA[<link rel="icon" href="https://aiven.io/favicon.ico">]]>
+        </head>
+
         <menu ref="modules" inherit="top"/>
 
         <menu name="Overview">

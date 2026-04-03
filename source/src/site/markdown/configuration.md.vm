@@ -63,8 +63,7 @@ Configuration
 Apache Kafka has produced a users guide that describes [how to run Kafka Connect](https://kafka.apache.org/documentation/#connect_running).  This documentation describes the Connect workers configuration.  They have also produced a good description of [how Kafka Connect resumes after a failure](https://kafka.apache.org/documentation/#connect_resuming) or stoppage.
 
 
-{$esc.hash}{$esc.hash}{$esc.hash} Configuration options
----------------
+${esc.hash}${esc.hash}${esc.hash} Configuration options
 
 All the configuration options are listed below in alphabetical order.
 
@@ -72,7 +71,7 @@ All the configuration options are listed below in alphabetical order.
 
 #foreach ($configKey in ${extendedConfigDef.configKeys})
 
-${esc.hash}${esc.hash} ${configKey.displayName}
+${esc.hash}${esc.hash}${esc.hash}${esc.hash} ${configKey.displayName}
 
 #if (${configKey.isDeprecated})**${configKey.deprecated}** #end
 
@@ -90,7 +89,7 @@ ${esc.hash}${esc.hash} ${configKey.displayName}
 
 #end
 
-{$esc.hash}{$esc.hash}{$esc.hash} Example
+${esc.hash}${esc.hash}${esc.hash} Example
 
 A copy of this [example configuration file}(./config_example.txt) is available for download.
 
