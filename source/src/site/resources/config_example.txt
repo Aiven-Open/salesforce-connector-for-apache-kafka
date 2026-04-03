@@ -39,6 +39,3 @@ salesforce.soql.query.wait=3600
 # Time is in seconds
 salesforce.status.check.wait=120
 
-
-# Begin the Query from a specific place
-salesforce.lastModifiedStartDate=2025-11-08T00:00:00Z
