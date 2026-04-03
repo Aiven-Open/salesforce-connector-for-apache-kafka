@@ -1,0 +1,11 @@
+
+${project.name} Architecture Notes
+==============================
+
+Offsets
+-------
+How the offsets are handled
+* We include a hash of the query, LastExecutionDate and the API name as part of the offset Key
+* We include the LastModifiedDate, jobId, next Locator, recordCount in the offset data
+* As we order the result set that is returned we then are able to use the lastModifiedDate in the offset, on a restart we read the offset and seed the correct lastModifiedDate
+

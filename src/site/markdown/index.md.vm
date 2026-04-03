@@ -1,0 +1,54 @@
+<!--
+    Copyright 2026 Aiven Oy and project contributors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+    SPDX-License-Identifier: Apache-2
+-->
+
+${project.name}
+======================
+
+[![Latest Build](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/actions/workflows/PR_check.yml/badge.svg)](https://github.com/Aiven-Open/asalesforce-connector-for-apache-kafka/actions/workflows/PR_check.yml)
+
+Versions
+========
+
+ - Development: ${project.version}
+ - Latest Release: ${project.properties.latestRelease}
+
+Overview
+========
+
+${project.name} provides a utility library and Apache Kafka source connector for Salesforce.  The source connector consumes data from Salesforce and to publishs that data to Kafka topics. This project utiizes the [Aiven connector framework](https://github.com/Aiven-Open/aiven-kafka-connector-framework) and familuarity with the [framework documentation](https://aiven-open.github.io/aiven-kafka-connector-framework) is advised.
+
+Build
+============
+
+The latest release is ${project.properties.latestRelease} and is available for download from the Maven repository or via the [releases](${project.url}/releases) page.
+Please note that all jars are provided for your convenience, the project delivery is the source code found in the [project git repository](${project.url}).
+
+To build the framework execute `mvn install`.  This will create the jars and install them in your local maven repository where they can be accessed from other projects.
+
+License
+============
+
+${project.name} is licensed under the Apache License, version 2.0. Full license text is available in the [license documentation](licenses.html) file.
+
+Please note that the project explicitly does not require a CLA (Contributor License Agreement) from its contributors.
+
+Contact
+============
+Bug reports and patches are very welcome, please post them as GitHub issues and pull requests at https://github.com/aiven/aiven-kafka-connector-framework .
+To report any possible vulnerabilities or other serious issues please see our [security policy](SECURITY.html).

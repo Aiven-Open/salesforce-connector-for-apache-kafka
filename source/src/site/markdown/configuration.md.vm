@@ -14,10 +14,57 @@
     specific language governing permissions and limitations
     under the License.
 
-    SPDX-License-Identifier: Apache-2
+    SPDX-License-Identifier: Apache-2.0
 -->
 
-${esc.hash} ${project.name} configuration options
+${project.name} Configuration
+==============================
+
+Authentication
+--------------
+
+To make the connector work, a user has to specify Salesforce client credentials to allow it to connect to Salesforce:
+1. Client Credentials are the only supported credentials at the moment
+    2. [Configure Client Credentials flow documentation](https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&type=5)
+    3. specify the client credentials using the configuration options
+        3. `salesforce.client.secret` for the Salesforce client secret
+        4. `salesforce.client.id` for the Salesforce client id
+
+Notes
+-----
+
+* Define your query `salesforce.bulk.api.queries`
+    * Queries are defined using the SOQL language
+    * The queries all need to have the system field LastModifiedDate included in the SELECT statement
+    * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
+    * The Order By statement is not allowed to be used as this is used to order the query results
+    * Multiple queries are supported
+    * example query
+        * SELECT Id, Name, LastModifiedDate FROM Account;
+    * It is possible to get duplicate entries in particular if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
+      ``
+
+* Some important configuration options to handle how often the Bulk API is queried by the connector
+    * `salesforce.lastModifiedStartDate`
+        * Let users choose when to start reading data from a specific point in the query objects
+        * This is applied to all queries
+    * `salesforce.soql.query.wait`
+        * How long to wait between querying a Salesforce object
+            * At the moment hardcoded to 60 seconds in BulkApiQueryEngine
+    * `salesforce.status.check.wait`
+        * Should probably rename this but how long do you wait between checking if a bulk query is ready for consumption
+            * default is 5 seconds hardcoded in BulkApiQueryEngine
+* This connector supports just one task this helps prevent issues with timing and also prevents using using up the api calls available to your account too quickly.
+
+
+Configuration
+------------
+
+Apache Kafka has produced a users guide that describes [how to run Kafka Connect](https://kafka.apache.org/documentation/#connect_running).  This documentation describes the Connect workers configuration.  They have also produced a good description of [how Kafka Connect resumes after a failure](https://kafka.apache.org/documentation/#connect_resuming) or stoppage.
+
+
+{$esc.hash}{$esc.hash}{$esc.hash} Configuration options
+---------------
 
 All the configuration options are listed below in alphabetical order.
 
@@ -42,3 +89,13 @@ ${esc.hash}${esc.hash} ${configKey.displayName}
 
 
 #end
+
+{$esc.hash}{$esc.hash}{$esc.hash} Example
+
+A copy of this [example configuration file}(./config_example.txt) is available for download.
+
+```properties
+
+#include("config_example.txt")
+
+```

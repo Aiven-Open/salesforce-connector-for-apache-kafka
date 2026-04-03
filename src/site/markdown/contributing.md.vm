@@ -1,0 +1,90 @@
+<!--
+    Copyright 2026 Aiven Oy and project contributors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+    SPDX-License-Identifier: Apache-2.0
+-->
+# Welcome!
+
+Contributions are very welcome on the ${project.name}. When contributing please keep this in mind:
+
+- Open an issue to discuss new bigger features.
+- Write code consistent with the project style and make sure the tests are passing.
+- Stay in touch with us if we have follow up questions or requests for further changes.
+
+# Development
+
+The source for this project is found in GitHub at ${project.url}.
+
+The project is developed using Maven and builds under Java ${context.get("jdk.version")}.
+
+All code must include an Apache license header.  Any header that passes the [Apache RAT](https://creadur.apache.org/rat/) tests is acceptable.  The RAT check is automatically run during build.  We recommend the following text block for licenses.
+
+```java
+/*
+ * Copyright Aiven Oy and project contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *     SPDX-License-Identifier: Apache-2.0
+ */
+```
+
+## Local Environment
+
+To setup a local development environment clone the GitHub repository and execute the maven install option
+
+```
+git clone ${project.url}.git
+cd salesforce-connector-for-apache-kafka
+mvn install
+```
+
+## Tests
+
+Tests must be included for any new features.
+
+Please ensure that any code passes `mvn clean verify` before submitting it.
+
+
+## Static checking and Linting
+
+The system will automatically format code to the standard Google style.
+
+
+## Manual testing
+
+We have not manual testing at this time.
+
+
+# Opening a PR
+
+- Commit messages should describe the changes, not the filenames. Win our admiration by following
+  the [excellent advice from Chris Beams](https://chris.beams.io/posts/git-commit/) when composing
+  commit messages.
+- Choose a meaningful title for your pull request.
+- The pull request description should focus on what changed and why.
+- Check that the tests pass (and add test coverage for your changes if appropriate).
+- Verify that `mvn clean verify` passes.

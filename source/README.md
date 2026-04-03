@@ -28,106 +28,14 @@ It provides an *at least once* approach to sending data to Kafka. This means tha
 Configuration
 =============
 
-Authentication
-To make the connector work, a user has to specify Salesforce Client Credentials to allow it to connect to Salesforce:
-1. Salesforce Client Credentials are the only supported credentials at the moment
-   1. [Configure Client Credentials flow documentation](https://help.salesforce.com/s/articleView?id=xcloud.configure_client_credentials_flow_for_external_client_apps.htm&type=5)
-   1. Specify the credentials using the configuration options
-      1. `salesforce.client.secret` for the Salesforce client secret (also known as consumer secret)
-      1. `salesforce.client.id` for the Salesforce client id (also known as consumer key)
-1. Configure your Salesforce urls
-   1. `salesforce.oauth.uri` is used to authenticate against.  Often this will be  "https://MyCompany.my.salesforce.com/services/oauth2/token"
-      1. More details can be found on the Salesforce [website](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_endpoints.htm&type=5)
-   1. `salesforce.uri` is the api we query against and is often "https://MyCompany.my.salesforce.com"
-1.  The api version you wish to use of the Bulk API is also selectable
-   1.`salesforce.api.version` can be set to select a particular version e.g. 'v66.0', 'v60.0' etc
-   2. By default, version `v65.0` is selected
+Full [configuration documentation](https://aiven-open.github.io/salesforce-connector-forapache-kafka/source/configuration.html) can be found on our [documentation site]((https://aiven-open.github.io/salesforce-connector-forapache-kafka/source).
 
-
-* Define your query `salesforce.bulk.api.queries`
-  * Queries are defined using the SOQL language and are subject to SOQL Syntax and case sensitivity restrictions
-  * The queries all need to have the system field LastModifiedDate included in the SELECT statement
-  * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
-  * The Order By statement is not allowed to be used as this is used to order the query results 
-  * Multiple queries are supported
-  * Example query: `SELECT Id, Name, LastModifiedDate FROM Account;`
-  * * It is possible to get duplicate entries. In particular, if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
-  * The Connector does not support using sub queries as part of your Bulk API query
- ``
-
-* Some important configuration options to handle how often the Bulk API is queried by the connector
-    * `salesforce.soql.query.wait`
-      * How long to wait between querying a Salesforce object
-        * The default is 60 seconds, but if this data does not change very often we would recommend extending this delay to help preserve your API limits
-    * `salesforce.status.check.wait`
-      * How long to wait after submitting a query to Salesforce before checking if a bulk query is ready for consumption
-        * The default is 5 seconds. If you are expecting a large amount of data you may need to extend this time to reduce the number of API calls.
-    * 'salesforce.max.records'
-      * Defines how many records per page should be returned by the Bulk API.  With larger Objects this may need to be decreased to allow for smaller chunking of data to the API.
-        * The default is 50,000 records
-* This connector supports just one task. This helps prevent issues with timing and also prevents using up the API calls available to your account too quickly.
-  * See further details on Salesforce allocations and limits on the [Bulk API 2.0](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_common_limits.htm)
-
-
-
-## Configuration
-
-Apache Kafka has produced a users guide that describes [how to run Kafka Connect](https://kafka.apache.org/documentation/#connect_running).  This documentation describes the Connect workers configuration.  They have also produced a good description of [how Kafka Connect resumes after a failure](https://kafka.apache.org/documentation/#connect_resuming) or stoppage.
-
-
-Below is an example connector configuration with descriptions:
-
-```properties
-### Standard connector configuration
-
-## Fill in your values in these:
-
-# The Java class for the connector
-connector.class=io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector
-
-# Number of worker tasks to run concurrently, only '1' is supported on this connector
-tasks.max=1
-
-# All data will be produced to topics with the prefix using the below an example topic would be
-# salesforce.test.bulkapi.Account
-topics.prefix=salesforce.test
-
-# The maximum number of times to retry a query or authentication request against the Bulk API before failing
-max.retries=3
-
-# The version of the Salesforce API to use for all queries
-salesforce.api.version=v65.0
-
-# Salesforce Client Secret
-salesforce.client.secret=YOUR_CLIENT_SECRET
-
-# Salesforce Client Id
-salesforce.client.id=YOUR_CLIENT_ID
-
-# The Salesforce OAUTH Uri may be unique for your salesforce deployment
-salesforce.oauth.uri=https://www.salesforce.com/services/oauth2/token
-
-salesforce.bulk.api.queries=Select Id,Name,LastModifiedDate FROM Account;Select Id,LastModifiedDate,Department,Email,FirstName,LastName FROM Contact WHERE HasOptedOutOfEmail=False;
-
-# Optional
-# Wait at least an hour in between each query being called
-# Time is in seconds
-salesforce.soql.query.wait=3600
-
-# When you have large Object tables it can take longer for the job to be processed by the API
-# reduce the number of API calls by increasing the time between job status checks
-# Time is in seconds
-salesforce.status.check.wait=120
-
-
-# Begin the Query from a specific place
-salesforce.lastModifiedStartDate=2025-11-08T00:00:00Z
-```
+An [example configuration file](https://aiven-open.github.io/salesforce-connector-forapache-kafka/source/config_example.txt) is also available for download.
 
 Offsets
 =======
 How the offsets are handled
-* We include a hash of the query,the API name as part of the offset Key
+* We include a hash of the query, the API name as part of the offset Key
 * We include the LastModifiedDate, jobId, next Locator, recordCount in the offset data
 * As we order the result set that is returned we then are able to use the lastModifiedDate in the offset, on a restart we read the offset and seed the correct lastModifiedDate
 
