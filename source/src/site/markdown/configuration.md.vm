@@ -35,7 +35,7 @@ To make the connector work, a user has to specify Salesforce client credentials 
     1. `salesforce.uri` is the api we query against and is often "https://MyCompany.my.salesforce.com"
 1.  The api version you wish to use of the Bulk API is also selectable
     1.`salesforce.api.version` can be set to select a particular version e.g. 'v66.0', 'v60.0' etc
-2. By default, version `v65.0` is selected
+    1. By default, version `v65.0` is selected
 
 Notes
 -----
