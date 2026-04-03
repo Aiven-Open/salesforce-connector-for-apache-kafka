@@ -20,7 +20,7 @@
 <site xmlns="http://maven.apache.org/SITE/2.0.0"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://maven.apache.org/SITE/2.0.0 https://maven.apache.org/xsd/site-2.0.0.xsd"
-      >
+      name="Aiven Common Utilities">
 
     <poweredBy>
         <logo name="Aiven" href="https://aiven.io/">
@@ -28,25 +28,31 @@
         </logo>
     </poweredBy>
     <body>
+        <head>
+            <![CDATA[<link rel="icon" href="https://aiven.io/favicon.ico">]]>
+        </head>
 
-        <menu ref="parent"/>
+        <menu ref="modules" inherit="top"/>
 
         <menu name="Overview">
-            <item name="Introduction" href="./index.html"/>
-            <item name="Architecture notes" href="./architecture.html" />
-            <item name="Configuration documentation" href="./configuration.html"/>
+            <item name="Introduction" href="/index.html"/>
+            <item name="Code of Conduct" href="./CODE_OF_CONDUCT.html" />
+            <item name="Contributing" href="./contributing.html" />
+            <item name="Change log" href="./CHANGE_LOG.html" />
+            <item name="Security Policy" href="./SECURITY.html" />
         </menu>
 
         <menu ref="reports"/>
 
         <links>
-            <item name="Apache Kafka" href="http://kafka.apache.org"/>
+            <item name="Apache" href="http://www.apache.org"/>
         </links>
 
         <footer>Copyright &copy; Aiven Oy. Licensed under the Apache License, Version 2.0.<![CDATA[<br/>
             Apache Commons Collection, Apache Kafka, and Apache Velocity are trademarks of The Apache Software Foundation.<br/>
             Salesforce is a trademark of Salesforce, Inc.<br/>
             All other marks mentioned may be trademarks or registered trademarks of their respective owners.]]></footer>
+
     </body>
     <skin>
         <groupId>org.apache.maven.skins</groupId>
@@ -59,7 +65,7 @@
             <sideBarEnabled>true</sideBarEnabled>
             <skipGenerationDate>true</skipGenerationDate>
             <gitHub>
-                <projectId>aiven-open/aiven-commons</projectId>
+                <projectId>aiven-open/aiven-kafka-connector-framework/</projectId>
                 <ribbonOrientation>right</ribbonOrientation>
                 <ribbonColor>orange</ribbonColor>
             </gitHub>

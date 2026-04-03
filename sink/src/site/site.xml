@@ -28,14 +28,7 @@
         </logo>
     </poweredBy>
     <body>
-
         <menu ref="parent"/>
-
-        <menu name="Overview">
-            <item name="Introduction" href="./index.html"/>
-            <item name="Architecture notes" href="./architecture.html" />
-            <item name="Configuration documentation" href="./configuration.html"/>
-        </menu>
 
         <menu ref="reports"/>
 

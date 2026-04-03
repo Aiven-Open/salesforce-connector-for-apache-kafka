@@ -1,0 +1,41 @@
+### Standard connector configuration
+
+## Fill in your values in these:
+
+# The Java class for the connector
+connector.class=io.aiven.kafka.connect.salesforce.source.SalesforceSourceConnector
+
+# Number of worker tasks to run concurrently, only '1' is supported on this connector
+tasks.max=1
+
+# All data will be produced to topics with the prefix using the below an example topic would be
+# salesforce.test.bulkapi.Account
+topics.prefix=salesforce.test
+
+# The maximum number of times to retry a query or authentication request against the Bulk API before failing
+max.retries=3
+
+# The version of the Salesforce API to use for all queries
+salesforce.api.version=v65.0
+
+# Salesforce Client Secret
+salesforce.client.secret=YOUR_CLIENT_SECRET
+
+# Salesforce Client Id
+salesforce.client.id=YOUR_CLIENT_ID
+
+# The Salesforce OAUTH Uri may be unique for your salesforce deployment
+salesforce.oauth.uri=https://www.salesforce.com/services/oauth2/token
+
+salesforce.bulk.api.queries=Select Id,Name,LastModifiedDate FROM Account;Select Id,LastModifiedDate,Department,Email,FirstName,LastName FROM Contact WHERE HasOptedOutOfEmail=False;
+
+# Optional
+# Wait at least an hour in between each query being called
+# Time is in seconds
+salesforce.soql.query.wait=3600
+
+# When you have large Object tables it can take longer for the job to be processed by the API
+# reduce the number of API calls by increasing the time between job status checks
+# Time is in seconds
+salesforce.status.check.wait=120
+

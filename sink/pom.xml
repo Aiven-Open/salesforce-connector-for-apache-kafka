@@ -38,7 +38,7 @@ SPDX-License-Identifier: Apache-2.0
       <!--  For the URL to resolve to the default URL as described in the Apache Site Plugin documentation this URL
                   must be invalid. A ticket is open to resolve this issue. See https://github.com/apache/maven-site-plugin/issues/1140
                   -->
-      <url>invalid:url</url>
+      <url>invalid:url/sink</url>
     </site>
   </distributionManagement>
 

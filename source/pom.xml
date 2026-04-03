@@ -27,6 +27,9 @@ SPDX-License-Identifier: Apache-2.0
   <artifactId>source-connector-for-salesforce</artifactId>
   <name>Aiven source connector for Salesforce on Apache Kafka</name>
   <description>Apache Kafka connector to extract data from Salesforce</description>
+
+  <inceptionYear>2026</inceptionYear>
+
   <distributionManagement>
     <snapshotRepository>
       <id>central-snapshot</id>
@@ -37,7 +40,7 @@ SPDX-License-Identifier: Apache-2.0
       <!--  For the URL to resolve to the default URL as described in the Apache Site Plugin documentation this URL
                   must be invalid. A ticket is open to resolve this issue. See https://github.com/apache/maven-site-plugin/issues/1140
                   -->
-      <url>invalid:url</url>
+      <url>invalid:url/source</url>
     </site>
   </distributionManagement>
 
@@ -49,7 +52,7 @@ SPDX-License-Identifier: Apache-2.0
     <dependency>
       <groupId>io.aiven.commons</groupId>
       <artifactId>kafka-config</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
+      <version>0.1.0</version>
     </dependency>
 
     <dependency>
@@ -75,6 +78,31 @@ SPDX-License-Identifier: Apache-2.0
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-markdown-resources</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>pre-site</phase>
+            <configuration>
+              <overwrite>true</overwrite>
+              <resources>
+                <resource>
+                  <directory>src/site/resources</directory>
+                  <includes>
+                    <include>config_example.txt</include>
+                  </includes>
+                </resource>
+              </resources>
+              <outputDirectory>src/site/markdown</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
         <version>1.3.0</version>
@@ -89,6 +117,13 @@ SPDX-License-Identifier: Apache-2.0
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <inputExclude>src/site/resources/config_example.txt</inputExclude>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

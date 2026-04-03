@@ -20,20 +20,24 @@ Aiven connectors for Salesforce on Apache Kafka
 ======================
 This is an open source connector developed by Aiven for the community that integrates with Apache Kafka and Salesforce providing both Sink and Source Connectors.
 
-
 Overview
 ========
 
+## Features
+ 
+ - A utility library to connect to and provide convenience methods for Salesforce interactions. 
+ - An Apache Kafka source connector for Salesforce.
 
-Features
-============
-A source connector for Salesforce to consume data from Salesforce and to publish that data to Kafka topics
-Setup
-============
+## Prerequisites
 
-### Prerequisites 
 * Java 17
 * Maven
+
+## Documentation
+
+Documentation for this project can be found at https://aiven-open.github.io/salesforce-connector-for-apache-kafka.  Documentation can be generated from source by executing: `mvn site site:stage`.  The documentation will then be found in `/target/staging`.
+
+This project is built upon [Aiven framework for connectors on Apache Kafka](https://github.com/Aiven-Open/aiven-kafka-connector-framework) and familuraity with the [framework documentation](httpd://aiven-open.github.io/aiven-kafka-connector-framework) is recommended.
 
 License
 ============
