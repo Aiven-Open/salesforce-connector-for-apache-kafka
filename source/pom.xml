@@ -51,27 +51,13 @@ SPDX-License-Identifier: Apache-2.0
   <dependencies>
     <dependency>
       <groupId>io.aiven.commons</groupId>
-      <artifactId>kafka-config</artifactId>
-      <version>0.1.0</version>
+      <artifactId>framework-for-source-connectors</artifactId>
+      <version>${aiven.framework.version}</version>
     </dependency>
-
     <dependency>
       <groupId>io.aiven.kafka.connect</groupId>
       <artifactId>connector-common-for-salesforce</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4</artifactId>
-      <version>${commons.collection4.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.confluent</groupId>
-      <artifactId>kafka-connect-avro-data</artifactId>
-      <version>8.1.0</version>
     </dependency>
   </dependencies>
 

@@ -41,18 +41,8 @@ SPDX-License-Identifier: Apache-2.0
     </site>
   </distributionManagement>
 
-  <dependencies>
-    <dependency>
-      <groupId>io.aiven.commons</groupId>
-      <artifactId>kafka-config</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>io.aiven.commons</groupId>
-      <artifactId>common-util</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
+  <!-- depdendencies for common shoudl be listed in parent -->
+  <dependencies/>
 
   <build>
     <plugins>
