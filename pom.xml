@@ -103,8 +103,6 @@ Sink module is removed until there is code
     <protoc.version>3.25.3</protoc.version>
     <protocJava.version>1.78.0</protocJava.version>
     <slf4j.version>1.7.26</slf4j.version>
-    <!--    <mockito.version>5.23.0</mockito.version>-->
-    <!--    <assertj.version>3.27.7</assertj.version>-->
   </properties>
 
   <dependencyManagement>

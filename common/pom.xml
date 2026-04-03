@@ -41,7 +41,7 @@ SPDX-License-Identifier: Apache-2.0
     </site>
   </distributionManagement>
 
-  <!-- depdendencies for common shoudl be listed in parent -->
+  <!-- dependencies for common should be listed in parent -->
   <dependencies/>
 
   <build>
