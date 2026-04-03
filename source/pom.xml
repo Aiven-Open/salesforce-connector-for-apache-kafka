@@ -118,8 +118,7 @@ SPDX-License-Identifier: Apache-2.0
           <finalName>${project.artifactId}-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <descriptors>
-            <descriptor>src/main/assembly/release-tar.xml</descriptor>
-            <descriptor>src/main/assembly/release-zip.xml</descriptor>
+            <descriptor>src/main/assembly/release.xml</descriptor>
           </descriptors>
           <tarLongFileMode>posix</tarLongFileMode>
         </configuration>
