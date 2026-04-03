@@ -122,9 +122,7 @@ SPDX-License-Identifier: Apache-2.0
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/site/resources/config_example.txt</exclude>
-          </excludes>
+          <inputExclude>src/site/resources/config_example.txt</inputExclude>
         </configuration>
       </plugin>
       <plugin>
