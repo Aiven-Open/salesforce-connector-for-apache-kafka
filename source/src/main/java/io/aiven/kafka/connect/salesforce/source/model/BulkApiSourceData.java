@@ -23,7 +23,6 @@ import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
-import io.aiven.kafka.connect.salesforce.common.bulk.model.SalesforceContext;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
 import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;

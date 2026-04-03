@@ -51,27 +51,13 @@ SPDX-License-Identifier: Apache-2.0
   <dependencies>
     <dependency>
       <groupId>io.aiven.commons</groupId>
-      <artifactId>kafka-config</artifactId>
-      <version>0.1.0</version>
+      <artifactId>framework-for-source-connectors</artifactId>
+      <version>${aiven.framework.version}</version>
     </dependency>
-
     <dependency>
       <groupId>io.aiven.kafka.connect</groupId>
       <artifactId>connector-common-for-salesforce</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4</artifactId>
-      <version>${commons.collection4.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.confluent</groupId>
-      <artifactId>kafka-connect-avro-data</artifactId>
-      <version>8.1.0</version>
     </dependency>
   </dependencies>
 
@@ -128,15 +114,22 @@ SPDX-License-Identifier: Apache-2.0
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
         <configuration>
           <finalName>${project.artifactId}-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <descriptors>
-            <descriptor>src/main/assembly/release-tar.xml</descriptor>
-            <descriptor>src/main/assembly/release-zip.xml</descriptor>
+            <descriptor>src/main/assembly/release.xml</descriptor>
           </descriptors>
           <tarLongFileMode>posix</tarLongFileMode>
         </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -160,14 +153,6 @@ SPDX-License-Identifier: Apache-2.0
         <extensions>true</extensions>
         <configuration>
           <publishingServerId>central</publishingServerId>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>17</source>
-          <target>17</target>
         </configuration>
       </plugin>
       <plugin>

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aiven.kafka.connect.salesforce.common.bulk.model;
+package io.aiven.kafka.connect.salesforce.source.model;
 
 import io.aiven.commons.kafka.connector.source.task.Context;
+import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 
 /** Extended Context to take in additional context for Salesforce */
 public class SalesforceContext extends Context {

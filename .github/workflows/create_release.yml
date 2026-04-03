@@ -1,0 +1,123 @@
+#
+# Copyright 2026 Aiven Oy and project contributors
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing,
+#    software distributed under the License is distributed on an
+#    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#    KIND, either express or implied.  See the License for the
+#    specific language governing permissions and limitations
+#    under the License.
+#
+#  SPDX-License-Identifier: Apache-2.0
+
+
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: "Hash of 'Release version x.y.z' commit"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.commit_hash }}
+          
+      - name: Extract version info
+        run: |
+          export version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec);
+          echo "version=${version}" >> $GITHUB_OUTPUT;
+          echo "java_version=$(mvn -q -Dexec.executable=echo -Dexec.args='${jdk.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT;
+          export release_version=$(mvn -q -Dexec.executable=echo -Dexec.args='${latestRelease}' --non-recursive exec:exec);
+          if [[ "${release_version}" == "${version}" ]]
+          then
+            echo "Creating draft release for ${release_version}"
+            echo "release_version=${release_version}" >> $GITHUB_OUTPUT;
+          else
+            echo "Invalid 'latestRelease' in pom. ${release_version} != ${version}"
+            exit 1
+          fi
+          export commit_title=$(git log --pretty=format:%s -1)
+          echo "Commit title: $commit_title"
+          if [[ ${commit_title} == "Release version ${release_version}" ]]; then
+            echo "release_hash=$(git rev-list -n 1 v${release_version})" >> $GITHUB_OUTPUT
+          else
+            echo "Invalid commit title: "${commit_title}
+            exit 1
+          fi
+
+          if [[ `grep -c "^## " CHANGE_LOG.md` -gt 1 ]]
+          then
+            grep -B 999 -m2 "^## " CHANGE_LOG.md | head -n -1 > /tmp/release_body.txt
+          else
+            cp CHANGE_LOG.md /tmp/release_body.txt
+          fi
+        id: project
+
+      - name: Create tag
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "action@github.com"
+          git tag -a "v${{ steps.project.outputs.version }}" -m "Release version ${{ steps.project.outputs.version }}"
+          git push origin "v${{ steps.project.outputs.version }}"
+
+      - name: Set up JDK ${{ steps.project.outputs.java_version }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'adopt'
+          java-version: ${{ steps.project.outputs.java_version }}
+          cache: 'maven'
+
+      - name: Setup Maven settings.xml
+        uses: s4u/maven-settings-action@v4.0.0
+        with:
+          sonatypeSnapshots: false
+          servers: |
+            [{
+              "id": "central",
+              "username": "${{ secrets.SONATYPE_ID }}",
+              "password": "${{ secrets.SONATYPE_PASSWORD }}"
+            }]
+
+      - name: Publish ${{ steps.project.outputs.release_version }}
+        run: mvn -P sign -P publish -e -B -V -ntp -Dgpg.signer=bc deploy
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
+
+      - name: Create release draft
+        id: create_release
+        uses: softprops/action-gh-release@v2.6.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          #tag_name: "v${{ steps.project.outputs.release_version }}"
+          target_commitish: ${{ github.event.inputs.commit_hash }}
+          draft: true
+          prerelease: false
+          body_path: /tmp/release_body.txt
+          files: | 
+            common/target/*.jar
+            source/target/*.jar
+            source/target/*.zip
+            source/target/*.tar
+
+
