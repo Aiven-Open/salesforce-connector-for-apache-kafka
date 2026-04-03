@@ -1,4 +1,3 @@
-
 ### Standard connector configuration
 
 ## Fill in your values in these:

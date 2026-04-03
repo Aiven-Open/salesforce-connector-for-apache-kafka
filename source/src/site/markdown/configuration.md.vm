@@ -29,32 +29,41 @@ To make the connector work, a user has to specify Salesforce client credentials 
     3. specify the client credentials using the configuration options
         3. `salesforce.client.secret` for the Salesforce client secret
         4. `salesforce.client.id` for the Salesforce client id
+1. Configure your Salesforce urls
+    1. `salesforce.oauth.uri` is used to authenticate against.  Often this will be  "https://MyCompany.my.salesforce.com/services/oauth2/token"
+        1. More details can be found on the Salesforce [website](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_endpoints.htm&type=5)
+    1. `salesforce.uri` is the api we query against and is often "https://MyCompany.my.salesforce.com"
+1.  The api version you wish to use of the Bulk API is also selectable
+    1.`salesforce.api.version` can be set to select a particular version e.g. 'v66.0', 'v60.0' etc
+2. By default, version `v65.0` is selected
 
 Notes
 -----
 
+
 * Define your query `salesforce.bulk.api.queries`
-    * Queries are defined using the SOQL language
+    * Queries are defined using the SOQL language and are subject to SOQL Syntax and case sensitivity restrictions
     * The queries all need to have the system field LastModifiedDate included in the SELECT statement
     * The WHERE Clause is optional but should not contain the "LastModifiedDate" as this is used internally
     * The Order By statement is not allowed to be used as this is used to order the query results
     * Multiple queries are supported
-    * example query
-        * SELECT Id, Name, LastModifiedDate FROM Account;
-    * It is possible to get duplicate entries in particular if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
+    * Example query: `SELECT Id, Name, LastModifiedDate FROM Account;`
+    * * It is possible to get duplicate entries. In particular, if your SELECT statement does not include a field and that field is updated the LastModifiedDate will be updated and you will receive a new event from that entry.
+    * The Connector does not support using sub queries as part of your Bulk API query
       ``
 
 * Some important configuration options to handle how often the Bulk API is queried by the connector
-    * `salesforce.lastModifiedStartDate`
-        * Let users choose when to start reading data from a specific point in the query objects
-        * This is applied to all queries
     * `salesforce.soql.query.wait`
         * How long to wait between querying a Salesforce object
-            * At the moment hardcoded to 60 seconds in BulkApiQueryEngine
+            * The default is 60 seconds, but if this data does not change very often we would recommend extending this delay to help preserve your API limits
     * `salesforce.status.check.wait`
-        * Should probably rename this but how long do you wait between checking if a bulk query is ready for consumption
-            * default is 5 seconds hardcoded in BulkApiQueryEngine
-* This connector supports just one task this helps prevent issues with timing and also prevents using using up the api calls available to your account too quickly.
+        * How long to wait after submitting a query to Salesforce before checking if a bulk query is ready for consumption
+            * The default is 5 seconds. If you are expecting a large amount of data you may need to extend this time to reduce the number of API calls.
+    * 'salesforce.max.records'
+        * Defines how many records per page should be returned by the Bulk API.  With larger Objects this may need to be decreased to allow for smaller chunking of data to the API.
+            * The default is 50,000 records
+* This connector supports just one task. This helps prevent issues with timing and also prevents using up the API calls available to your account too quickly.
+    * See further details on Salesforce allocations and limits on the [Bulk API 2.0](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_common_limits.htm)
 
 
 Configuration
