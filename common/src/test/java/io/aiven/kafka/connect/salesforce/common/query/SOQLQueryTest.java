@@ -32,7 +32,7 @@ public class SOQLQueryTest {
     assertEquals(isValid, soqlQuery.validate());
     // Everything gets appended with the Order By statement
     if (isValid) {
-      assertEquals(expectedQuery, soqlQuery.getQueryString(null));
+      assertEquals(expectedQuery, soqlQuery.getQueryString(null, false));
     }
   }
 

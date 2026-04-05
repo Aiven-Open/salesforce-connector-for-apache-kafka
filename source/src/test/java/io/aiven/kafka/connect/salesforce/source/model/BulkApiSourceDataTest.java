@@ -273,10 +273,16 @@ public class BulkApiSourceDataTest {
     map.put("salesforce.api.version", "v65.0");
     map.put("salesforce.soql.query.wait", "30");
     map.put("salesforce.max.records", "5");
-    map.put("salesforce.client.secret", "Client.Secret");
-    map.put("salesforce.client.id", "Client.Id");
-    map.put("salesforce.uri", "http://localhost");
-    map.put("salesforce.oauth.uri", "https://localhost/services/oauth2/token");
+    map.put(
+        "salesforce.client.secret",
+        "871E3DABA22E92CA92EE2BE756F93B6E5778DFC0BCB06A1BCA3EEE0A11E1C478");
+    map.put(
+        "salesforce.client.id",
+        "3MVG9rZjd7MXFdLhQy2_kDbWj9txDj.jKxUm71PNtnHMO2rKwtrbXtzkqj24tEoVq6cxw4aZDxehyTtaljMyJ");
+    map.put("salesforce.uri", "https://orgfarm-c805d9b92e-dev-ed.develop.my.salesforce.com");
+    map.put(
+        "salesforce.oauth.uri",
+        "https://orgfarm-c805d9b92e-dev-ed.develop.my.salesforce.com/services/oauth2/token");
     map.put("topic.prefix", "salesforce.bulk");
     map.put("salesforce.bulk.api.queries", "SELECT Id, LastModifiedDate, Name FROM Account ");
     return map;

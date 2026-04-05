@@ -76,13 +76,18 @@ public class BulkApiQueryEngine {
    * @param query The query to execute against the Bulk Api
    * @param lastModifiedDate The last time this query was executed, null to be used to return
    *     everything in the object, add a ZonedDateTime to query from a particular time
+   * @param recoveryMode if recovering from a restart then we execute the first query in recovery
+   *     mode which will change the query we send to Salesforce to include the current
+   *     lastModifiedDate
    * @return a Stream of records
    */
-  public Iterator<BulkApiNativeInfo> getRecords(SOQLQuery query, String lastModifiedDate) {
+  public Iterator<BulkApiNativeInfo> getRecords(
+      SOQLQuery query, String lastModifiedDate, boolean recoveryMode) {
 
-    LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate));
+    LOGGER.info("Query String to execute {}", query.getQueryString(lastModifiedDate, recoveryMode));
     // Submit the job
-    Optional<String> optJobId = apiClient.submitQueryJob(query.getQueryString(lastModifiedDate));
+    Optional<String> optJobId =
+        apiClient.submitQueryJob(query.getQueryString(lastModifiedDate, recoveryMode));
     if (optJobId.isPresent()) {
       String jobId = optJobId.get();
       Optional<QueryResponse> optQueryResponse = apiClient.queryJobStatus(jobId);

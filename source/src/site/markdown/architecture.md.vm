@@ -20,6 +20,13 @@
 ${project.name} Architecture Notes
 ==============================
 
+Restart and recovery
+--------
+The Salesforce objects act like databases, they are contiunually updated and require special attention especially on restarts.
+When we have a connector that restarts or recovers from an incident, the last recorded LastModifiedDate is retrieved from the offset for each query.
+When the query is being first run after that recovery it will run the query with the last modified date set to `greater then or equal to` ie `>=` so that if their were multiple entries at that exact timestamp they will be not be missed.
+This will lead to some duplicate events in one of these scenarios.
+
 Offsets
 -------
 How the offsets are handled

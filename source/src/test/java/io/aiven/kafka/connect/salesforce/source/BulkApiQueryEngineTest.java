@@ -58,12 +58,13 @@ public class BulkApiQueryEngineTest {
     engine = new BulkApiQueryEngine(config, apiClient);
     SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
 
-    when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
+    when(apiClient.submitQueryJob(eq(query.getQueryString(null, false))))
+        .thenReturn(Optional.of(jobId));
     when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
     when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
         .thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
 
-    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
+    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null, false);
     assertTrue(iterator.hasNext());
 
     BulkApiNativeInfo next = iterator.next();
@@ -77,7 +78,8 @@ public class BulkApiQueryEngineTest {
     engine = new BulkApiQueryEngine(config, apiClient);
     SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
 
-    when(apiClient.submitQueryJob(eq(query.getQueryString(null)))).thenReturn(Optional.of(jobId));
+    when(apiClient.submitQueryJob(eq(query.getQueryString(null, false))))
+        .thenReturn(Optional.of(jobId));
     when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
     when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
         .thenReturn(CompletableFuture.completedFuture(getJobResults("Locator1", 5)));
@@ -88,7 +90,7 @@ public class BulkApiQueryEngineTest {
     when(apiClient.getJobResults(eq(jobId), eq("Locator2"), eq(null), any(BulkApiKey.class)))
         .thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
 
-    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null);
+    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, null, false);
     assertTrue(iterator.hasNext());
 
     BulkApiNativeInfo next = iterator.next();

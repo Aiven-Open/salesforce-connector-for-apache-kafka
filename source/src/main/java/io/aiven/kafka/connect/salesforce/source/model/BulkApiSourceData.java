@@ -53,7 +53,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 
   /** The key to retrieve the Is complete information from the offset. */
-  private static final String IS_COMPLETE = "isComplete";
+  //  private static final String IS_COMPLETE = "isComplete";
 
   private final Duration minimumDelayBetweenQueries;
 
@@ -203,9 +203,9 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    */
   @Override
   public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-    if ((boolean) data.getOrDefault(IS_COMPLETE, false)) {
-      return null;
-    }
+    //    if ((boolean) data.getOrDefault(IS_COMPLETE, false)) {
+    //      return null;
+    //    }
     return new SalesforceOffsetManagerEntry(
         new BulkApiKey(
             BULK_API,
@@ -313,12 +313,14 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                 lastSeenModifiedDate.getOrDefault(getQueryHash(queries.getLast()), null);
             try {
               LOGGER.info("Submit new query");
+              // If the query has not been executed before it will run the query in recoveryMode
+              // This will only have an impact if the lastModifiedDate has been retrieved from the
+              // offsets
               iterator =
                   engine.getRecords(
                       element,
-                      lastModifiedDate != null
-                          ? InstantUtil.toMilliString(lastModifiedDate)
-                          : null);
+                      lastModifiedDate != null ? InstantUtil.toMilliString(lastModifiedDate) : null,
+                      lastQueryExecuted.containsKey(getQueryHash(queries.getLast())));
 
             } finally {
               lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());
