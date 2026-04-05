@@ -163,6 +163,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
     this.engine = engine;
     this.lastSeenModifiedDate = lastSeenModifiedDate;
     this.minimumDelayBetweenQueries = config.getMinimumQueryExecutionDelay();
+    refreshSourceDataFromOffsets(offsetManager);
   }
 
   /**
@@ -203,9 +204,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
    */
   @Override
   public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-    //    if ((boolean) data.getOrDefault(IS_COMPLETE, false)) {
-    //      return null;
-    //    }
     return new SalesforceOffsetManagerEntry(
         new BulkApiKey(
             BULK_API,
@@ -320,7 +318,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
                   engine.getRecords(
                       element,
                       lastModifiedDate != null ? InstantUtil.toMilliString(lastModifiedDate) : null,
-                      lastQueryExecuted.containsKey(getQueryHash(queries.getLast())));
+                      !lastQueryExecuted.containsKey(getQueryHash(queries.getLast())));
 
             } finally {
               lastQueryExecuted.put(getQueryHash(queries.getLast()), InstantUtil.now());

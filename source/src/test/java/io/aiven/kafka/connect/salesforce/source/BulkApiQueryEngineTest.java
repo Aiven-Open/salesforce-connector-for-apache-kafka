@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.aiven.commons.kafka.connector.common.NativeInfo;
@@ -34,8 +36,12 @@ import io.aiven.kafka.connect.salesforce.source.model.BulkApiNativeInfo;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 public class BulkApiQueryEngineTest {
@@ -102,6 +108,34 @@ public class BulkApiQueryEngineTest {
     next = iterator.next();
 
     assertFalse(iterator.hasNext());
+  }
+
+  @ParameterizedTest
+  @MethodSource("recoveryTest")
+  void onRestartIncludeLastSeenModifiedDateInQuery(String expectedQuery, boolean isRecovery) {
+    String jobId = "ABCD123";
+    String lastModifiedDate = "2026-01-13T13:00:00Z";
+    engine = new BulkApiQueryEngine(config, apiClient);
+    SOQLQuery query = SOQLQuery.fromQueryString(QUERY);
+
+    when(apiClient.submitQueryJob(eq(query.getQueryString(lastModifiedDate, false))))
+        .thenReturn(Optional.of(jobId));
+    when(apiClient.queryJobStatus(eq(jobId))).thenReturn(getJobStatus(jobId, JobState.JobComplete));
+    when(apiClient.getJobResults(eq(jobId), eq(null), eq(null), any(BulkApiKey.class)))
+        .thenReturn(CompletableFuture.completedFuture(getJobResults(null, 5)));
+
+    Iterator<BulkApiNativeInfo> iterator = engine.getRecords(query, lastModifiedDate, isRecovery);
+    verify(apiClient, times(1)).submitQueryJob(String.format(expectedQuery, lastModifiedDate));
+  }
+
+  public static Stream<Arguments> recoveryTest() {
+    return Stream.of(
+        Arguments.of(
+            "SELECT Id, Name, LastModifiedDate FROM Account WHERE  LastModifiedDate >= %s ORDER BY LastModifiedDate ASC",
+            true),
+        Arguments.of(
+            "SELECT Id, Name, LastModifiedDate FROM Account WHERE  LastModifiedDate > %s ORDER BY LastModifiedDate ASC",
+            false));
   }
 
   private BulkApiResultResponse getJobResults(String locator, int numberOfRecords) {

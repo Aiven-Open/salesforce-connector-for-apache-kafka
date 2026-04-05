@@ -15,6 +15,7 @@
  */
 package io.aiven.kafka.connect.salesforce.source.model;
 
+import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +38,7 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResult;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.BulkApiResultResponse;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
+import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.BulkApiQueryEngine;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;
 import java.time.Instant;
@@ -65,6 +67,7 @@ public class BulkApiSourceDataTest {
 
   public static final String MSG_HEADER =
       CSVFormat.RFC4180.format("Id", "LastModifiedDate", "Name");
+  public static final String SOQL_QUERY = "SELECT Id, LastModifiedDate, Name FROM Account ";
   private BulkApiSourceData sourceData;
   private OffsetManager offsetManager;
   private BulkApiQueryEngine engine;
@@ -164,7 +167,6 @@ public class BulkApiSourceDataTest {
     BulkApiSourceData bulkApiSourceData =
         new BulkApiSourceData(myConfig, offsetManager, engine, new HashMap<>());
 
-    List<EvolvingSourceRecord> sourceRecord = new ArrayList<>();
     // Start Page Count at 1
     AtomicInteger recordCount = new AtomicInteger();
     Iterator<BulkApiNativeInfo> salesforceBulkApiIterator =
@@ -174,6 +176,35 @@ public class BulkApiSourceDataTest {
     // Check if it has the expected number of pages
     assertEquals(0, recordCount.get());
     verify(apiClient, times(1)).submitQueryJob(anyString());
+    verify(apiClient, times(1))
+        .getJobResults(anyString(), eq(null), anyString(), any(BulkApiKey.class));
+    verify(apiClient, times(0))
+        .getJobResults(anyString(), anyString(), anyString(), any(BulkApiKey.class));
+  }
+
+  @Test
+  void bulkApiRecoverFromRestart() {
+
+    SalesforceSourceConfig myConfig = setUpSalesforceBulkApiClientMock(0, 500);
+    // Return no records
+    when(apiClient.getJobResults(eq("jobId"), eq(null), eq("Account"), any()))
+        .thenReturn(getResults(1, 0, 0, 500));
+    String lastModifiedDate = "2026-01-13T13:00:00.000Z";
+    Long lastModDateMillis = InstantUtil.parseString(lastModifiedDate).toEpochMilli();
+    when(offsetManager.getEntryData(any()))
+        .thenReturn(Optional.of(Map.of(LAST_MODIFIED_DATE, lastModDateMillis)));
+    BulkApiSourceData bulkApiSourceData =
+        new BulkApiSourceData(myConfig, offsetManager, engine, new HashMap<>());
+
+    // Start Page Count at 1
+    AtomicInteger recordCount = new AtomicInteger();
+    Iterator<BulkApiNativeInfo> salesforceBulkApiIterator =
+        bulkApiSourceData.getSalesforceBulkApiIterator();
+    salesforceBulkApiIterator.forEachRemaining(
+        entry -> recordCount.addAndGet(((SalesforceContext) entry.getContext()).getTotalRecords()));
+    // Check if it has the expected number of pages
+    assertEquals(0, recordCount.get());
+    verify(apiClient, times(1)).submitQueryJob(getSOQLQuery(lastModifiedDate, true));
     verify(apiClient, times(1))
         .getJobResults(anyString(), eq(null), anyString(), any(BulkApiKey.class));
     verify(apiClient, times(0))
@@ -236,6 +267,13 @@ public class BulkApiSourceDataTest {
     return CSVFormat.RFC4180.format(messageId, msg, messageId);
   }
 
+  private String getSOQLQuery(String lastModifiedDate, boolean isRecovery) {
+    return String.format(
+        SOQL_QUERY + "WHERE  LastModifiedDate %s %s ORDER BY LastModifiedDate ASC",
+        isRecovery ? ">=" : ">",
+        lastModifiedDate);
+  }
+
   private List<String> lastModifiedDates() {
     return List.of(
         "2025-11-08T00:00:00Z",
@@ -273,18 +311,12 @@ public class BulkApiSourceDataTest {
     map.put("salesforce.api.version", "v65.0");
     map.put("salesforce.soql.query.wait", "30");
     map.put("salesforce.max.records", "5");
-    map.put(
-        "salesforce.client.secret",
-        "871E3DABA22E92CA92EE2BE756F93B6E5778DFC0BCB06A1BCA3EEE0A11E1C478");
-    map.put(
-        "salesforce.client.id",
-        "3MVG9rZjd7MXFdLhQy2_kDbWj9txDj.jKxUm71PNtnHMO2rKwtrbXtzkqj24tEoVq6cxw4aZDxehyTtaljMyJ");
-    map.put("salesforce.uri", "https://orgfarm-c805d9b92e-dev-ed.develop.my.salesforce.com");
-    map.put(
-        "salesforce.oauth.uri",
-        "https://orgfarm-c805d9b92e-dev-ed.develop.my.salesforce.com/services/oauth2/token");
+    map.put("salesforce.client.secret", "Client.Secret");
+    map.put("salesforce.client.id", "Client.Id");
+    map.put("salesforce.uri", "http://localhost");
+    map.put("salesforce.oauth.uri", "https://localhost/services/oauth2/token");
     map.put("topic.prefix", "salesforce.bulk");
-    map.put("salesforce.bulk.api.queries", "SELECT Id, LastModifiedDate, Name FROM Account ");
+    map.put("salesforce.bulk.api.queries", SOQL_QUERY);
     return map;
   }
 
