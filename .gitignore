@@ -2,6 +2,8 @@
 .idea
 **.iml
 *.DS_Store
+.metals/
+.vscode/
 
 # Package files
 *.jar
@@ -12,9 +14,3 @@
 # Maven files
 **/target
 
-
-# Build files
-build/
-/azure-sink-connector/.jqwik-database
-**/out/
-**/*.patch
