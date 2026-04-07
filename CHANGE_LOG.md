@@ -12,7 +12,7 @@
  - Merge pull request #35 from Aiven-Open/ryanskraba/service-loader-source-config
  - Update validation for tasks.max (#34)
  - Make the connector loadable
- - Aindriu aiven/add iterator tests (#33)
+ - Aindriú aiven/add iterator tests (#33)
  - Merge pull request #32 from Aiven-Open/update-workflows
  - fixed dependencies
  - updated workflows
@@ -24,7 +24,7 @@
  - Rename packaging (#27)
  - Update pom & dependencies (#28)
  - Add offsets correctly (#25)
- - Aindriu aiven/update config (#24)
+ - Aindriú aiven/update config (#24)
  - Use project name in documentation template. (#23)
  - Rename modules and artifacts for trademark compliance (#21)
  - Merge pull request #16 from Aiven-Open/rework-BulkApiClient
@@ -41,7 +41,7 @@
  - Update framework implementation and use csv transformer correctly (#8)
  - Add reuseable Query parts to commons (#6)
  - Implement Source task so that it consumes from salesforce and sends events to kafka (#5)
- - Aindriu aiven/add base source task (#4)
+ - Aindriú aiven/add base source task (#4)
  - Add initial configuration and BulkAPI client  (#3)
  - Add github workflows mvnw and codeowners (#2)
  - Merge pull request #1 from Aiven-Open/aindriu-aiven/initial-commit
@@ -50,7 +50,7 @@
  
 ### Co-authored by
  
- - Aindriu Lavelle
+ - Aindriú Lavelle
  - Claude Warren
  - Ryan Skraba
  
