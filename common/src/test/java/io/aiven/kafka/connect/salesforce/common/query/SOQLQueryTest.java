@@ -131,11 +131,11 @@ public class SOQLQueryTest {
             true),
         Arguments.of(
             "SELECT FIELDS(STANDARD) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV'",
-            "SELECT FIELDS(STANDARD) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV' AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
+            "SELECT FIELDS(STANDARD) FROM Contact WHERE (Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV') AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
             true),
         Arguments.of(
             "SELECT Name,LastModifiedDate FROM Account WHERE BillingState IN ('California', 'New York')",
-            "SELECT Name,LastModifiedDate FROM Account WHERE BillingState IN ('California', 'New York') AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
+            "SELECT Name,LastModifiedDate FROM Account WHERE (BillingState IN ('California', 'New York')) AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
             true));
   }
 }
