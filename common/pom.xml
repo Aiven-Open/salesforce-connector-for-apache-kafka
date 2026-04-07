@@ -21,7 +21,7 @@ SPDX-License-Identifier: Apache-2.0
   <parent>
     <groupId>io.aiven.kafka.connect</groupId>
     <artifactId>connectors-for-salesforce</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>connector-common-for-salesforce</artifactId>

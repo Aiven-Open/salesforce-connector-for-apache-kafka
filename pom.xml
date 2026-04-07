@@ -26,7 +26,7 @@ SPDX-License-Identifier: Apache-2.0
 
   <groupId>io.aiven.kafka.connect</groupId>
   <artifactId>connectors-for-salesforce</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Aiven connectors for Salesforce on Apache Kafka</name>
@@ -96,7 +96,7 @@ Sink module is removed until there is code
   </distributionManagement>
 
   <properties>
-    <latestRelease>none</latestRelease>
+    <latestRelease>0.1.0</latestRelease>
     <jackson.databind.version>3.0.3</jackson.databind.version>
     <aiven.framework.version>0.1.0</aiven.framework.version>
     <grpc.version>1.64.0</grpc.version>
