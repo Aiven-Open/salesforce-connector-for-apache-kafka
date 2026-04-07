@@ -18,6 +18,9 @@
 -->
 Aiven connectors for Salesforce on Apache Kafka
 ======================
+
+[![Main checks](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/actions/workflows/Merge_check.yml/badge.svg)](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/actions/workflows/Merge_check.yml)
+
 This is an open source connector developed by Aiven for the community that integrates with Apache Kafka and Salesforce providing both Sink and Source Connectors.
 
 Overview
