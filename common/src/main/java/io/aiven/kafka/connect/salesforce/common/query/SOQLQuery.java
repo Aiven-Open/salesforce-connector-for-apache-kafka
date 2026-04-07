@@ -270,7 +270,7 @@ public class SOQLQuery {
       return getPart(
           WHERE,
           lastModifiedDate != null
-              ? partInstruction + AND + whereCheck + lastModifiedDate
+              ? "(" + partInstruction + ")" + AND + whereCheck + lastModifiedDate
               : partInstruction);
     }
   }
