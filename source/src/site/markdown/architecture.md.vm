@@ -20,12 +20,29 @@
 ${project.name} Architecture Notes
 ==============================
 
+Bulk API
+--------
+The Bulk API 2.0 is used to move large amount of data from Salesforce, when we query the data, we will return every entry unless the Connector is restarted or stopped in the middle of processing.
+If data changes multiple times between queries only the data available when the Bulk API is re-queried will be returned.
+
+For example if the following query is made "SELECT Id, Name, BillingAddress, LastModifiedDate"
+If the Name of an entry was updated twice from "Company Ltd" to "Company Enterprise" to "Company AG"
+Then the name on the event sent to Kafka will be Company AG e.g. event
+```
+{"Id" : "abcd", "Name":"Company AG","BillingAddress":"Bill to here","LastModifiedDate":"2025-10-16T11:37:07.000Z"}
+```
+However if an entry is changed from  "Company Ltd" to "Company AG" and the billing address is changed to "Bill to there" then both Updates will be sent to
+e.g. event
+```
+{"Id" : "abcd", "Name":"Company AG","BillingAddress":"Bill to there","LastModifiedDate":"2025-10-16T11:38:07.000Z"}
+```
+
 Restart and recovery
 --------
-The Salesforce objects act like databases, they are contiunually updated and require special attention especially on restarts.
+The Salesforce objects act like databases, they are continually updated and require special attention especially on restarts.
 When we have a connector that restarts or recovers from an incident, the last recorded LastModifiedDate is retrieved from the offset for each query.
 When the query is being first run after that recovery it will run the query with the last modified date set to `greater then or equal to` ie `>=` so that if their were multiple entries at that exact timestamp they will be not be missed.
-This will lead to some duplicate events in one of these scenarios.
+This will lead to some duplicate events in one of these scenarios. After the initial recovery query only dates that are greater then the last recorded LastModifiedDate will be returned ensuring only new entries will be processed.
 
 Offsets
 -------

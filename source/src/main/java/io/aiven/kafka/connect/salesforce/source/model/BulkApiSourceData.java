@@ -52,9 +52,6 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   private static final String BULK_API = "bulkApi";
   private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiSourceData.class);
 
-  /** The key to retrieve the Is complete information from the offset. */
-  //  private static final String IS_COMPLETE = "isComplete";
-
   private final Duration minimumDelayBetweenQueries;
 
   /**
@@ -125,6 +122,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
           offsetManager.getEntryData(
               SalesforceOffsetManagerEntry.asKey(
                   new BulkApiKey(BULK_API, query.getSOQLQuery(), null, null)));
+      LOGGER.debug("offset.isPresent({}) on startup", offset.isPresent());
       if (offset.isPresent() && offset.get().getOrDefault(LAST_MODIFIED_DATE, null) != null) {
         // Seed the last Seen modified Date
         // If there is no offset for a particular query then it will default to null and all data
@@ -191,26 +189,18 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   /**
    * Creates an offset manager entry using the data in the map.
    *
-   * <p>The BulkAi we are using returns a delta CSV of information on each query. That means that
-   * when we encounter that the data already has isComplete already set to true we know that we are
-   * starting to query a new job which has a delta level of information. Returning null here forces
-   * the offsets to be created from the context and create a new offset with all the correct
-   * information for the new job, however when we have not yet completed the job we allow the
-   * existing data to be used so that we can accurately track the record count and metadata in the
-   * offset.
+   * <p>The BulkAi we are using returns a delta CSV of information on each query that is ordered by
+   * LastModifiedDate. This method is called on processing of each page. The offset is created new
+   * for each csv page as data can change in between queries so even running the same query a few
+   * minutes apart may see a different csv. Data can be altered and cause its position in the csv of
+   * the new query to be different. This ensures that each entry we see will be sent at least once.
    *
    * @param data the data to create the offset manager from.
    * @return a valid offset manager entry.
    */
   @Override
   public OffsetManager.OffsetManagerEntry createOffsetManagerEntry(final Map<String, Object> data) {
-    return new SalesforceOffsetManagerEntry(
-        new BulkApiKey(
-            BULK_API,
-            queries.getLast().getSOQLQuery(),
-            lastQueryExecuted.get(getQueryHash(queries.getLast())).toString(),
-            ""),
-        data);
+    return null;
   }
 
   private String getQueryHash(SOQLQuery query) {
