@@ -40,6 +40,7 @@ public class SOQLQuery {
   private static final String WHERE = "WHERE";
   private static final List<String> SUPPORTED_KEYWORDS =
       List.of(SELECT, FROM, WHERE, HAVING, ORDER_BY, GROUP_BY, LIMIT, OFFSET, WITH);
+  private static final String AND = "AND";
   private String SOQLQuery;
   private String select;
   private String from;
@@ -259,6 +260,10 @@ public class SOQLQuery {
         .trim();
   }
 
+  /**
+   * TODO there is a simplification of this method that could be done and should be looked at before
+   * the next release
+   */
   private String getWhere(String partInstruction, String lastModifiedDate, boolean recovery) {
 
     String where = getPart(WHERE, partInstruction);
@@ -267,7 +272,7 @@ public class SOQLQuery {
     if (StringUtils.isBlank(where)) {
       return getPart(WHERE, lastModifiedDate != null ? whereCheck + lastModifiedDate : null);
     } else {
-      where += lastModifiedDate != null ? whereCheck + lastModifiedDate : "";
+      where += lastModifiedDate != null ? AND + whereCheck + lastModifiedDate + " " : "";
       return where;
     }
   }
