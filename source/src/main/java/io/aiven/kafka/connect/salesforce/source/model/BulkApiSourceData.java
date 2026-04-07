@@ -189,7 +189,7 @@ public class BulkApiSourceData extends NativeSourceData<BulkApiKey> {
   /**
    * Creates an offset manager entry using the data in the map.
    *
-   * <p>The BulkAi we are using returns a delta CSV of information on each query that is ordered by
+   * <p>The BulkApi we are using returns a delta CSV of information on each query that is ordered by
    * LastModifiedDate. This method is called on processing of each page. The offset is created new
    * for each csv page as data can change in between queries so even running the same query a few
    * minutes apart may see a different csv. Data can be altered and cause its position in the csv of

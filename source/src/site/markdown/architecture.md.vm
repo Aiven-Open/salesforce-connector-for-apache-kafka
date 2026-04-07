@@ -23,7 +23,7 @@ ${project.name} Architecture Notes
 Bulk API
 --------
 The Bulk API 2.0 is used to move large amount of data from Salesforce, when we query the data, we will return every entry unless the Connector is restarted or stopped in the middle of processing.
-If data changes multiple times between queries only the data available when the Bulk API is re-queried will be returned.
+If data changes multiple times between queries only the data available when the Bulk API is re-queried will be returned. so intermediate changes will not all be sent to Kafka.
 
 For example if the following query is made "SELECT Id, Name, BillingAddress, LastModifiedDate"
 If the Name of an entry was updated twice from "Company Ltd" to "Company Enterprise" to "Company AG"
@@ -31,18 +31,26 @@ Then the name on the event sent to Kafka will be Company AG e.g. event
 ```
 {"Id" : "abcd", "Name":"Company AG","BillingAddress":"Bill to here","LastModifiedDate":"2025-10-16T11:37:07.000Z"}
 ```
-However if an entry is changed from  "Company Ltd" to "Company AG" and the billing address is changed to "Bill to there" then both Updates will be sent to
-e.g. event
-```
-{"Id" : "abcd", "Name":"Company AG","BillingAddress":"Bill to there","LastModifiedDate":"2025-10-16T11:38:07.000Z"}
-```
+
+Of course if their are multiple updates for a record and some affect different fields, the latest data from each field is sent to Kafka, as long as that field is included in the 'SELECT' portion of the configured query.
 
 Restart and recovery
 --------
-The Salesforce objects act like databases, they are continually updated and require special attention especially on restarts.
-When we have a connector that restarts or recovers from an incident, the last recorded LastModifiedDate is retrieved from the offset for each query.
-When the query is being first run after that recovery it will run the query with the last modified date set to `greater then or equal to` ie `>=` so that if their were multiple entries at that exact timestamp they will be not be missed.
-This will lead to some duplicate events in one of these scenarios. After the initial recovery query only dates that are greater then the last recorded LastModifiedDate will be returned ensuring only new entries will be processed.
+The Salesforce objects act like databases, they are continually updated and require special attention especially on restarts. On a restart the last recorded LastModifiedDate is retrieved from the offset for each query.
+1. Standard shutdown.
+    1. No data change
+        1. The offset is retrieved and the LastModifiedDate is retrieved and used to query the data it includes the date that was found in the offset
+        1. A duplicate event will be sent, this is configured as such to ensure that any updates that were made at that timestamp are all processed and sent to Kafka, as bulk updates can be sent to Salesforce or made in the UI resulting in a dataset greater then one existing at that LastModifiedDate
+    1. Data changed
+        1. The offset is retrieved and the LastModifiedDate is retrieved and used to query the data it includes the date that was found in the offset
+        1. If the original piece of data at that timestamp has been updated, then no duplicate event will be sent, just an update with the latest data.
+1. Crash and restart
+    1. No data change
+        1. The offset is retrieved and the LastModifiedDate is retrieved and used to query the data it includes the date that was found in the offset
+        1. A duplicate event will be sent, this is configured as such to ensure that any updates that were made at that timestamp are all processed and sent to Kafka, as bulk updates can be sent to Salesforce or made in the UI resulting in a dataset greater then one existing at that LastModifiedDate
+    1. Data changed
+        1. The offset is retrieved and the LastModifiedDate is retrieved and used to query the data it includes the date that was found in the offset
+        1. If the original piece of data at that timestamp has been updated, then no duplicate event will be sent, just an update with the latest data.
 
 Offsets
 -------
