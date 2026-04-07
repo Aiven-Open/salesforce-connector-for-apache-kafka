@@ -75,7 +75,7 @@ jobs:
             }]
 
       - name: Sign and Publish (Maven deploy)
-        run: mvn -P sign --batch-mode -Dgpg.signer=bc deploy
+        run: mvn -X -P sign --batch-mode -Dgpg.signer=bc deploy
         env:
           MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
