@@ -39,8 +39,6 @@ Restart and recovery
 The Salesforce objects act like databases, they are continually updated and require special attention especially on restarts. On a restart the last recorded LastModifiedDate is retrieved from the offset for each query.
 Currently a standard shutdown or restart is handled the same way as a crash and restart is
 1. On restart
-    1. With a previously fully completed query
-        1.
     1. With no data change
         1. The offset is retrieved and the LastModifiedDate is retrieved and used to query the data it includes the date that was found in the offset
         1. A duplicate event will be sent, this is configured as such to ensure that any updates that were made at that timestamp are all processed and sent to Kafka, as bulk updates can be sent to Salesforce or made in the UI resulting in a dataset greater then one existing at that LastModifiedDate
