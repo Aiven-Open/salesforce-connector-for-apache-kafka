@@ -44,7 +44,7 @@ public class SalesforceOffsetManagerEntry implements OffsetManager.OffsetManager
   private static final String JOB_ID = "jobId";
 
   /** Defines whether a query has completed processing or not */
-  private static final String IS_COMPLETE = "isComplete";
+  public static final String IS_COMPLETE = "isComplete";
 
   /** Restricted keys */
   static final List<String> RESTRICTED_KEYS = List.of(API_NAME, QUERY_HASH, JOB_ID);

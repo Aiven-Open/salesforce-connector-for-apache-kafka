@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class SOQLQueryTest {
+  private static String LAST_MODIFIED_DATE = "2025-11-08T00:00:00Z";
 
   @MethodSource("queryStrings")
   @ParameterizedTest
@@ -32,7 +33,20 @@ public class SOQLQueryTest {
     assertEquals(isValid, soqlQuery.validate());
     // Everything gets appended with the Order By statement
     if (isValid) {
-      assertEquals(expectedQuery, soqlQuery.getQueryString(null));
+      assertEquals(expectedQuery, soqlQuery.getQueryString(null, false));
+      assertEquals(expectedQuery, soqlQuery.getQueryString(null, true));
+    }
+  }
+
+  @MethodSource("lastModifiedIncludedQueryStrings")
+  @ParameterizedTest
+  void fromQueryStringWithLastModifiedDate(String query, String expectedQuery, boolean isValid) {
+    SOQLQuery soqlQuery = SOQLQuery.fromQueryString(query);
+
+    assertEquals(isValid, soqlQuery.validate());
+    // Everything gets appended with the Order By statement
+    if (isValid) {
+      assertEquals(expectedQuery, soqlQuery.getQueryString(LAST_MODIFIED_DATE, false));
     }
   }
 
@@ -99,5 +113,29 @@ public class SOQLQueryTest {
             "SELECT Id,LastModifiedDate, Name, Industry FROM Account WHERE LastModifiedDate > 2026",
             null,
             false));
+  }
+
+  private static Stream<Arguments> lastModifiedIncludedQueryStrings() {
+    return Stream.of(
+        Arguments.of(
+            "SELECT Id,LastModifiedDate FROM Account",
+            "SELECT Id,LastModifiedDate FROM Account WHERE  LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
+            true),
+        Arguments.of(
+            "SELECT Id,LastModifiedDate FROM User LIMIT 200",
+            "SELECT Id,LastModifiedDate FROM User WHERE  LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC LIMIT 200",
+            true),
+        Arguments.of(
+            "SELECT FIELDS(STANDARD) FROM Contact LIMIT 200",
+            "SELECT FIELDS(STANDARD) FROM Contact WHERE  LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC LIMIT 200",
+            true),
+        Arguments.of(
+            "SELECT FIELDS(STANDARD) FROM Contact WHERE Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV'",
+            "SELECT FIELDS(STANDARD) FROM Contact WHERE (Id = '003R000000ATjnCIAT' OR Id = '003R000000AZFUIIA5' OR Id = '003R000000DkYoFIAV') AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
+            true),
+        Arguments.of(
+            "SELECT Name,LastModifiedDate FROM Account WHERE BillingState IN ('California', 'New York')",
+            "SELECT Name,LastModifiedDate FROM Account WHERE (BillingState IN ('California', 'New York')) AND LastModifiedDate > 2025-11-08T00:00:00Z ORDER BY LastModifiedDate ASC",
+            true));
   }
 }

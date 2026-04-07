@@ -40,6 +40,7 @@ public class SOQLQuery {
   private static final String WHERE = "WHERE";
   private static final List<String> SUPPORTED_KEYWORDS =
       List.of(SELECT, FROM, WHERE, HAVING, ORDER_BY, GROUP_BY, LIMIT, OFFSET, WITH);
+  private static final String AND = " AND";
   private String SOQLQuery;
   private String select;
   private String from;
@@ -242,12 +243,14 @@ public class SOQLQuery {
    * "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm">https://developer.salesforce.com</a>
    *
    * @param lastModifiedDate The lastModifiedDate for the object to begin querying data from
+   * @param recovery When recovery is true the LastModifiedDate where query is altered to include
+   *     the lastSeenModifiedDate to ensure no data is lost in between.
    * @return A useable SOQL query
    */
-  public String getQueryString(String lastModifiedDate) {
+  public String getQueryString(String lastModifiedDate, boolean recovery) {
     return (getPart(SELECT, select)
             + getPart(FROM, from)
-            + getWhere(where, lastModifiedDate)
+            + getWhere(where, lastModifiedDate, recovery)
             + getPart(WITH, with)
             + getPart(GROUP_BY, groupBy)
             + getPart(HAVING, having)
@@ -257,16 +260,18 @@ public class SOQLQuery {
         .trim();
   }
 
-  private String getWhere(String partInstruction, String lastModifiedDate) {
+  private String getWhere(String partInstruction, String lastModifiedDate, boolean recovery) {
 
-    String where = getPart(WHERE, partInstruction);
+    String whereCheck = recovery ? " LastModifiedDate >= " : " LastModifiedDate > ";
 
-    if (StringUtils.isBlank(where)) {
-      return getPart(
-          WHERE, lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : null);
+    if (StringUtils.isBlank(partInstruction)) {
+      return getPart(WHERE, lastModifiedDate != null ? whereCheck + lastModifiedDate : null);
     } else {
-      where += lastModifiedDate != null ? " LastModifiedDate > " + lastModifiedDate : "";
-      return where;
+      return getPart(
+          WHERE,
+          lastModifiedDate != null
+              ? "(" + partInstruction + ")" + AND + whereCheck + lastModifiedDate
+              : partInstruction);
     }
   }
 
