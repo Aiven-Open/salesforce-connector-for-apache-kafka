@@ -99,7 +99,7 @@ SPDX-License-Identifier: Apache-2.0
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <outputFile>${project.build.outputDirectory}/${project.groupId}/${artifactId}.properties</outputFile>
+              <outputFile>${project.build.outputDirectory}/${project.groupId}/${project.artifactId}.properties</outputFile>
             </configuration>
           </execution>
         </executions>
