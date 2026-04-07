@@ -53,7 +53,7 @@
             <sideBarEnabled>true</sideBarEnabled>
             <skipGenerationDate>true</skipGenerationDate>
             <gitHub>
-                <projectId>aiven-open/aiven-commons</projectId>
+                <projectId>Aiven-Open/salesforce-connector-for-apache-kafka</projectId>
                 <ribbonOrientation>right</ribbonOrientation>
                 <ribbonColor>orange</ribbonColor>
             </gitHub>
