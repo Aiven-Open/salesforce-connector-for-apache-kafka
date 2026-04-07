@@ -129,7 +129,7 @@ jobs:
 
       - name: Publish ${{ steps.project.outputs.version }}
         if:  contains(steps.project.outputs.version , '-SNAPSHOT')
-        run: mvn -P sign -P publish-snapshot -e -B -V -ntp -Dgpg.signer=bc deploy
+        run: mvn -P sign -e -B -V -ntp -Dgpg.signer=bc deploy
         env:
           MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
