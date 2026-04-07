@@ -116,18 +116,18 @@ SPDX-License-Identifier: Apache-2.0
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
-        <configuration>
-          <finalName>${project.artifactId}-${project.version}</finalName>
-          <appendAssemblyId>false</appendAssemblyId>
-          <descriptors>
-            <descriptor>src/main/assembly/release.xml</descriptor>
-          </descriptors>
-          <tarLongFileMode>posix</tarLongFileMode>
-        </configuration>
+            <phase>package</phase>
+            <configuration>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assembly/release.xml</descriptor>
+              </descriptors>
+              <tarLongFileMode>posix</tarLongFileMode>
+            </configuration>
           </execution>
         </executions>
       </plugin>
