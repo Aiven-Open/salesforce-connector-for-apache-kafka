@@ -5,8 +5,7 @@
  - updated versions and moved SalesforceContext to source module (#41)
  - Add site (#40)
  - Update README.md (#39)
- - Merge pull request #38 from Aiven-Open/ryanskraba/set-source-version
- - Set the source connector version automatically
+ - Set the source connector version automatically (#38)
  - Hide excess configuration from site documentation (#36)
  - Merge pull request #37 from Aiven-Open/ryanskraba/version-map
  - Use 0.1.0 in release version map
@@ -30,25 +29,13 @@
  - Rename modules and artifacts for trademark compliance (#21)
  - Merge pull request #16 from Aiven-Open/rework-BulkApiClient
  - updated jobstate
- - cleaned up merge issue
- - added snapshot repository
- - Changes to take advantage of the CompletableFuture
- - initial code
  - Add delta lastModifiedTimeStamp (#9)
  - Update framework implementation and use csv transformer correctly.
  - A look at the csv transformer to connect data
- - Merge remote-tracking branch 'origin/move-BulkApiClient' into move-BulkApiClient
- - cleaned up as per review and build failures
- - Apply suggestion from @RyanSkraba
- - added snapshot repository
- - cleaned code
  - moved BulkApiClient to common and adjusted classes
- - Update salesforce-source-connector/src/main/java/io/aiven/kafka/connect/salesforce/model/BulkApiSourceData.java
  - updated documentation and cleaned up code
  - Adjusted configuration so tht is constructed properly. Removed unneeded classes Refactored framework u to expected usage.
  - Add delta lastModifiedTimeStamp (#9)
- - Update framework implementation and use csv transformer correctly.
- - A look at the csv transformer to connect data
  - Add documentation (#12)
  - Adjust framework usage (#11)
  - Update framework implementation and use csv transformer correctly (#8)
@@ -64,7 +51,6 @@
 ### Co-authored by
  
  - Aindriu Lavelle
- - Aindriú Lavelle
  - Claude Warren
  - Ryan Skraba
  
