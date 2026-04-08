@@ -51,6 +51,9 @@ Setup
 * Java 17
 * Maven
 
+### Releases
+[Visit our release page forall release information](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/releases)
+
 License
 ============
 Salesforce Connector for Apache Kafka is licensed under the Apache License, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
