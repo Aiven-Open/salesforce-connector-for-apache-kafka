@@ -17,10 +17,10 @@ package io.aiven.kafka.connect.salesforce.source.model;
 
 import static io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEntry.LAST_MODIFIED_DATE;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.NativeSourceData;
 import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.task.Context;
+import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.query.SOQLQuery;
