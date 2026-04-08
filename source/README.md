@@ -52,7 +52,7 @@ Setup
 * Maven
 
 ### Releases
-[Visit our release page forall release information](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/releases)
+Visit our release page for [release information](https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/releases).
 
 License
 ============
