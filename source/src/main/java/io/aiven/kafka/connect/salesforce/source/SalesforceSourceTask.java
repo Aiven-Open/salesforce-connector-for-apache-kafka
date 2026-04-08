@@ -15,7 +15,6 @@
  */
 package io.aiven.kafka.connect.salesforce.source;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.source.AbstractSourceTask;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecord;
 import io.aiven.commons.kafka.connector.source.EvolvingSourceRecordIterator;
@@ -23,6 +22,7 @@ import io.aiven.commons.kafka.connector.source.OffsetManager;
 import io.aiven.commons.kafka.connector.source.config.SourceCommonConfig;
 import io.aiven.commons.kafka.connector.source.config.SourceConfigFragment;
 import io.aiven.commons.kafka.connector.source.extractor.CsvExtractor;
+import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.time.InstantUtil;
 import io.aiven.kafka.connect.salesforce.source.config.SalesforceSourceConfig;

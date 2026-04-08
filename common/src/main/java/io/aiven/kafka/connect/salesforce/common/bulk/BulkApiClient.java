@@ -17,7 +17,6 @@ package io.aiven.kafka.connect.salesforce.common.bulk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import io.aiven.commons.kafka.connector.common.NativeInfo;
 import io.aiven.commons.util.strings.HttpStatus;
 import io.aiven.commons.util.strings.HttpStrings;
@@ -25,6 +24,7 @@ import io.aiven.commons.util.timing.AbortTrigger;
 import io.aiven.commons.util.timing.Backoff;
 import io.aiven.commons.util.timing.BackoffConfig;
 import io.aiven.commons.util.timing.SupplierOfLong;
+import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiQuery;
