@@ -21,7 +21,7 @@ import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFra
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigValue;
 
-/** Common ConfigDef for Salesforce */
+/** Source ConfigDef for Salesforce */
 public final class SalesforceSourceConfigDef extends SourceCommonConfig.SourceCommonConfigDef {
 
   /** Default constructor */

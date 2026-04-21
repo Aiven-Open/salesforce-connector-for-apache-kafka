@@ -35,7 +35,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # builds aiven-commons and all modules. Does not deploy.
   build:
 
     strategy:

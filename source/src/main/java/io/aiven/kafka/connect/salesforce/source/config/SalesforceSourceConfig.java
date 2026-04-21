@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Salesforce Common Config to instantiate all the required configuration for the salesforce
- * connector that is common to a source and a sink connector.
+ * Salesforce Source Config to instantiate all the required configuration for the salesforce
+ * source connector.
  */
 public final class SalesforceSourceConfig extends SourceCommonConfig
     implements SalesforceCommonConfig {
@@ -34,7 +34,7 @@ public final class SalesforceSourceConfig extends SourceCommonConfig
   private final SalesforceSourceConfigFragment sourceFragment;
 
   /**
-   * Instantiation of the SalesforceCommonConfig class
+   * Constructor
    *
    * @param originals The original configuration that is stored in a Map of String, String
    */

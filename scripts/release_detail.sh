@@ -49,7 +49,7 @@ git log --format=' - %an'  ${commits} | sort -u  >> /tmp/proposed_changelog.txt;
 echo ' ' >> /tmp/proposed_changelog.txt;
 echo ' ' >> /tmp/proposed_changelog.txt;
 echo '### Full Changelog' >> /tmp/proposed_changelog.txt;
-echo 'https://github.com/Aiven-Open/aiven-commons/compare/'${startTag}'...v'${endVersion}  >> /tmp/proposed_changelog.txt;
+echo 'https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/compare/'${startTag}'...v'${endVersion}  >> /tmp/proposed_changelog.txt;
 echo ' ' >> /tmp/proposed_changelog.txt
 touch CHANGE_LOG.md
 cat /tmp/proposed_changelog.txt CHANGE_LOG.md >> /tmp/CHANGE_LOG.md

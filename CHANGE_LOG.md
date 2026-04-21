@@ -56,5 +56,5 @@
  
  
 ### Full Changelog
-https://github.com/Aiven-Open/aiven-commons/compare/ad07a6e46a0bb1c51d4b891cf6657901697ef77d...v0.1.0
+https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/compare/ad07a6e46a0bb1c51d4b891cf6657901697ef77d...v0.1.0
  
