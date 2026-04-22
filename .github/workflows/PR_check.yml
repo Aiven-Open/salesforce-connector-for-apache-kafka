@@ -35,7 +35,6 @@ permissions:
 
 jobs:
 
-  # builds aiven-commons and all modules. Does not deploy.
   build:
 
     strategy:
