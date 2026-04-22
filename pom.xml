@@ -99,6 +99,7 @@ Sink module is removed until there is code
     <latestRelease>0.1.0</latestRelease>
     <jackson.databind.version>3.0.3</jackson.databind.version>
     <aiven.framework.version>0.1.0</aiven.framework.version>
+    <aiven.kafka.config.version>0.1.0</aiven.kafka.config.version>
     <slf4j.version>1.7.26</slf4j.version>
   </properties>
 

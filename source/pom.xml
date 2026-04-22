@@ -175,7 +175,7 @@ SPDX-License-Identifier: Apache-2.0
           <dependency>
             <groupId>io.aiven.commons</groupId>
             <artifactId>kafka-config</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>${aiven.kafka.config.version}</version>
           </dependency>
           <dependency>
             <groupId>${project.groupId}</groupId>
