@@ -76,9 +76,7 @@ SPDX-License-Identifier: Apache-2.0
   <modules>
     <module>common</module>
     <module>source</module>
-    <!--
-Sink module is removed until there is code
-<module>sink</module>-->
+    <module>sink</module>
   </modules>
 
   <distributionManagement>

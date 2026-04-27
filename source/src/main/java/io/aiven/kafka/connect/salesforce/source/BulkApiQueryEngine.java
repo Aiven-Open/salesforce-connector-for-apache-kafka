@@ -120,6 +120,7 @@ public class BulkApiQueryEngine {
     return Collections.emptyIterator();
   }
 
+  // TODO: Use apiClient.waitForJob()
   private JobState waitUntilProcessingComplete(JobState state, String jobId) {
     if (state.isExecuting()) {
       Timer timer = new Timer(statusCheckDelay);
