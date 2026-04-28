@@ -21,6 +21,7 @@ SPDX-License-Identifier: Apache-2.0
     <id>release-tar</id>
     <formats>
         <format>tar</format>
+        <format>zip</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
     <dependencySets>

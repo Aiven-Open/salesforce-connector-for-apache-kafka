@@ -373,7 +373,7 @@ public class BulkApiClient {
    * @return a QueryResponse if the query was successfull, an empty Optional if not.
    * @deprecated use {@link #getJobStatus(String, String)}
    */
-  @Deprecated(since = "Pass in the the specific URI to query")
+  @Deprecated(since = "0.2.0")
   public Optional<QueryResponse> queryJobStatus(String jobId) {
     return getJobStatus(jobId, queryJobByIdUri);
   }

@@ -31,8 +31,10 @@ topics=account
 # How the messages in the Kafka topic are converted into Kafka Connect records
 value.converter=org.apache.kafka.connect.json.JsonConverter
 
-# How often to flush records to the Salesforce sink
+# How often to flush records to the Salesforce sink; a larger interval means fewer API calls but larger batches
 offset.flush.interval.ms=60000
+# The maximum time to wait for each flush to complete (default is 5000 ms); increase this for large batches or high Salesforce latency
+offset.flush.timeout.ms=5000
 
 # The maximum number of times to retry an insert or authentication request against the Bulk API before failing
 max.retries=3

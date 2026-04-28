@@ -63,7 +63,8 @@ This will be written to Salesforce with columns: `Name`, `Email`, `ExternalId`.
 
 ### Flush Interval
 
-The frequency of flushes (and thus Salesforce inserts) is controlled by the `offset.flush.interval.ms` configuration in Kafka Connect. The default is typically 60 seconds.
+The frequency of flushes (and thus Salesforce inserts) is controlled by the `offset.flush.interval.ms` configuration in Kafka Connect. The default is typically 60 seconds.  
+The maximum time allowed for a flush to complete is controlled by `offset.flush.timeout.ms` (default `5000` ms or 5 seconds). If a flush takes longer than this timeout, Kafka Connect considers the flush failed. You may need to increase this value for large batches or when Salesforce latency is high.
 
 Releases
 ==============================================================================
