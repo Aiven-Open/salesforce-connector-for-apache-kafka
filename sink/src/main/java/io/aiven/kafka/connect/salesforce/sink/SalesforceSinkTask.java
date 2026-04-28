@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toSet;
 
 import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
+import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.sink.config.SalesforceSinkConfig;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -185,7 +186,12 @@ public final class SalesforceSinkTask extends SinkTask {
         "Bulk ingest job {} submitted with state {}, waiting for completion",
         response.get().getId(),
         response.get().getState());
-    var info = getApi().waitForJob(response.get(), BulkApiClient.URI_INGEST_JOB_INFO);
+    handleFinalJobState(getApi().waitForJob(response.get(), BulkApiClient.URI_INGEST_JOB_INFO));
+
+    buffer.clear();
+  }
+
+  private static void handleFinalJobState(QueryResponse info) throws ConnectException {
     switch (info.getState()) {
       case JobComplete:
         LOG.info("Bulk ingest job {} completed successfully", info.getId());
@@ -220,8 +226,6 @@ public final class SalesforceSinkTask extends SinkTask {
                   info.getId(), info.getState()));
         }
     }
-
-    buffer.clear();
   }
 
   @Override
