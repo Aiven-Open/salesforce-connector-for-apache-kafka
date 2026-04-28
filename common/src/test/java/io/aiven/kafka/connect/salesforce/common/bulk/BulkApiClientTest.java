@@ -172,7 +172,7 @@ public class BulkApiClientTest {
     URI expectedUri =
         URI.create(
             TEST_SALESFORCE_URI
-                + String.format(BulkApiClient.ingestJobUri, SALESFORCE_API_VERSION));
+                + String.format(BulkApiClient.URI_INGEST_JOBS, SALESFORCE_API_VERSION));
     assertThat(sent.uri()).isEqualTo(expectedUri);
     assertThat(sent.headers().firstValue("Authorization"))
         .hasValue(BulkApiClient.BEARER + BEARER_TOKEN);
@@ -486,7 +486,7 @@ public class BulkApiClientTest {
         .thenReturn(CompletableFuture.completedFuture(mockFailureResponse));
 
     // This should break after some retries.
-    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.ingestJobByIdUri);
+    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.URI_INGEST_JOB_INFO);
 
     // Should return the initial job info since no successful status checks occurred
     assertThat(result.getId()).isEqualTo(TEST_JOB_ID);
@@ -536,7 +536,7 @@ public class BulkApiClientTest {
         .thenReturn(CompletableFuture.completedFuture(mockCompletedResponse));
 
     // Call waitForJob
-    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.ingestJobByIdUri);
+    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.URI_INGEST_JOB_INFO);
 
     // Should complete successfully because counter was reset
     assertThat(result.getId()).isEqualTo(TEST_JOB_ID);

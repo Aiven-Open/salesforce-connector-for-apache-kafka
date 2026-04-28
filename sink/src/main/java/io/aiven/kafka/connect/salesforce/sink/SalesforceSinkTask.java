@@ -185,7 +185,7 @@ public final class SalesforceSinkTask extends SinkTask {
         "Bulk ingest job {} submitted with state {}, waiting for completion",
         response.get().getId(),
         response.get().getState());
-    var info = getApi().waitForJob(response.get(), BulkApiClient.ingestJobByIdUri);
+    var info = getApi().waitForJob(response.get(), BulkApiClient.URI_INGEST_JOB_INFO);
     switch (info.getState()) {
       case JobComplete:
         LOG.info("Bulk ingest job {} completed successfully", info.getId());

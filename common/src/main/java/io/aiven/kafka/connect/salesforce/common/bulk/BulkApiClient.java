@@ -112,13 +112,13 @@ public class BulkApiClient {
   protected static final String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
 
   /** This is the URI endpoint which when added to the salesforce uri is used to ingest. */
-  protected static final String ingestJobUri = "/services/data/%s/jobs/ingest";
+  protected static final String URI_INGEST_JOBS = "/services/data/%s/jobs/ingest";
 
   /**
    * This is the URI endpoint which when added to the salesforce uri is used to check the status of
    * an ingest job.
    */
-  public static final String ingestJobByIdUri = ingestJobUri + "/%s";
+  public static final String URI_INGEST_JOB_INFO = URI_INGEST_JOBS + "/%s";
 
   // When retrieving results you can add maxRecords to specify the maximum number
   // of records to be returned at a time.
@@ -282,7 +282,7 @@ public class BulkApiClient {
       HttpRequest.Builder request =
           HttpRequest.newBuilder(
                   getUriFrom(
-                      config.getSalesforceUri() + ingestJobUri,
+                      config.getSalesforceUri() + URI_INGEST_JOBS,
                       EMPTY_QUERY_PARAM,
                       config.getSalesforceApiVersion()))
               .POST(body);
