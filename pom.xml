@@ -44,7 +44,6 @@ SPDX-License-Identifier: Apache-2.0
       <distribution>repo</distribution>
     </license>
   </licenses>
-
   <!-- please order developers by surname then given name -->
   <developers>
     <developer>
@@ -80,6 +79,13 @@ SPDX-License-Identifier: Apache-2.0
 Sink module is removed until there is code
 <module>sink</module>-->
   </modules>
+
+  <scm>
+    <connection>scm:git:git://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</connection>
+    <developerConnection>scm:git:git@github.com:Aiven-Open/salesforce-connector-for-apache-kafka.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</url>
+  </scm>
 
   <distributionManagement>
     <snapshotRepository>
