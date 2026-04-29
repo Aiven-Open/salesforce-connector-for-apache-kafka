@@ -82,7 +82,7 @@ Sink module is removed until there is code
 
   <scm>
     <connection>scm:git:git://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</connection>
-    <developerConnection>scm:git:git@github.com:Aiven-Open/salesfprce-connector-for-apache-kafka.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:Aiven-Open/salesforce-connector-for-apache-kafka.git</developerConnection>
     <tag>HEAD</tag>
     <url>https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka</url>
   </scm>
