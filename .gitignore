@@ -11,6 +11,9 @@
 *.ear
 *.class
 
+# Copied files
+**/src/site/markdown/config_example.txt
+
 # Maven files
 **/target
 

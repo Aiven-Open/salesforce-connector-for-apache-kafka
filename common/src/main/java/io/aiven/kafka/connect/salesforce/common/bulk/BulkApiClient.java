@@ -24,6 +24,7 @@ import io.aiven.commons.util.timing.AbortTrigger;
 import io.aiven.commons.util.timing.Backoff;
 import io.aiven.commons.util.timing.BackoffConfig;
 import io.aiven.commons.util.timing.SupplierOfLong;
+import io.aiven.commons.util.timing.Timer;
 import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.auth.credentials.Oauth2Login;
 import io.aiven.kafka.connect.salesforce.common.bulk.model.BulkApiKey;
@@ -40,11 +41,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Stream;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +63,8 @@ import org.slf4j.LoggerFactory;
 public class BulkApiClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BulkApiClient.class);
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   /**
    * The type of operation that is to be made against the Bulk API At the moment only Query
@@ -102,6 +110,15 @@ public class BulkApiClient {
    * of a query.
    */
   protected static final String getJobResultsUri = "/services/data/%s/jobs/query/%s/results";
+
+  /** This is the URI endpoint which when added to the salesforce uri is used to ingest. */
+  protected static final String URI_INGEST_JOBS = "/services/data/%s/jobs/ingest";
+
+  /**
+   * This is the URI endpoint which when added to the salesforce uri is used to check the status of
+   * an ingest job.
+   */
+  public static final String URI_INGEST_JOB_INFO = URI_INGEST_JOBS + "/%s";
 
   // When retrieving results you can add maxRecords to specify the maximum number
   // of records to be returned at a time.
@@ -196,27 +213,169 @@ public class BulkApiClient {
   }
 
   /**
-   * Polls the job status and returns a QueryResponse if the query was successfull. If not
-   * successful, an empty Optional is returned.
+   * Submits a Bulk API 2.0 ingest job as a multipart/form-data POST request.
    *
-   * @param jobId The unique id of the job that is being queried
-   * @return a QueryResponse if the query was successfull, an empty Optional if not.
+   * <p>The multipart body contains a JSON job definition part and a CSV content part, where the
+   * first CSV row is generated from {@code columns} and subsequent rows are streamed from {@code
+   * data}.
+   *
+   * <p>See <a
+   * href="https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/walkthrough_upload_multipart_data.htm">Multipart
+   * Bulk Insert</a>
+   *
+   * @param object the Salesforce object to insert into (such as Accounts or Contacts)
+   * @param columns the CSV column names used for the header row
+   * @param data stream of CSV records, in the same order as {@code columns}
+   * @return the parsed {@link QueryResponse} when the request succeeds, or {@link Optional#empty()}
+   *     if submission fails
    */
-  public Optional<QueryResponse> queryJobStatus(String jobId) {
+  public Optional<QueryResponse> multipartInsert(
+      String object, Object[] columns, Stream<Object[]> data) {
+    Objects.requireNonNull(object, "object");
+
+    // The boundary is a unique string that separates the job setup and data to ingest
+    var boundary = UUID.randomUUID().toString();
+
+    // The preamble contains the job setup part, and starts the data part, including the CSV header
+    String jobSetup =
+        MAPPER
+            .createObjectNode()
+            .put("object", object)
+            .put("contentType", "CSV")
+            .put("operation", "insert")
+            .put("lineEnding", "LF")
+            .toString();
+    final String preamble =
+        String.format(
+            """
+        --%1$s
+        Content-Type: application/json
+        Content-Disposition: form-data; name="job"
+
+        %2$s
+
+        --%1$s
+        Content-Type: text/csv
+        Content-Disposition: form-data; name="content"; filename="content"
+
+        %3$s
+        """,
+            boundary, jobSetup, CSVFormat.RFC4180.format(columns));
+
+    // The data part is created as a streaming iterable that sends one CSV line at a time
+    Iterable<byte[]> dataStream =
+        () ->
+            data.map(
+                    record ->
+                        (CSVFormat.RFC4180.format(record) + "\n").getBytes(StandardCharsets.UTF_8))
+                .iterator();
+
+    // The full body has the preamble, streams the data, and closes the boundary.
+    var body =
+        HttpRequest.BodyPublishers.concat(
+            // The data to stream
+            HttpRequest.BodyPublishers.ofString(preamble),
+            HttpRequest.BodyPublishers.ofByteArrays(dataStream),
+            HttpRequest.BodyPublishers.ofString("--" + boundary + "--\n"));
+
     try {
       HttpRequest.Builder request =
           HttpRequest.newBuilder(
                   getUriFrom(
-                      config.getSalesforceUri() + queryJobByIdUri,
+                      config.getSalesforceUri() + URI_INGEST_JOBS,
+                      EMPTY_QUERY_PARAM,
+                      config.getSalesforceApiVersion()))
+              .POST(body);
+      return executeHttpRequest(request, "multipart/form-data; boundary=\"" + boundary + "\"")
+          .thenApply(this::parseJsonResponse)
+          .join();
+    } catch (CancellationException | CompletionException e) {
+      LOGGER.error("Bulk ingest submission failed: {}", e.getMessage(), e);
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Waits until a job moves to a terminal state and is no longer executing. This uses a {@link
+   * Timer} and the {@link SalesforceCommonConfig#getStatusCheckWaitTime} to control how often and
+   * how long the polling should occur.
+   *
+   * @param jobInfo The current job information that describes the job to check
+   * @param jobByIdUri The URL to call for job status changes
+   * @return The job information if the job reaches a terminal state, or the last job status seen
+   *     when the timer ran out.
+   */
+  public QueryResponse waitForJob(final QueryResponse jobInfo, String jobByIdUri) {
+    // Don't do anything if this job is terminal
+    if (!jobInfo.getState().isExecuting()) {
+      return jobInfo;
+    }
+
+    // Otherwise refresh the job information until it is terminal.
+    QueryResponse lastJobInfo = jobInfo;
+    Timer timer = new Timer(config.getStatusCheckWaitTime());
+    Backoff backoff = new Backoff(timer.getBackoffConfig());
+    int retries = 0;
+
+    while (lastJobInfo.getState().isExecuting() && !timer.isExpired()) {
+      backoff.cleanDelay();
+      Optional<QueryResponse> opt = getJobStatus(lastJobInfo.getId(), jobByIdUri);
+      if (opt.isPresent()) {
+        lastJobInfo = opt.get();
+        retries = 0; // Reset on successful status check
+      } else {
+        retries++;
+        if (retries >= config.getSalesforceMaxRetries()) {
+          LOGGER.error(
+              "Exceeded maximum retries ({}) while polling job {}",
+              config.getSalesforceMaxRetries(),
+              lastJobInfo.getId());
+          break;
+        } else {
+          LOGGER.warn(
+              "Failed to get job status for job {} (retry #{})", lastJobInfo.getId(), retries);
+        }
+      }
+    }
+
+    return lastJobInfo;
+  }
+
+  /**
+   * Gets a job status from the Salesforce API.
+   *
+   * @param jobId The id of the job to check
+   * @param jobByIdUri The URL to call for job status changes
+   * @return a QueryResponse containing the new job status change if the call was successful
+   */
+  public Optional<QueryResponse> getJobStatus(String jobId, String jobByIdUri) {
+    try {
+      HttpRequest.Builder request =
+          HttpRequest.newBuilder(
+                  getUriFrom(
+                      config.getSalesforceUri() + jobByIdUri,
                       EMPTY_QUERY_PARAM,
                       config.getSalesforceApiVersion(),
                       jobId))
               .GET();
       return executeHttpRequest(request).thenApply(this::parseJsonResponse).join();
     } catch (CancellationException | CompletionException e) {
-      LOGGER.error("Query submission failed: {}", e.getMessage(), e);
+      LOGGER.error("Query job status request failed: {}", e.getMessage(), e);
       return Optional.empty();
     }
+  }
+
+  /**
+   * Polls the job status and returns a QueryResponse if the query was successfull. If not
+   * successful, an empty Optional is returned.
+   *
+   * @param jobId The unique id of the job that is being queried
+   * @return a QueryResponse if the query was successfull, an empty Optional if not.
+   * @deprecated use {@link #getJobStatus(String, String)}
+   */
+  @Deprecated(since = "0.2.0")
+  public Optional<QueryResponse> queryJobStatus(String jobId) {
+    return getJobStatus(jobId, queryJobByIdUri);
   }
 
   /**
@@ -522,19 +681,32 @@ public class BulkApiClient {
   }
 
   /**
-   * This method executes Http requests to the bulk api and handles retries and authorization
+   * This method executes JSON HTTP requests to the bulk api and handles retries and authorization
    *
    * @param request The request to be executed against the Bulk Api 2.X
    * @return The response from the request made to the API
    */
   @VisibleForTesting
   CompletableFuture<ExecutionResult> executeHttpRequest(HttpRequest.Builder request) {
+    return executeHttpRequest(request, "application/json");
+  }
+
+  /**
+   * This method executes HTTP requests to the bulk api and handles retries and authorization
+   *
+   * @param request The request to be executed against the Bulk Api 2.X
+   * @param contentType The Content-Type header value to use in the request.
+   * @return The response from the request made to the API
+   */
+  @VisibleForTesting
+  CompletableFuture<ExecutionResult> executeHttpRequest(
+      HttpRequest.Builder request, String contentType) {
     try {
       return client
           .sendAsync(
               request
                   .header("Authorization", BEARER + getAccessToken())
-                  .header("Content-Type", "application/json")
+                  .header("Content-Type", contentType)
                   .build(),
               HttpResponse.BodyHandlers.ofString())
           .handle(this::responseHandler);
