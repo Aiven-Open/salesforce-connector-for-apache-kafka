@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Salesforce Source Config to instantiate all the required configuration for the salesforce
- * source connector.
+ * Salesforce Source Config to instantiate all the required configuration for the salesforce source
+ * connector.
  */
 public final class SalesforceSourceConfig extends SourceCommonConfig
     implements SalesforceCommonConfig {
