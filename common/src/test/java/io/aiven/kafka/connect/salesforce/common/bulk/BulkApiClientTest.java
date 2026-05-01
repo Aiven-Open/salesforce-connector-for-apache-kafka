@@ -33,19 +33,26 @@ import io.aiven.kafka.connect.salesforce.common.bulk.query.JobState;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.common.config.SalesforceCommonConfigFragment;
 import io.aiven.kafka.connect.salesforce.common.utils.TestingSalesforceCommonConfig;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 /** Test the Bulk Api Client to confirm it behaves in an expected way. */
@@ -65,7 +72,7 @@ public class BulkApiClientTest {
 
   private HttpClient client;
 
-  @InjectMocks private io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
+  private io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient apiClient;
 
   private Map<String, String> props;
 
@@ -86,6 +93,118 @@ public class BulkApiClientTest {
 
   private BulkApiClient createClient() {
     return new BulkApiClient(new TestingSalesforceCommonConfig(props), client, login);
+  }
+
+  /**
+   * Materializes an {@link BodyPublisher} from {@link HttpRequest#bodyPublisher()} for assertions.
+   *
+   * <p>Note that this technique only works while the HTTP request is being mocked. If it were
+   * executed by the HttpClient, the body would have been consumed.
+   */
+  private static String extractMockBody(BodyPublisher publisher) {
+    CompletableFuture<byte[]> done = new CompletableFuture<>();
+    publisher.subscribe(
+        new Flow.Subscriber<>() {
+          final ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+          @Override
+          public void onSubscribe(Flow.Subscription subscription) {
+            subscription.request(Long.MAX_VALUE);
+          }
+
+          @Override
+          public void onNext(ByteBuffer buffer) {
+            byte[] arr = new byte[buffer.remaining()];
+            buffer.get(arr);
+            out.writeBytes(arr);
+          }
+
+          @Override
+          public void onError(Throwable throwable) {
+            done.completeExceptionally(throwable);
+          }
+
+          @Override
+          public void onComplete() {
+            done.complete(out.toByteArray());
+          }
+        });
+    return new String(done.join(), StandardCharsets.UTF_8);
+  }
+
+  /** Tests the successful path for doing a multipart insert. */
+  @Test
+  public void testMultipartInsert() {
+    apiClient = createClient();
+    when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+
+    String responseBody =
+        """
+            { "id":"000INSERTID000",
+              "object":"Account",
+              "operation": "insert" }
+            """;
+
+    HttpResponse<Object> mockQueryResponse = mockResponse(responseBody, HttpStatus.SC_OK);
+
+    when(client.sendAsync(any(HttpRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockQueryResponse));
+
+    Optional<QueryResponse> result =
+        apiClient.multipartInsert(
+            "Account",
+            new String[] {"AccountNumber", "Name"},
+            Stream.of(new Object[] {"1", "Test1"}, new Object[] {"2", "Test2, Inc"}));
+
+    // Testing the parsed response
+    assertThat(result)
+        .hasValueSatisfying(
+            response -> {
+              assertThat(response).hasFieldOrPropertyWithValue("id", "000INSERTID000");
+              assertThat(response).hasFieldOrPropertyWithValue("object", "Account");
+            });
+
+    // Testing that the request was formed as expected
+    ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(client).sendAsync(captor.capture(), any());
+    HttpRequest sent = captor.getValue();
+    assertThat(sent.method()).isEqualTo("POST");
+    URI expectedUri =
+        URI.create(
+            TEST_SALESFORCE_URI
+                + String.format(BulkApiClient.URI_INGEST_JOBS, SALESFORCE_API_VERSION));
+    assertThat(sent.uri()).isEqualTo(expectedUri);
+    assertThat(sent.headers().firstValue("Authorization"))
+        .hasValue(BulkApiClient.BEARER + BEARER_TOKEN);
+
+    String[] reqContentType =
+        sent.headers().firstValue("Content-Type").orElseThrow().split("\"", -1);
+    assertThat(reqContentType).hasSize(3);
+    assertThat(reqContentType[0]).isEqualTo("multipart/form-data; boundary=");
+    assertThat(reqContentType[1]).matches("[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}");
+    assertThat(reqContentType[2]).isBlank();
+
+    String body = extractMockBody(captor.getValue().bodyPublisher().orElseThrow());
+    assertThat(body)
+        .isEqualTo(
+            String.format(
+                """
+            --%1$s
+            Content-Type: application/json
+            Content-Disposition: form-data; name="job"
+
+            {"object":"Account","contentType":"CSV","operation":"insert","lineEnding":"LF"}
+
+            --%1$s
+            Content-Type: text/csv
+            Content-Disposition: form-data; name="content"; filename="content"
+
+            AccountNumber,Name
+            1,Test1
+            2,"Test2, Inc"
+            --%1$s--
+            """,
+                reqContentType[1]));
   }
 
   @Test
@@ -344,6 +463,87 @@ public class BulkApiClientTest {
 
     // specifically ensure delete job is called.
     verify(client, times(1)).sendAsync(eq(jobStatusRequest), any());
+  }
+
+  /**
+   * Tests that waitForJob breaks out of the loop after max consecutive failures when getJobStatus
+   * consistently returns empty.
+   */
+  @Test
+  public void testWaitForJobMaxRetries() throws JsonProcessingException {
+    apiClient = createClient();
+
+    when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+
+    // Create a job response that is still executing
+    QueryResponse initialResponse = new QueryResponse();
+    initialResponse.setId(TEST_JOB_ID);
+    initialResponse.setState(JobState.InProgress);
+
+    // Mock getJobStatus to consistently return empty (simulating API failures)
+    HttpResponse<Object> mockFailureResponse = mockResponse("", 500);
+    when(client.sendAsync(any(HttpRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockFailureResponse));
+
+    // This should break after some retries.
+    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.URI_INGEST_JOB_INFO);
+
+    // Should return the initial job info since no successful status checks occurred
+    assertThat(result.getId()).isEqualTo(TEST_JOB_ID);
+    assertThat(result.getState()).isEqualTo(JobState.InProgress);
+
+    // Verify it attempted the configured number of retries (default is 3 based on max retries)
+    verify(client, times(3)).sendAsync(any(HttpRequest.class), any());
+  }
+
+  /**
+   * Tests that waitForJob resets the consecutive failure counter after a successful status check.
+   */
+  @Test
+  public void testWaitForJobResetsFailureCounter() throws JsonProcessingException {
+    apiClient = createClient();
+
+    when(login.getAccessToken(eq(TEST_CLIENT_ID), eq(TEST_CLIENT_SECRET))).thenReturn(BEARER_TOKEN);
+
+    // Create initial job response
+    QueryResponse initialResponse = new QueryResponse();
+    initialResponse.setId(TEST_JOB_ID);
+    initialResponse.setState(JobState.InProgress);
+
+    // Create successful response showing job still in progress
+    QueryResponse progressResponse = new QueryResponse();
+    progressResponse.setId(TEST_JOB_ID);
+    progressResponse.setState(JobState.InProgress);
+
+    // Create final completed response
+    QueryResponse completedResponse = new QueryResponse();
+    completedResponse.setId(TEST_JOB_ID);
+    completedResponse.setState(JobState.JobComplete);
+
+    HttpResponse<Object> mockFailureResponse = mockResponse("", 500);
+    HttpResponse<Object> mockProgressResponse =
+        mockResponse(mapper.writeValueAsString(progressResponse), 200);
+    HttpResponse<Object> mockCompletedResponse =
+        mockResponse(mapper.writeValueAsString(completedResponse), 200);
+
+    // Fail twice, succeed once (which resets counter), fail twice more, then succeed to complete
+    when(client.sendAsync(any(HttpRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockFailureResponse))
+        .thenReturn(CompletableFuture.completedFuture(mockFailureResponse))
+        .thenReturn(CompletableFuture.completedFuture(mockProgressResponse))
+        .thenReturn(CompletableFuture.completedFuture(mockFailureResponse))
+        .thenReturn(CompletableFuture.completedFuture(mockFailureResponse))
+        .thenReturn(CompletableFuture.completedFuture(mockCompletedResponse));
+
+    // Call waitForJob
+    QueryResponse result = apiClient.waitForJob(initialResponse, BulkApiClient.URI_INGEST_JOB_INFO);
+
+    // Should complete successfully because counter was reset
+    assertThat(result.getId()).isEqualTo(TEST_JOB_ID);
+    assertThat(result.getState()).isEqualTo(JobState.JobComplete);
+
+    // Should have made all 6 attempts
+    verify(client, times(6)).sendAsync(any(HttpRequest.class), any());
   }
 
   private HttpResponse<Object> mockResponse(String payload, int statusCode) {
