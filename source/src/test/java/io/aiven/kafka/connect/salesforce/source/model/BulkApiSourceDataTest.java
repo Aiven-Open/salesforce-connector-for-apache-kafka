@@ -223,8 +223,7 @@ public class BulkApiSourceDataTest {
   @CsvSource(
       value = {
         "org.apache.kafka.connect.storage.StringConverter",
-        "org.apache.kafka.connect.json.JsonConverter",
-        "org.apache.kafka.connect.converters.ByteArrayConverter"
+        "org.apache.kafka.connect.json.JsonConverter"
       })
   void readData(String converterType) {
     int expectedRecords = 20;

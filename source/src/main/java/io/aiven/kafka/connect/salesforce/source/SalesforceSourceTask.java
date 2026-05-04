@@ -31,7 +31,6 @@ import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEnt
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.kafka.connect.data.Struct;
 import org.slf4j.Logger;
@@ -164,7 +163,8 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       Struct struct = (Struct) evolvingSourceRecord.getValue().value();
       return struct.getString(LAST_MODIFIED_DATE_CSV_HEADER);
     } else {
-      LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
+      HashMap<String, String> value =
+          (HashMap<String, String>) evolvingSourceRecord.getValue().value();
       return value.get(LAST_MODIFIED_DATE_CSV_HEADER);
     }
   }

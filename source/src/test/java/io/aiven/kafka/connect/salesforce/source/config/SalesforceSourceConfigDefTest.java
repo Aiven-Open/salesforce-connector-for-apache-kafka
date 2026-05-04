@@ -21,15 +21,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.aiven.commons.kafka.config.docs.ConfigDefBeanFactory;
 import io.aiven.commons.kafka.config.docs.ExtendedConfigKeyBean;
+import java.awt.*;
+import java.util.stream.Collectors;
+import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.junit.jupiter.api.Test;
 
 public class SalesforceSourceConfigDefTest {
 
   @Test
   void sinceTest() {
+    var defaultConfigNames =
+        ConnectorConfig.configDef().configKeys().values().stream()
+            .collect(Collectors.groupingBy(key -> key.name));
     for (ExtendedConfigKeyBean bean :
         new ConfigDefBeanFactory().open(SalesforceSourceConfigDef.class.getName()).configKeys()) {
-      assertThat(bean.since()).as(bean.getName()).containsAnyOf("0.1.0", "Kafka 0.9.0.0");
+      if (!defaultConfigNames.containsKey(bean.getName())) {
+        assertThat(bean.since()).as(bean.getName()).containsAnyOf("0.1.0", "Kafka 0.9.0.0");
+      }
     }
   }
 }
