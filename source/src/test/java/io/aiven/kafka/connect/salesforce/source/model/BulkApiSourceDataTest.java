@@ -251,16 +251,6 @@ public class BulkApiSourceDataTest {
         .getJobResults(anyString(), anyString(), anyString(), any(BulkApiKey.class));
   }
 
-  //  private readFromJsonConverter(EvolvingSourceRecord evolvingSourceRecord){
-  //
-  //    JsonConverter converter = new JsonConverter();
-  //    converter.configure(Map.of("schemas.enable", false, "converter.type", "value"));
-  //
-  //    var first = sourceRecords.get(0);
-  //    Object map = first.getValue().value();
-  //    var result = converter.fromConnectData("topic", first.getValue().schema(), map);
-  //  }
-
   private static @Nullable String getNextLocator(int pageNumber) {
     return pageNumber != 1 ? String.valueOf(pageNumber - 1) : null;
   }
