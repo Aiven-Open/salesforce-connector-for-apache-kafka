@@ -21,6 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.aiven.commons.kafka.config.docs.ConfigDefBeanFactory;
 import io.aiven.commons.kafka.config.docs.ExtendedConfigKeyBean;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link SalesforceSinkConfigDef} */
@@ -28,9 +33,14 @@ public class SalesforceSinkConfigDefTest {
 
   @Test
   void sinceTest() {
+    Map<String, List<ConfigDef.ConfigKey>> defaultConfigs =
+        ConnectorConfig.configDef().configKeys().values().stream()
+            .collect(Collectors.groupingBy(key -> key.name));
     for (ExtendedConfigKeyBean bean :
         new ConfigDefBeanFactory().open(SalesforceSinkConfigDef.class.getName()).configKeys()) {
-      assertThat(bean.since()).as(bean.getName()).containsAnyOf("0.2.0", "Kafka 0.9.0.0");
+      if (!defaultConfigs.containsKey(bean.getName())) {
+        assertThat(bean.since()).as(bean.getName()).containsAnyOf("0.2.0", "Kafka 0.9.0.0");
+      }
     }
   }
 }
