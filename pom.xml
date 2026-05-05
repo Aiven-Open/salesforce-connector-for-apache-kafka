@@ -26,7 +26,7 @@ SPDX-License-Identifier: Apache-2.0
 
   <groupId>io.aiven.kafka.connect</groupId>
   <artifactId>connectors-for-salesforce</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Aiven connectors for Salesforce on Apache Kafka</name>
