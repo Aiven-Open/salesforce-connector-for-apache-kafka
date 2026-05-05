@@ -1,3 +1,18 @@
+## v0.2.0
+### What is changed
+ 
+ - Implement sink
+ 
+### Co-authored by
+ 
+ - Aindriú Lavelle
+ - Claude Warren
+ - Ryan Skraba
+ 
+ 
+### Full Changelog
+https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/compare/v0.1.0...v0.2.0
+ 
 ## v0.1.0
 ### What is changed
  
