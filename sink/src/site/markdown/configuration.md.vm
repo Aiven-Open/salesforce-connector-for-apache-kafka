@@ -44,7 +44,7 @@ ${esc.hash}${esc.hash}${esc.hash}${esc.hash} ${configKey.displayName}
 
 ${esc.hash}${esc.hash}${esc.hash} Example
 
-A copy of this [example configuration file}(./config_example.txt) is available for download.
+A copy of this [example configuration file](./config_example.txt) is available for download.
 
 ```properties
 
