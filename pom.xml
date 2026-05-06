@@ -102,8 +102,8 @@ SPDX-License-Identifier: Apache-2.0
   <properties>
     <latestRelease>0.2.0</latestRelease>
     <jackson.databind.version>3.0.3</jackson.databind.version>
-    <aiven.framework.version>0.1.0</aiven.framework.version>
     <aiven.kafka.config.version>0.1.0</aiven.kafka.config.version>
+    <aiven.framework.version>0.3.0-SNAPSHOT</aiven.framework.version>
     <slf4j.version>1.7.26</slf4j.version>
   </properties>
 
@@ -139,7 +139,7 @@ SPDX-License-Identifier: Apache-2.0
       <dependency>
         <groupId>io.aiven.commons</groupId>
         <artifactId>kafka-config</artifactId>
-        <version>0.1.0</version>
+        <version>0.2.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>io.aiven.commons</groupId>
@@ -251,6 +251,7 @@ SPDX-License-Identifier: Apache-2.0
     <dependency>
       <groupId>io.aiven.commons</groupId>
       <artifactId>kafka-config</artifactId>
+      <version>0.2.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>

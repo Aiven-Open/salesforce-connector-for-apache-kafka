@@ -31,8 +31,8 @@ import io.aiven.kafka.connect.salesforce.source.utils.SalesforceOffsetManagerEnt
 import io.aiven.kafka.connect.salesforce.source.utils.Version;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.kafka.connect.data.Struct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,16 +136,14 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
   @Override
   protected EvolvingSourceRecord lastEvolution(EvolvingSourceRecord evolvingSourceRecord) {
     try {
-      LinkedHashMap<String, String> value = (LinkedHashMap) evolvingSourceRecord.getValue().value();
+      String value = getLastModifiedDateFromRecord(evolvingSourceRecord);
       BulkApiKey key = (BulkApiKey) evolvingSourceRecord.getNativeKey();
       Instant lastModifiedDate = lastSeenModifiedDate.getOrDefault(key.getQueryHash(), null);
       if (lastModifiedDate != null) {
         lastSeenModifiedDate.put(
-            key.getQueryHash(),
-            InstantUtil.getLatest(value.get(LAST_MODIFIED_DATE_CSV_HEADER), lastModifiedDate));
+            key.getQueryHash(), InstantUtil.getLatest(value, lastModifiedDate));
       } else {
-        lastSeenModifiedDate.put(
-            key.getQueryHash(), InstantUtil.parseString(value.get(LAST_MODIFIED_DATE_CSV_HEADER)));
+        lastSeenModifiedDate.put(key.getQueryHash(), InstantUtil.parseString(value));
       }
       // Update to the last seen timestamp so we
       // know where to begin from on a restart
@@ -158,5 +156,16 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       LOGGER.error("Exception caught updating the LastModifiedDate in lastEvolution. ", e);
     }
     return evolvingSourceRecord;
+  }
+
+  private static String getLastModifiedDateFromRecord(EvolvingSourceRecord evolvingSourceRecord) {
+    if (evolvingSourceRecord.getValue().value() instanceof Struct) {
+      Struct struct = (Struct) evolvingSourceRecord.getValue().value();
+      return struct.getString(LAST_MODIFIED_DATE_CSV_HEADER);
+    } else {
+      HashMap<String, String> value =
+          (HashMap<String, String>) evolvingSourceRecord.getValue().value();
+      return value.get(LAST_MODIFIED_DATE_CSV_HEADER);
+    }
   }
 }
