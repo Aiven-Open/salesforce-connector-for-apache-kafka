@@ -17,25 +17,21 @@
  */
 package io.aiven.kafka.connect.salesforce.sink;
 
-import static java.util.stream.Collectors.toSet;
-
 import io.aiven.kafka.connect.salesforce.common.VisibleForTesting;
 import io.aiven.kafka.connect.salesforce.common.bulk.BulkApiClient;
 import io.aiven.kafka.connect.salesforce.common.bulk.query.QueryResponse;
 import io.aiven.kafka.connect.salesforce.sink.config.SalesforceSinkConfig;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
@@ -92,6 +88,16 @@ public final class SalesforceSinkTask extends SinkTask {
     }
   }
 
+  private void reportUnsupportedValue(SinkRecord record) {
+    var msg =
+        String.format(
+            "Skipping record with unsupported value: {} and schema: {}",
+            record.value().getClass(),
+            record.valueSchema());
+    LOG.error(msg);
+    errantRecordReporter.report(record, new Throwable(msg));
+  }
+
   @Override
   public void flush(final Map<TopicPartition, OffsetAndMetadata> currentOffsets) {
     if (buffer.isEmpty()) {
@@ -103,73 +109,76 @@ public final class SalesforceSinkTask extends SinkTask {
     // TODO: In configuration, we could specify the exact header set to use instead of dynamically
     // detecting it.
 
-    // The columns to use for the insert come from the STRUCT schema in the values. Do the first
-    // pass to detect the unique set of schemas in play.
-    final Set<Schema> vSchemas = buffer.stream().map(ConnectRecord::valueSchema).collect(toSet());
+    // In the first pass, discover the column headers (in a TreeMap for consistent, alphabetical
+    // column order).
+    final Map<String, Integer> columns = new TreeMap<>();
+    final List<SinkRecord> valid = new ArrayList<>(buffer.size());
+    int skipped = 0;
+    // Cache STRUCT schemas for the ideal path where all records have the same schema.
+    final Set<Schema> seen = new HashSet<>();
 
-    // Create a tree map with every dynamically discovered column name. Alphabetical ordering is
-    // not required but can be useful to have a consistent column order.
-    final int[] skippedSchemas = {0};
-    final Map<String, Integer> columns =
-        vSchemas.stream()
-            .flatMap(
-                schema -> {
-                  if (schema.type() == Schema.Type.STRUCT) {
-                    return schema.fields().stream();
-                  } else {
-                    // Some messages will be unsendable. Warnings are handled later.
-                    skippedSchemas[0]++;
-                    return Stream.empty();
-                  }
-                })
-            .map(Field::name)
-            .unordered()
-            .distinct()
-            .collect(
-                Collectors.toMap(
-                    Function.identity(), kv -> 0, (first, ignored) -> first, TreeMap::new));
+    // Process each record once: extract columns and filter valid records
+    for (SinkRecord record : buffer) {
+      if (record.value() instanceof Map<?, ?> mapValue) {
+        valid.add(record);
+        for (Object key : mapValue.keySet()) {
+          columns.putIfAbsent(key.toString(), 0);
+        }
+      } else if (record.valueSchema() != null
+          && record.valueSchema().type() == Schema.Type.STRUCT) {
+        // Skip processing if we've already seen this schema
+        valid.add(record);
+        if (seen.contains(record.valueSchema())) continue;
+        seen.add(record.valueSchema());
+        // Discover any new columns from this STRUCT
+        for (Field field : record.valueSchema().fields()) {
+          columns.putIfAbsent(field.name(), 0); // Placeholder, indices assigned later
+        }
+      } else {
+        skipped++;
+        reportUnsupportedValue(record);
+      }
+    }
 
-    if (skippedSchemas[0] > 0) {
-      LOG.warn("Flush encountered {} schema(s) without a struct value", skippedSchemas[0]);
+    if (skipped > 0) {
+      LOG.warn("Flush encountered {} records with unsupported schemas or values", skipped);
     }
 
     // There were records, but none that were ingestible. Fail the entire batch.
     if (columns.isEmpty()) {
       buffer.clear();
       throw new ConnectException(
-          "Flush didn't encounter any struct values; skipping Salesforce bulk insert.");
+          "Flush didn't encounter any struct or map values; skipping Salesforce bulk insert.");
     }
 
     // TODO: Do we want to check for invalid columns in the struct?
     // Should we ignore them or fail those records?
 
-    // Give every column a unique position in the output CSV file.
-    int i = 0;
-    for (String column : columns.keySet()) {
-      columns.put(column, i++);
+    // Assign sequential indices to columns in alphabetical order (TreeMap iteration order)
+    int columnIndex = 0;
+    for (String columnName : columns.keySet()) {
+      columns.put(columnName, columnIndex++);
     }
 
-    // In a second pass, convert each record in the buffer into its CSV string
+    final int columnCount = columns.size();
+
+    // Convert valid records to CSV rows using discovered column positions
     Stream<Object[]> dataToSend =
-        buffer.stream()
-            .filter(
-                record -> {
-                  if (record.valueSchema().type() != Schema.Type.STRUCT) {
-                    LOG.error(
-                        "Skipping record with non-struct value schema: {}", record.valueSchema());
-                    this.errantRecordReporter.report(
-                        record, new Throwable("Salesforce only accept records of type STRUCT"));
-                    return false;
-                  } else {
-                    return true;
-                  }
-                })
+        valid.stream()
             .map(
                 record -> {
-                  var value = (Struct) record.value();
-                  var orderedValues = new Object[columns.size()];
-                  for (Field f : record.valueSchema().fields()) {
-                    orderedValues[columns.get(f.name())] = value.get(f);
+                  var orderedValues = new Object[columnCount];
+                  if (record.value() instanceof Map<?, ?> mapValue) {
+                    for (Map.Entry<?, ?> entry : mapValue.entrySet()) {
+                      orderedValues[columns.get(entry.getKey().toString())] = entry.getValue();
+                    }
+                  } else if (record.value() instanceof Struct structValue) {
+                    for (Field f : record.valueSchema().fields()) {
+                      orderedValues[columns.get(f.name())] = structValue.get(f);
+                    }
+                  } else {
+                    // This should never occur because of the first pass
+                    reportUnsupportedValue(record);
                   }
                   return orderedValues;
                 });
