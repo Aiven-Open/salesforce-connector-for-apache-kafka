@@ -39,10 +39,11 @@ The sink connector consumes records from Kafka topics and writes them to Salesfo
 
 ### Data Format
 
-The connector expects records with **Struct** schemas in the value field. The struct field names are dynamically mapped to Salesforce object field names:
+The connector accepts records with either **`Schema.Type.STRUCT`** value schemas or **Map* values (either with `Schema.Type.MAP` value schema or `null` schemaless Maps). The field names (for Struct) or keys (for Map) are dynamically mapped to Salesforce object field names:
 
+**Example (schemaless Map represented as JSON)**
 ```
-Kafka Record Value (Struct):
+Kafka Record Value (Map):
 {
   "Name": "Alice",
   "Email": "alice@example.com",
@@ -51,6 +52,8 @@ Kafka Record Value (Struct):
 ```
 
 This will be written to Salesforce with columns: `Name`, `Email`, `ExternalId`.
+
+You can mix Struct and Map records in the same batch. The connector will discover all unique field names/keys across all records in the batch.
 
 ### Processing Flow
 

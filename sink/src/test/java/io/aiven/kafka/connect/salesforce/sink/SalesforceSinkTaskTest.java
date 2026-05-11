@@ -135,35 +135,63 @@ public final class SalesforceSinkTaskTest {
     var task = new SalesforceSinkTask(api);
     task.initialize(Mockito.mock(SinkTaskContext.class));
     task.start(createTestConfig());
-    // A good example record
-    task.put(List.of(createSinkRecord("AccountNumber", "1", "Name", "Test1")));
-    // Another batch of records with fewer fields, different field types, and differently ordered
-    // fields
+
+    // A good example STRUCT record
+    task.put(List.of(createStructRecord("AccountNumber", "1", "Name", "Test1")));
+
+    // Other STRUCT records with fewer fields, different field types, and differently ordered fields
     task.put(
         List.of(
-            createSinkRecord("AccountNumber", 2, "Name", "Test2"),
-            createSinkRecord("Name", "Test3", "AccountNumber", "3")));
+            createStructRecord("AccountNumber", 2, "Name", "Test2"),
+            createStructRecord("Name", "Test3", "AccountNumber", "3")));
     task.put(
         List.of(
-            createSinkRecord("AccountNumber", "4", "Name", "Test\"4", "NumberofLocations__c", 4),
-            createSinkRecord("Name", "Test5, Inc")));
+            createStructRecord("AccountNumber", "4", "Name", "Test\"4", "NumberofLocations__c", 4),
+            createStructRecord("Name", "Test5, Inc")));
+
+    // Other MAP records, both with and without schemas
+    task.put(
+        List.of(
+            createMapRecord(
+                Schema.STRING_SCHEMA,
+                "AccountNumber",
+                "6",
+                "Name",
+                "Test6",
+                "NumberofLocations__c",
+                "6"),
+            createMapRecord(
+                Schema.STRING_SCHEMA,
+                "Name",
+                "Test7",
+                "NumberofLocations__c",
+                "7",
+                "Rating",
+                "Hot"),
+            createMapRecord(null, "Name", "Test8", "AccountNumber", "8", "NumberofLocations__c", 8),
+            createMapRecord(null, "Name", "Test9, Inc")));
+
     task.flush(Map.of());
     task.stop();
 
     verify(api, times(1))
         .multipartInsert(
             eq("Account"),
-            eq(new Object[] {"AccountNumber", "Name", "NumberofLocations__c"}),
+            eq(new Object[] {"AccountNumber", "Name", "NumberofLocations__c", "Rating"}),
             any());
     verify(api, times(1)).waitForJob(any(), anyString());
 
     assertThat(capturedData)
         .containsExactly(
-            new Object[] {"1", "Test1", null},
-            new Object[] {2, "Test2", null},
-            new Object[] {"3", "Test3", null},
-            new Object[] {"4", "Test\"4", 4},
-            new Object[] {null, "Test5, Inc", null});
+            new Object[] {"1", "Test1", null, null},
+            new Object[] {2, "Test2", null, null},
+            new Object[] {"3", "Test3", null, null},
+            new Object[] {"4", "Test\"4", 4, null},
+            new Object[] {null, "Test5, Inc", null, null},
+            new Object[] {"6", "Test6", "6", null},
+            new Object[] {null, "Test7", "7", "Hot"},
+            new Object[] {"8", "Test8", 8, null},
+            new Object[] {null, "Test9, Inc", null, null});
   }
 
   /** Tests the failure path where one bad column spoils the entire batch. */
@@ -176,9 +204,9 @@ public final class SalesforceSinkTaskTest {
     task.initialize(Mockito.mock(SinkTaskContext.class));
     task.start(createTestConfig());
     // An OK record
-    task.put(List.of(createSinkRecord("AccountNumber", "1", "Name", "Test1", "Rating", "Hot")));
+    task.put(List.of(createStructRecord("AccountNumber", "1", "Name", "Test1", "Rating", "Hot")));
     // A bad record fails the batch because of the invalid column
-    task.put(List.of(createSinkRecord("Name", "Test2", "Invalid", "2")));
+    task.put(List.of(createStructRecord("Name", "Test2", "Invalid", "2")));
     assertThatThrownBy(() -> task.flush(Map.of()))
         .isInstanceOf(ConnectException.class)
         .hasMessage("Salesforce bulk ingest job <JOB_ID> failed: <ERROR_MSG>");
@@ -194,9 +222,10 @@ public final class SalesforceSinkTaskTest {
 
     task.initialize(Mockito.mock(SinkTaskContext.class));
     task.start(createTestConfig());
-    task.put(List.of(createSinkRecord("Name", "Test1", "NumberofLocations__c", "1")));
+    task.put(List.of(createStructRecord("Name", "Test1", "NumberofLocations__c", "1")));
     task.put(
-        List.of(createSinkRecord("Name", "Test2", "NumberofLocations__c", "Two"))); // not a number
+        List.of(
+            createStructRecord("Name", "Test2", "NumberofLocations__c", "Two"))); // not a number
     assertThatThrownBy(() -> task.flush(Map.of()))
         .isInstanceOf(ConnectException.class)
         .hasMessage("Salesforce bulk ingest job <JOB_ID> failed: <ERROR_MSG>");
@@ -211,7 +240,7 @@ public final class SalesforceSinkTaskTest {
 
     task.initialize(Mockito.mock(SinkTaskContext.class));
     task.start(createTestConfig());
-    task.put(List.of(createSinkRecord("Name", "Test1")));
+    task.put(List.of(createStructRecord("Name", "Test1")));
     assertThatThrownBy(() -> task.flush(Map.of()))
         .isInstanceOf(ConnectException.class)
         .hasMessage(
@@ -227,9 +256,29 @@ public final class SalesforceSinkTaskTest {
    * @return A structure created from the keys and values, where the values are either int32,
    *     string, or another struct.
    */
-  private static SinkRecord createSinkRecord(final Object... kvs) {
+  private static SinkRecord createStructRecord(final Object... kvs) {
     var value = createStruct(kvs);
     return new SinkRecord("topic", 0, null, null, value.schema(), value, 0);
+  }
+
+  /**
+   * Build a test {@link SinkRecord} with a Map value and potentially a MAP schema
+   *
+   * @param mapValueSchema If null, create a schemaless record. Otherwise, use this as the MAP value
+   *     schema.
+   * @param kvs A list of alternating keys and values (e.g. "a", 1, "b", 2).
+   * @return A MAP record with string keys and string values.
+   */
+  private static SinkRecord createMapRecord(Schema mapValueSchema, final Object... kvs) {
+    var map = new java.util.HashMap<String, Object>();
+    for (int i = 0; (i + 1) < kvs.length; i += 2) {
+      map.put(kvs[i].toString(), kvs[i + 1] == null ? null : kvs[i + 1]);
+    }
+    var schema =
+        mapValueSchema != null
+            ? SchemaBuilder.map(Schema.STRING_SCHEMA, mapValueSchema).build()
+            : null;
+    return new SinkRecord("topic", 0, null, null, schema, map, 0);
   }
 
   /**
@@ -242,7 +291,7 @@ public final class SalesforceSinkTaskTest {
    */
   private static Struct createStruct(final Object... kvs) {
     SchemaBuilder sb = SchemaBuilder.struct();
-    for (int i = 0; i < kvs.length; i += 2) {
+    for (int i = 0; (i + 1) < kvs.length; i += 2) {
       Schema fieldSchema = Schema.STRING_SCHEMA;
       if (kvs[i + 1] instanceof Integer) {
         fieldSchema = Schema.INT32_SCHEMA;
@@ -254,7 +303,7 @@ public final class SalesforceSinkTaskTest {
 
     final Schema schema = sb.build();
     final Struct struct = new Struct(schema);
-    for (int i = 0; i < kvs.length; i += 2) {
+    for (int i = 0; (i + 1) < kvs.length; i += 2) {
       struct.put(kvs[i].toString(), kvs[i + 1]);
     }
 
