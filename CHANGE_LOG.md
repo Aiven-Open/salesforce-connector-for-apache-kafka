@@ -1,3 +1,20 @@
+## v0.3.0
+### What is changed
+ 
+ - Remove unnecessary kafka-clients-3.9.1.jar from distribution
+ - Trim named contributors (#75)
+ - Support schemaless Map values for JSON converters
+ - Bump aiven.framework.version from 0.1.0 to 0.2.0 (#64)
+ - Bump tools.jackson.core:jackson-databind from 3.0.3 to 3.1.3 (#65)
+ 
+### Co-authored by
+ 
+ - Aindriú Lavelle
+ - Ryan Skraba
+ 
+### Full Changelog
+https://github.com/Aiven-Open/salesforce-connector-for-apache-kafka/compare/v0.2.0...v0.3.0
+ 
 ## v0.2.0
 ### What is changed
  
