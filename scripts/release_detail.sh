@@ -55,14 +55,10 @@ touch CHANGE_LOG.md
 cat /tmp/proposed_changelog.txt CHANGE_LOG.md >> /tmp/CHANGE_LOG.md
 mv /tmp/CHANGE_LOG.md CHANGE_LOG.md
 
+echo Created branch for changelog (changelog-${endVersion})
+echo   \* Revise and merge before creating the release
 git checkout -b changelog-${endVersion}
-
 git add CHANGE_LOG.md
-git commit -m "Changelog for ${startTag} to v${endVersion}"
-git push --set-upstream origin changelog-${endVersion}
+echo git commit -m "Add CHANGE_LOG.md for ${startTag} to v${endVersion}"
+echo git push --set-upstream origin changelog-${endVersion}
 
-mvn -P pre-release-check verify
-if [[ $? -eq 1 ]]
-then
-  echo "Fix issues with the build and rerun 'mvn -P pre-release-check verify'"
-fi
