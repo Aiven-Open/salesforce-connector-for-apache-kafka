@@ -55,14 +55,6 @@ SPDX-License-Identifier: Apache-2.0
       <timezone>Europe/Dublin</timezone>
     </developer>
     <developer>
-      <id>RyanSkraba</id>
-      <name>Ryan Skraba</name>
-      <email>ryan.skraba@aiven.io</email>
-      <organization>Aiven, OY</organization>
-      <organizationUrl>https://aiven.io</organizationUrl>
-      <timezone>Europe/Paris</timezone>
-    </developer>
-    <developer>
       <id>claudenw</id>
       <name>Claude Warren</name>
       <email>claude.warren@aiven.io</email>
