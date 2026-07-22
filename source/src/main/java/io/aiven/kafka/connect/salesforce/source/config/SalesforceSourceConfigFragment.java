@@ -106,6 +106,18 @@ public final class SalesforceSourceConfigFragment extends ConfigFragment {
                     + "`SELECT Id,Name, LastModifiedDate FROM Account ; SELECT Id, FirstName, Name, LastModifiedDate FROM Contact; SELECT LastName__c, FirstName__c, PhoneNumber__c FROM Phone_Book__b`")
             .width(ConfigDef.Width.LONG)
             .build());
+
+    configDef.define(
+        ExtendedConfigKey.builder(ConnectorConfig.VALUE_CONVERTER_CLASS_CONFIG)
+            .group(group)
+            .orderInGroup(++groupOrder)
+            .defaultValue(null)
+            .since(siBuilder.version("0.1.0").build().setVersionOnly())
+            .type(ConfigDef.Type.CLASS)
+            .importance(ConfigDef.Importance.MEDIUM)
+            .documentation(ConnectorConfig.VALUE_CONVERTER_CLASS_DOC)
+            .width(ConfigDef.Width.LONG)
+            .build());
   }
 
   /**
