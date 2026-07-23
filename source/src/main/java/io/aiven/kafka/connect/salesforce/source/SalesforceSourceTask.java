@@ -163,8 +163,7 @@ public final class SalesforceSourceTask extends AbstractSourceTask {
       Struct struct = (Struct) evolvingSourceRecord.getValue().value();
       return struct.getString(LAST_MODIFIED_DATE_CSV_HEADER);
     } else {
-      HashMap<String, String> value =
-          (HashMap<String, String>) evolvingSourceRecord.getValue().value();
+      Map<String, String> value = (Map<String, String>) evolvingSourceRecord.getValue().value();
       return value.get(LAST_MODIFIED_DATE_CSV_HEADER);
     }
   }
