@@ -94,9 +94,10 @@ SPDX-License-Identifier: Apache-2.0
   <properties>
     <latestRelease>0.3.0</latestRelease>
     <jackson.databind.version>3.1.3</jackson.databind.version>
-    <aiven.framework.version>0.2.0</aiven.framework.version>
-    <aiven.kafka.config.version>0.1.0</aiven.kafka.config.version>
+    <aiven.framework.version>0.3.0</aiven.framework.version>
+    <aiven.kafka.config.version>0.2.0</aiven.kafka.config.version>
     <slf4j.version>1.7.26</slf4j.version>
+    <checker-qual.version>3.37.0</checker-qual.version>
   </properties>
 
   <dependencyManagement>
@@ -127,11 +128,6 @@ SPDX-License-Identifier: Apache-2.0
         <groupId>io.aiven.commons</groupId>
         <artifactId>common-util</artifactId>
         <version>0.2.0</version>
-      </dependency>
-      <dependency>
-        <groupId>io.aiven.commons</groupId>
-        <artifactId>kafka-config</artifactId>
-        <version>0.1.0</version>
       </dependency>
       <dependency>
         <groupId>io.aiven.commons</groupId>
@@ -243,6 +239,7 @@ SPDX-License-Identifier: Apache-2.0
     <dependency>
       <groupId>io.aiven.commons</groupId>
       <artifactId>kafka-config</artifactId>
+      <version>${aiven.kafka.config.version}</version>
     </dependency>
 
     <dependency>
@@ -278,6 +275,11 @@ SPDX-License-Identifier: Apache-2.0
     </dependency>
 
     <!-- tests (please sort by groupId/artifactId)-->
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>${checker-qual.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>

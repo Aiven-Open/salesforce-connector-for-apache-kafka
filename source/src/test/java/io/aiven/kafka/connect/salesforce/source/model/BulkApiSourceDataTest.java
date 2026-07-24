@@ -56,6 +56,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
@@ -85,7 +86,8 @@ public class BulkApiSourceDataTest {
   void evolvingSourceRecordIteratorShouldProcessAllRecords(
       int expectedRecords, int resultsPerPage, int expectedPaginatedPages) {
     SalesforceSourceConfig myConfig =
-        setUpSalesforceBulkApiClientMock(expectedRecords, resultsPerPage);
+        setUpSalesforceBulkApiClientMock(
+            "org.apache.kafka.connect.storage.StringConverter", expectedRecords, resultsPerPage);
     EvolvingSourceRecordIterator evolvingSourceRecordIterator =
         new EvolvingSourceRecordIterator(
             myConfig, new BulkApiSourceData(myConfig, offsetManager, engine, new HashMap<>()));
@@ -111,7 +113,8 @@ public class BulkApiSourceDataTest {
       int expectedRecords, int resultsPerPage, int expectedPaginatedPages) {
 
     SalesforceSourceConfig myConfig =
-        setUpSalesforceBulkApiClientMock(expectedRecords, resultsPerPage);
+        setUpSalesforceBulkApiClientMock(
+            "org.apache.kafka.connect.storage.StringConverter", expectedRecords, resultsPerPage);
     BulkApiSourceData bulkApiSourceData =
         new BulkApiSourceData(myConfig, offsetManager, engine, new HashMap<>());
 
@@ -133,7 +136,9 @@ public class BulkApiSourceDataTest {
 
   @Test
   void evolvingSourceRecordIteratorNoRecordsReturned() {
-    SalesforceSourceConfig myConfig = setUpSalesforceBulkApiClientMock(0, 500);
+    SalesforceSourceConfig myConfig =
+        setUpSalesforceBulkApiClientMock(
+            "org.apache.kafka.connect.storage.StringConverter", 0, 500);
     // Return no records
     when(apiClient.getJobResults(eq("jobId"), eq(null), eq("Account"), any()))
         .thenReturn(getResults(1, 0, 0, 500));
@@ -159,7 +164,9 @@ public class BulkApiSourceDataTest {
   @Test
   void BulkApiSourceDataStreamNoRecordsReturned() {
 
-    SalesforceSourceConfig myConfig = setUpSalesforceBulkApiClientMock(0, 500);
+    SalesforceSourceConfig myConfig =
+        setUpSalesforceBulkApiClientMock(
+            "org.apache.kafka.connect.storage.StringConverter", 0, 500);
     // Return no records
     when(apiClient.getJobResults(eq("jobId"), eq(null), eq("Account"), any()))
         .thenReturn(getResults(1, 0, 0, 500));
@@ -184,7 +191,9 @@ public class BulkApiSourceDataTest {
   @Test
   void bulkApiRecoverFromRestart() {
 
-    SalesforceSourceConfig myConfig = setUpSalesforceBulkApiClientMock(0, 500);
+    SalesforceSourceConfig myConfig =
+        setUpSalesforceBulkApiClientMock(
+            "org.apache.kafka.connect.storage.StringConverter", 0, 500);
     // Return no records
     when(apiClient.getJobResults(eq("jobId"), eq(null), eq("Account"), any()))
         .thenReturn(getResults(1, 0, 0, 500));
@@ -207,6 +216,38 @@ public class BulkApiSourceDataTest {
     verify(apiClient, times(1))
         .getJobResults(anyString(), eq(null), anyString(), any(BulkApiKey.class));
     verify(apiClient, times(0))
+        .getJobResults(anyString(), anyString(), anyString(), any(BulkApiKey.class));
+  }
+
+  @ParameterizedTest
+  @CsvSource(
+      value = {
+        "org.apache.kafka.connect.storage.StringConverter",
+        "org.apache.kafka.connect.json.JsonConverter"
+      })
+  void readData(String converterType) {
+    int expectedRecords = 20;
+    int resultsPerPage = 20;
+    int expectedPaginatedPages = 0;
+    SalesforceSourceConfig myConfig =
+        setUpSalesforceBulkApiClientMock(converterType, expectedRecords, resultsPerPage);
+    EvolvingSourceRecordIterator evolvingSourceRecordIterator =
+        new EvolvingSourceRecordIterator(
+            myConfig, new BulkApiSourceData(myConfig, offsetManager, engine, new HashMap<>()));
+
+    List<EvolvingSourceRecord> sourceRecords = new ArrayList<>();
+
+    while (evolvingSourceRecordIterator.hasNext()) {
+      EvolvingSourceRecord evolvingSourceRecord = evolvingSourceRecordIterator.next();
+      sourceRecords.add(evolvingSourceRecord);
+    }
+    assertEquals(expectedRecords, sourceRecords.size());
+    assertFalse(evolvingSourceRecordIterator.hasNext());
+
+    verify(apiClient, times(1)).submitQueryJob(anyString());
+    verify(apiClient, times(1))
+        .getJobResults(anyString(), eq(null), anyString(), any(BulkApiKey.class));
+    verify(apiClient, times(expectedPaginatedPages))
         .getJobResults(anyString(), anyString(), anyString(), any(BulkApiKey.class));
   }
 
@@ -320,10 +361,11 @@ public class BulkApiSourceDataTest {
   }
 
   private SalesforceSourceConfig setUpSalesforceBulkApiClientMock(
-      int expectedRecords, int resultsPerPage) {
+      String converterString, int expectedRecords, int resultsPerPage) {
     int pageNumber = 1;
     Map<String, String> props = getConfig();
     SourceConfigFragment.setter(props).extractorClass(CsvExtractor.class);
+    props.put("value.converter", converterString);
 
     engine = new BulkApiQueryEngine(config, apiClient);
 
